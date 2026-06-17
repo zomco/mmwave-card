@@ -134,6 +134,13 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
 export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   room_w: 400,
   room_d: 350,
+  presence_entity: "binary_sensor.r60abd1_presence",
+  x_entity: "sensor.r60abd1_x",
+  y_entity: "sensor.r60abd1_y",
+  z_entity: "sensor.r60abd1_z",
+};
+  room_w: 400,
+  room_d: 350,
 };
 
 // ── Yaw calibration sub-state ─────────────────────────────────────────────────

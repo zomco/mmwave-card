@@ -1,0 +1,11 @@
+type: custom:mmwave-card
+radar_model: r60abd1
+presence_entity: binary_sensor.r60abd1_presence
+x_entity: sensor.r60abd1_x
+y_entity: sensor.r60abd1_y
+z_entity: sensor.r60abd1_z
+breath_entity: sensor.r60abd1_breath_value
+heart_entity: sensor.r60abd1_heart_rate
+sleep_entity: sensor.r60abd1_sleep_state
+room_w: 400
+room_d: 350
