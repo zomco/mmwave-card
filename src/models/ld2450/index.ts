@@ -36,7 +36,7 @@ const INFO: RadarModelInfo = {
   fovDegrees:   120,
   maxRangeM:    6,
   minRangeM:    0.2,   // LD2450 typical blind zone ~20 cm
-  updateRateHz: 20,
+  updateRateHz: 10,
   maxTargets:   3,
   hasZAxis:     false,
   hasBreathing: false,
@@ -49,13 +49,16 @@ const INFO: RadarModelInfo = {
 // plus a presence binary sensor from the ESPHome component.
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
-  { key: "presence_entity", labelKey: "editor.presence_entity", required: true,  domain: "binary_sensor" },
-  { key: "target1_x",       labelKey: "editor.target1_x",       required: true,  domain: "sensor" },
-  { key: "target1_y",       labelKey: "editor.target1_y",       required: true,  domain: "sensor" },
-  { key: "target2_x",       labelKey: "editor.target2_x",       required: false, domain: "sensor" },
-  { key: "target2_y",       labelKey: "editor.target2_y",       required: false, domain: "sensor" },
-  { key: "target3_x",       labelKey: "editor.target3_x",       required: false, domain: "sensor" },
-  { key: "target3_y",       labelKey: "editor.target3_y",       required: false, domain: "sensor" },
+  { key: "presence_entity",       labelKey: "editor.presence_entity",       required: true,  domain: "binary_sensor" },
+  { key: "target_1_x_entity",     labelKey: "editor.target_1_x",            required: true,  domain: "sensor" },
+  { key: "target_1_y_entity",     labelKey: "editor.target_1_y",            required: true,  domain: "sensor" },
+  { key: "target_1_speed_entity", labelKey: "editor.target_1_speed",        required: false, domain: "sensor" },
+  { key: "target_2_x_entity",     labelKey: "editor.target_2_x",            required: false, domain: "sensor" },
+  { key: "target_2_y_entity",     labelKey: "editor.target_2_y",            required: false, domain: "sensor" },
+  { key: "target_2_speed_entity", labelKey: "editor.target_2_speed",        required: false, domain: "sensor" },
+  { key: "target_3_x_entity",     labelKey: "editor.target_3_x",            required: false, domain: "sensor" },
+  { key: "target_3_y_entity",     labelKey: "editor.target_3_y",            required: false, domain: "sensor" },
+  { key: "target_3_speed_entity", labelKey: "editor.target_3_speed",        required: false, domain: "sensor" },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────
@@ -92,8 +95,8 @@ export const ld2450Adapter: RadarModelAdapter = {
 
     // LD2450 reports (0,0) for "slot empty"; filter those out.
     for (let i = 1; i <= INFO.maxTargets; i++) {
-      const xs = get(`target${i}_x`);
-      const ys = get(`target${i}_y`);
+      const xs = get(`target_${i}_x_entity`);
+      const ys = get(`target_${i}_y_entity`);
       if (!xs || !ys) continue;
 
       // LD2450 unit is mm; convert to cm
@@ -101,7 +104,7 @@ export const ld2450Adapter: RadarModelAdapter = {
       const rawY = (parseFloat(ys.state) || 0) / 10;
       if (rawX === 0 && rawY === 0) continue;
 
-      const speedState = get(`target${i}_speed`);
+      const speedState = get(`target_${i}_speed_entity`);
       const speed = speedState ? Math.abs(parseFloat(speedState.state) || 0) : undefined;
 
       targets.push({ index: i - 1, rawX, rawY, rawZ: 0, speed });

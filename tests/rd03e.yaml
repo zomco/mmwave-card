@@ -1,0 +1,7 @@
+type: custom:mmwave-card
+radar_model: rd03e
+presence_entity: binary_sensor.rd03e_presence
+distance_entity: sensor.rd03e_distance
+motion_state_entity: sensor.rd03e_motion_state
+room_w: 400
+room_d: 350

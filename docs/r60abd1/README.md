@@ -1,33 +1,34 @@
-# R60ABD1 Lovelace 配置使用说明
+# R60ABD1 Lovelace Configuration Guide
 
-这份说明用于指导如何在 Home Assistant 中使用 `tests/r60abd1.yaml` 中的配置文件。
+[中文文档 (Chinese)](./README_CN.md)
+This guide explains how to use the configuration file located in `tests/r60abd1.yaml` within Home Assistant.
 
-## 1. 简介
+## 1. Introduction
 
-`r60abd1.yaml` 包含了适用于 MicRadar R60ABD1 毫米波雷达的 [mmwave-card](https://github.com/zomco/mmwave-card) 基本 Lovelace 卡片配置。它能够实现该雷达在 Home Assistant 中的可视化实时追踪、几何边界校准以及健康相关数据（呼吸、心率、睡眠等）的显示接入。
+`r60abd1.yaml` contains the basic Lovelace card configuration for the MicRadar R60ABD1 mmWave radar using [mmwave-card](https://github.com/zomco/mmwave-card). It enables visual real-time tracking, geometric boundary calibration, and health-related data (breathing, heart rate, sleep, etc.) display integration for this radar in Home Assistant.
 
-## 2. 前置准备
+## 2. Prerequisites
 
-在应用此配置之前，请确保：
-1. 您已正确安装了 `mmwave-card`（推荐通过 HACS 安装或手动配置前端资源）。
-2. 您的 R60ABD1 雷达设备已通过 ESPHome 或其他方式成功接入 Home Assistant。
+Before applying this configuration, ensure that:
+1. You have correctly installed `mmwave-card` (installation via HACS or manual frontend resource configuration is recommended).
+2. Your R60ABD1 radar device is successfully integrated into Home Assistant via ESPHome or other methods.
 
-## 3. 如何使用
+## 3. How to Use
 
-您可以通过以下两种主要方式将该配置添加到您的 Home Assistant 仪表板中：
+You can add this configuration to your Home Assistant dashboard using two main methods:
 
-### 方法 A：通过 UI 编辑器（推荐）
+### Method A: Via UI Editor (Recommended)
 
-1. 进入 Home Assistant，打开您想要添加卡片的仪表板。
-2. 点击右上角的 **“编辑仪表板”** (铅笔图标)。
-3. 点击右下角的 **“添加卡片”**。
-4. 在弹出的卡片列表中，向下滚动并选择最底部的 **“手动” (Manual)**。
-5. 将 `tests/r60abd1.yaml` 中的内容复制并粘贴到代码编辑器中。
-6. 根据您的实际情况修改实体 ID（见下文“修改实体 ID”），然后点击“保存”。
+1. Go to Home Assistant and open the dashboard where you want to add the card.
+2. Click **"Edit Dashboard"** (the pencil icon) in the top right corner.
+3. Click **"Add Card"** in the bottom right corner.
+4. Scroll to the very bottom of the card list popup and select **"Manual"**.
+5. Copy the contents from `tests/r60abd1.yaml` and paste them into the code editor.
+6. Modify the entity IDs according to your actual setup (see "Modifying Entity IDs" below), and then click "Save".
 
-### 方法 B：通过 YAML 模式
+### Method B: Via YAML Mode
 
-如果您使用 YAML 模式管理 Lovelace (`ui-lovelace.yaml`)，请将配置直接复制到相应的视图 (view) 卡片数组中：
+If you manage Lovelace using YAML mode (`ui-lovelace.yaml`), copy the configuration directly into the cards array of the appropriate view:
 ```yaml
 cards:
   - type: custom:mmwave-card
@@ -43,21 +44,21 @@ cards:
     room_d: 350
 ```
 
-## 4. 修改实体 ID
+## 4. Modifying Entity IDs
 
-配置中的所有 `entity_id`（如 `binary_sensor.r60abd1_presence`）都是示例 ID。如果您的设备在 Home Assistant 中具有不同的名称，请务必将其替换为**您实际的实体 ID**。
+All `entity_id`s in the configuration (such as `binary_sensor.r60abd1_presence`) are examples. If your device has different names in Home Assistant, please make sure to replace them with **your actual entity IDs**.
 
-您可以在 Home Assistant 的 **“开发者工具” -> “状态”** 页面中搜索并确认您雷达设备的真实实体 ID。
+You can search and confirm the real entity IDs of your radar device on the **"Developer Tools" -> "States"** page in Home Assistant.
 
-## 5. 配置项说明
+## 5. Configuration Options
 
-- **`type`**: `custom:mmwave-card`（固定值，调用本卡片插件）
-- **`radar_model`**: `r60abd1`（固定值，指定使用的雷达模型）
-- **`presence_entity`**: 【必填】表示是否有人存在的二进制传感器。
-- **`x_entity`**: 【必填】雷达测量的局部 X 轴坐标（单位：cm）。
-- **`y_entity`**: 【必填】雷达测量的局部 Y 轴坐标（单位：cm）。
-- **`z_entity`**: 【可选】雷达测量的局部 Z 轴坐标（高度），填入后可在卡片UI中显示离地高度。
-- **`breath_entity`**: 【可选】呼吸频率（次/分钟），加入以备自动化和扩展显示调用。
-- **`heart_entity`**: 【可选】心率（bpm）。
-- **`sleep_entity`**: 【可选】睡眠状态传感器。
-- **`room_w` / `room_d`**: 房间的物理宽度和深度（单位：cm），用于在卡片绘图时缩放比例，不影响校准数据本身。您可以根据实际房间大小自行修改（例如 `300` 或 `500`）。
+- **`type`**: `custom:mmwave-card` (Fixed value, calls this custom card plugin)
+- **`radar_model`**: `r60abd1` (Fixed value, specifies the radar model used)
+- **`presence_entity`**: [Required] Binary sensor indicating whether someone is present.
+- **`x_entity`**: [Required] Radar-measured local X-axis coordinate (Unit: cm).
+- **`y_entity`**: [Required] Radar-measured local Y-axis coordinate (Unit: cm).
+- **`z_entity`**: [Optional] Radar-measured local Z-axis coordinate (height). If provided, it can display the height above ground in the card UI.
+- **`breath_entity`**: [Optional] Breathing rate (breaths/minute), included for automation and extended display.
+- **`heart_entity`**: [Optional] Heart rate (bpm).
+- **`sleep_entity`**: [Optional] Sleep state sensor.
+- **`room_w` / `room_d`**: The physical width and depth of the room (Unit: cm), used for scaling during card rendering. This does not affect the calibration data itself. You can modify it according to your actual room size (e.g., `300` or `500`).

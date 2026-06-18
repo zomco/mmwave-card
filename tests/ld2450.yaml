@@ -1,0 +1,14 @@
+type: custom:mmwave-card
+radar_model: ld2450
+presence_entity: binary_sensor.ld2450_presence
+target_1_x_entity: sensor.ld2450_target_1_x
+target_1_y_entity: sensor.ld2450_target_1_y
+target_1_speed_entity: sensor.ld2450_target_1_speed
+target_2_x_entity: sensor.ld2450_target_2_x
+target_2_y_entity: sensor.ld2450_target_2_y
+target_2_speed_entity: sensor.ld2450_target_2_speed
+target_3_x_entity: sensor.ld2450_target_3_x
+target_3_y_entity: sensor.ld2450_target_3_y
+target_3_speed_entity: sensor.ld2450_target_3_speed
+room_w: 400
+room_d: 350
