@@ -1,0 +1,24 @@
+# Option 1: Full 2D Coordinates mode
+# Make sure your ESPHome ld6002 calibration parameters (yaw/pitch/roll) 
+# are set to 0 to avoid double-calibration with this HA card!
+type: custom:mmwave-card
+radar_model: ld6002
+presence_entity: binary_sensor.ld6002_presence
+x_entity: sensor.ld6002_room_x
+y_entity: sensor.ld6002_room_y
+respiration_entity: sensor.ld6002_respiration_rate
+heart_rate_entity: sensor.ld6002_heart_rate
+room_w: 400
+room_d: 350
+
+# --- OR ---
+
+# Option 2: 1D Forward Distance mode
+# type: custom:mmwave-card
+# radar_model: ld6002
+# presence_entity: binary_sensor.ld6002_presence
+# distance_entity: sensor.ld6002_distance
+# respiration_entity: sensor.ld6002_respiration_rate
+# heart_rate_entity: sensor.ld6002_heart_rate
+# room_w: 400
+# room_d: 350

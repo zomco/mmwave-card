@@ -1,0 +1,7 @@
+type: custom:mmwave-card
+radar_model: ld2410c
+presence_entity: binary_sensor.ld2410c_presence
+distance_entity: sensor.ld2410c_detection_distance
+target_state_entity: sensor.ld2410c_target_state
+room_w: 400
+room_d: 350

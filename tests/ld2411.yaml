@@ -1,0 +1,7 @@
+type: custom:mmwave-card
+radar_model: ld2411
+presence_entity: binary_sensor.ld2411_presence
+distance_entity: sensor.ld2411_distance
+motion_state_entity: sensor.ld2411_motion_state
+room_w: 400
+room_d: 350
