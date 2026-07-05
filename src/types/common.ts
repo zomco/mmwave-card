@@ -3,11 +3,14 @@
  * Model-specific types live in src/models/<model>/types.ts.
  */
 
-import type { LovelaceCardConfig, ActionConfig } from "custom-card-helpers";
+import type { LovelaceCardConfig, ActionConfig } from 'custom-card-helpers';
 
 // ── Geometry ──────────────────────────────────────────────────────────────────
 
-export interface Vec2 { x: number; y: number }
+export interface Vec2 {
+  x: number;
+  y: number;
+}
 
 // ── Calibration ───────────────────────────────────────────────────────────────
 
@@ -16,7 +19,7 @@ export interface CalibrationConfig {
   radar_x: number;
   radar_y: number;
   /** Radar installation height above floor (cm). */
-  radar_height: number;
+  radar_z: number;
   /** Yaw angle: deviation of radar forward axis from room Y-axis, clockwise positive (°). */
   yaw: number;
   /** Pitch angle: forward tilt, positive = tilted forward (°). */
@@ -28,8 +31,12 @@ export interface CalibrationConfig {
 }
 
 export const DEFAULT_CALIBRATION: CalibrationConfig = {
-  radar_x: 0, radar_y: 0, radar_height: 220,
-  yaw: 0, pitch: 0, roll: 0,
+  radar_x: 0,
+  radar_y: 0,
+  radar_z: 220,
+  yaw: 0,
+  pitch: 0,
+  roll: 0,
   polygon: [],
 };
 
@@ -39,7 +46,7 @@ export interface TransformResult {
   roomX: number;
   roomY: number;
   /** Target height above floor (cm). Only meaningful when radar has Z axis. */
-  heightFloor: number;
+  roomZ: number;
   /** Whether the target is inside the room boundary polygon. */
   inBoundary: boolean;
 }
@@ -134,13 +141,10 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
 export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   room_w: 400,
   room_d: 350,
-  presence_entity: "binary_sensor.r60abd1_presence",
-  x_entity: "sensor.r60abd1_x",
-  y_entity: "sensor.r60abd1_y",
-  z_entity: "sensor.r60abd1_z",
-};
-  room_w: 400,
-  room_d: 350,
+  presence_entity: 'binary_sensor.r60abd1_presence',
+  x_entity: 'sensor.r60abd1_x',
+  y_entity: 'sensor.r60abd1_y',
+  z_entity: 'sensor.r60abd1_z',
 };
 
 // ── Yaw calibration sub-state ─────────────────────────────────────────────────

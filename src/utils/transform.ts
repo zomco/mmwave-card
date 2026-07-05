@@ -3,18 +3,20 @@
  * Rotation order: Rz(yaw) · Rx(pitch) · Ry(roll)
  */
 
-import type { CalibrationConfig, Vec2, TransformResult } from "../types";
+import type { CalibrationConfig, Vec2, TransformResult } from '../types';
 
-type Mat3 = [[number,number,number],[number,number,number],[number,number,number]];
+type Mat3 = [[number, number, number], [number, number, number], [number, number, number]];
 
 function buildRotation(yawDeg: number, pitchDeg: number, rollDeg: number): Mat3 {
   const d = Math.PI / 180;
-  const γ = yawDeg * d, α = pitchDeg * d, β = rollDeg * d;
-  const [sγ,cγ,sα,cα,sβ,cβ] = [Math.sin(γ),Math.cos(γ),Math.sin(α),Math.cos(α),Math.sin(β),Math.cos(β)];
+  const γ = yawDeg * d,
+    α = pitchDeg * d,
+    β = rollDeg * d;
+  const [sγ, cγ, sα, cα, sβ, cβ] = [Math.sin(γ), Math.cos(γ), Math.sin(α), Math.cos(α), Math.sin(β), Math.cos(β)];
   return [
-    [ cγ*cβ+sγ*sα*sβ,  sγ*cα, -cγ*sβ+sγ*sα*cβ ],
-    [-sγ*cβ+cγ*sα*sβ,  cγ*cα,  sγ*sβ+cγ*sα*cβ ],
-    [ cα*sβ,           -sα,     cα*cβ            ],
+    [cγ * cβ + sγ * sα * sβ, sγ * cα, -cγ * sβ + sγ * sα * cβ],
+    [-sγ * cβ + cγ * sα * sβ, cγ * cα, sγ * sβ + cγ * sα * cβ],
+    [cα * sβ, -sα, cα * cβ],
   ];
 }
 
@@ -23,45 +25,46 @@ export function pointInPolygon(px: number, py: number, poly: Vec2[]): boolean {
   const n = poly.length;
   if (n < 3) return true;
   let inside = false;
-  for (let i = 0, j = n-1; i < n; j = i++) {
-    const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
-    if (((yi > py) !== (yj > py)) && (px < (xj-xi)*(py-yi)/(yj-yi)+xi))
-      inside = !inside;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = poly[i].x,
+      yi = poly[i].y,
+      xj = poly[j].x,
+      yj = poly[j].y;
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) inside = !inside;
   }
   return inside;
 }
 
 /** Apply full 3-D rotation + translation + boundary test. */
-export function applyTransform(
-  rx: number, ry: number, rz: number,
-  cal: CalibrationConfig,
-): TransformResult {
+export function applyTransform(rx: number, ry: number, rz: number, cal: CalibrationConfig): TransformResult {
   const R = buildRotation(cal.yaw, cal.pitch, cal.roll);
-  const wx = R[0][0]*rx + R[0][1]*ry + R[0][2]*rz;
-  const wy = R[1][0]*rx + R[1][1]*ry + R[1][2]*rz;
-  const wz = R[2][0]*rx + R[2][1]*ry + R[2][2]*rz;
-  const roomX       = cal.radar_x + wx;
-  const roomY       = cal.radar_y + wy;
-  const heightFloor = cal.radar_height - wz;
-  return { roomX, roomY, heightFloor, inBoundary: pointInPolygon(roomX, roomY, cal.polygon) };
+  const wx = R[0][0] * rx + R[0][1] * ry + R[0][2] * rz;
+  const wy = R[1][0] * rx + R[1][1] * ry + R[1][2] * rz;
+  const wz = R[2][0] * rx + R[2][1] * ry + R[2][2] * rz;
+  const roomX = cal.radar_x + wx;
+  const roomY = cal.radar_y + wy;
+  const roomZ = cal.radar_z - wz;
+  return { roomX, roomY, roomZ, inBoundary: pointInPolygon(roomX, roomY, cal.polygon) };
 }
 
 /** Two-point geometric yaw calculation. */
 export function calcYawFromTwoPoints(mapA: Vec2, mapB: Vec2, detA: Vec2, detB: Vec2): number {
-  const am = Math.atan2(mapB.y-mapA.y, mapB.x-mapA.x);
-  const ad = Math.atan2(detB.y-detA.y, detB.x-detA.x);
-  let y = (am - ad) * (180/Math.PI);
+  const am = Math.atan2(mapB.y - mapA.y, mapB.x - mapA.x);
+  const ad = Math.atan2(detB.y - detA.y, detB.x - detA.x);
+  let y = (am - ad) * (180 / Math.PI);
   while (y > 180) y -= 360;
   while (y < -180) y += 360;
   return Math.round(y * 10) / 10;
 }
 
 export function calcCalibrationResidual(
-  mapA: Vec2, mapB: Vec2, detA: Vec2, detB: Vec2,
+  mapA: Vec2,
+  mapB: Vec2,
+  detA: Vec2,
+  detB: Vec2,
   cal: CalibrationConfig,
 ): number {
   const tA = applyTransform(detA.x, detA.y, 0, cal);
   const tB = applyTransform(detB.x, detB.y, 0, cal);
-  return (Math.hypot(tA.roomX-mapA.x, tA.roomY-mapA.y) +
-          Math.hypot(tB.roomX-mapB.x, tB.roomY-mapB.y)) / 2;
+  return (Math.hypot(tA.roomX - mapA.x, tA.roomY - mapA.y) + Math.hypot(tB.roomX - mapB.x, tB.roomY - mapB.y)) / 2;
 }

@@ -9,7 +9,7 @@
     "install_params": "Installation Parameters (measure with tape)",
     "radar_x": "Radar X",
     "radar_y": "Radar Y",
-    "radar_height": "Height",
+    "radar_z": "Height",
     "yaw_rough": "Rough Yaw",
     "pitch": "Pitch",
     "roll": "Roll",
@@ -43,7 +43,7 @@
     "badge_filtered": "Outside boundary",
     "room_x": "Room X (cm)",
     "room_y": "Room Y (cm)",
-    "height": "Height (cm)",
+    "room_z": "Height (cm)",
     "targets": "Targets"
   },
   "actions": {

@@ -1,824 +1,37 @@
-/******************************************************************************
-Copyright (c) Microsoft Corporation.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.
-***************************************************************************** */
-/* global Reflect, Promise, SuppressedError, Symbol, Iterator */
-
-
-function __decorate(decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-}
-
-typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
-    var e = new Error(message);
-    return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
-};
-
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$4=globalThis,e$7=t$4.ShadowRoot&&(void 0===t$4.ShadyCSS||t$4.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$4=Symbol(),o$7=new WeakMap;let n$6 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$4)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$7&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$7.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$7.set(s,t));}return t}toString(){return this.cssText}};const r$7=t=>new n$6("string"==typeof t?t:t+"",void 0,s$4),S$3=(s,o)=>{if(e$7)s.adoptedStyleSheets=o.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const e of o){const o=document.createElement("style"),n=t$4.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$5=e$7?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$7(e)})(t):t;
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$5,defineProperty:e$6,getOwnPropertyDescriptor:h$3,getOwnPropertyNames:r$6,getOwnPropertySymbols:o$6,getPrototypeOf:n$5}=Object,a$3=globalThis,c$4=a$3.trustedTypes,l$3=c$4?c$4.emptyScript:"",p$3=a$3.reactiveElementPolyfillSupport,d$3=(t,s)=>t,u$3={toAttribute(t,s){switch(s){case Boolean:t=t?l$3:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$3=(t,s)=>!i$5(t,s),b$2={attribute:true,type:String,converter:u$3,reflect:false,useDefault:false,hasChanged:f$3};Symbol.metadata??=Symbol("metadata"),a$3.litPropertyMetadata??=new WeakMap;let y$3 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$2){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$6(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$3(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$2}static _$Ei(){if(this.hasOwnProperty(d$3("elementProperties")))return;const t=n$5(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$3("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$3("properties"))){const t=this.properties,s=[...r$6(t),...o$6(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$5(s));}else void 0!==s&&i.push(c$5(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$3(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach(t=>t.hostConnected?.());}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.());}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$3).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$3;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i,e=false,h){if(void 0!==t){const r=this.constructor;if(false===e&&(h=this[t]),i??=r.getPropertyOptions(t),!((i.hasChanged??f$3)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(r._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM();}updated(t){}firstUpdated(t){}};y$3.elementStyles=[],y$3.shadowRootOptions={mode:"open"},y$3[d$3("elementProperties")]=new Map,y$3[d$3("finalized")]=new Map,p$3?.({ReactiveElement:y$3}),(a$3.reactiveElementVersions??=[]).push("2.1.2");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$3=globalThis,i$4=t=>t,s$3=t$3.trustedTypes,e$5=s$3?s$3.createPolicy("lit-html",{createHTML:t=>t}):void 0,h$2="$lit$",o$5=`lit$${Math.random().toFixed(9).slice(2)}$`,n$4="?"+o$5,r$5=`<${n$4}>`,l$2=document,c$3=()=>l$2.createComment(""),a$2=t=>null===t||"object"!=typeof t&&"function"!=typeof t,u$2=Array.isArray,d$2=t=>u$2(t)||"function"==typeof t?.[Symbol.iterator],f$2="[ \t\n\f\r]",v$1=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,_$1=/-->/g,m$1=/>/g,p$2=RegExp(`>|${f$2}(?:([^\\s"'>=/]+)(${f$2}*=${f$2}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),g$1=/'/g,$$1=/"/g,y$2=/^(?:script|style|textarea|title)$/i,E$1=Symbol.for("lit-noChange"),A$1=Symbol.for("lit-nothing"),C$1=new WeakMap,P$1=l$2.createTreeWalker(l$2,129);function V$1(t,i){if(!u$2(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==e$5?e$5.createHTML(i):i}const N$1=(t,i)=>{const s=t.length-1,e=[];let n,l=2===i?"<svg>":3===i?"<math>":"",c=v$1;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,f=0;for(;f<s.length&&(c.lastIndex=f,u=c.exec(s),null!==u);)f=c.lastIndex,c===v$1?"!--"===u[1]?c=_$1:void 0!==u[1]?c=m$1:void 0!==u[2]?(y$2.test(u[2])&&(n=RegExp("</"+u[2],"g")),c=p$2):void 0!==u[3]&&(c=p$2):c===p$2?">"===u[0]?(c=n??v$1,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?p$2:'"'===u[3]?$$1:g$1):c===$$1||c===g$1?c=p$2:c===_$1||c===m$1?c=v$1:(c=p$2,n=void 0);const x=c===p$2&&t[i+1].startsWith("/>")?" ":"";l+=c===v$1?s+r$5:d>=0?(e.push(a),s.slice(0,d)+h$2+s.slice(d)+o$5+x):s+o$5+(-2===d?i:x);}return [V$1(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),e]};let S$2 = class S{constructor({strings:t,_$litType$:i},e){let r;this.parts=[];let l=0,a=0;const u=t.length-1,d=this.parts,[f,v]=N$1(t,i);if(this.el=S.createElement(f,e),P$1.currentNode=this.el.content,2===i||3===i){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=P$1.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(h$2)){const i=v[a++],s=r.getAttribute(t).split(o$5),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:l,name:e[2],strings:s,ctor:"."===e[1]?I$1:"?"===e[1]?L$1:"@"===e[1]?z$1:H$1}),r.removeAttribute(t);}else t.startsWith(o$5)&&(d.push({type:6,index:l}),r.removeAttribute(t));if(y$2.test(r.tagName)){const t=r.textContent.split(o$5),i=t.length-1;if(i>0){r.textContent=s$3?s$3.emptyScript:"";for(let s=0;s<i;s++)r.append(t[s],c$3()),P$1.nextNode(),d.push({type:2,index:++l});r.append(t[i],c$3());}}}else if(8===r.nodeType)if(r.data===n$4)d.push({type:2,index:l});else {let t=-1;for(;-1!==(t=r.data.indexOf(o$5,t+1));)d.push({type:7,index:l}),t+=o$5.length-1;}l++;}}static createElement(t,i){const s=l$2.createElement("template");return s.innerHTML=t,s}};function M$1(t,i,s=t,e){if(i===E$1)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=a$2(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=M$1(t,h._$AS(t,i.values),h,e)),i}let R$1 = class R{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??l$2).importNode(i,true);P$1.currentNode=e;let h=P$1.nextNode(),o=0,n=0,r=s[0];for(;void 0!==r;){if(o===r.index){let i;2===r.type?i=new k$1(h,h.nextSibling,this,t):1===r.type?i=new r.ctor(h,r.name,r.strings,this,t):6===r.type&&(i=new Z$1(h,this,t)),this._$AV.push(i),r=s[++n];}o!==r?.index&&(h=P$1.nextNode(),o++);}return P$1.currentNode=l$2,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}};let k$1 = class k{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=A$1,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=M$1(this,t,i),a$2(t)?t===A$1||null==t||""===t?(this._$AH!==A$1&&this._$AR(),this._$AH=A$1):t!==this._$AH&&t!==E$1&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):d$2(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==A$1&&a$2(this._$AH)?this._$AA.nextSibling.data=t:this.T(l$2.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=S$2.createElement(V$1(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new R$1(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=C$1.get(t.strings);return void 0===i&&C$1.set(t.strings,i=new S$2(t)),i}k(t){u$2(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new k(this.O(c$3()),this.O(c$3()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,s){for(this._$AP?.(false,true,s);t!==this._$AB;){const s=i$4(t).nextSibling;i$4(t).remove(),t=s;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}};let H$1 = class H{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=A$1,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=A$1;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=M$1(this,t,i,0),o=!a$2(t)||t!==this._$AH&&t!==E$1,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=M$1(this,e[s+n],i,n),r===E$1&&(r=this._$AH[n]),o||=!a$2(r)||r!==this._$AH[n],r===A$1?t=A$1:t!==A$1&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===A$1?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}};let I$1 = class I extends H$1{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===A$1?void 0:t;}};let L$1 = class L extends H$1{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==A$1);}};let z$1 = class z extends H$1{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=M$1(this,t,i,0)??A$1)===E$1)return;const s=this._$AH,e=t===A$1&&s!==A$1||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==A$1&&(s===A$1||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}};let Z$1 = class Z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){M$1(this,t);}};const B$1=t$3.litHtmlPolyfillSupport;B$1?.(S$2,k$1),(t$3.litHtmlVersions??=[]).push("3.3.2");
-
-/**
- * @license
- * Copyright 2019 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$2=globalThis,e$4=t$2.ShadowRoot&&(void 0===t$2.ShadyCSS||t$2.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,s$2=Symbol(),o$4=new WeakMap;let n$3 = class n{constructor(t,e,o){if(this._$cssResult$=true,o!==s$2)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e;}get styleSheet(){let t=this.o;const s=this.t;if(e$4&&void 0===t){const e=void 0!==s&&1===s.length;e&&(t=o$4.get(s)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),e&&o$4.set(s,t));}return t}toString(){return this.cssText}};const r$4=t=>new n$3("string"==typeof t?t:t+"",void 0,s$2),i$3=(t,...e)=>{const o=1===t.length?t[0]:e.reduce((e,s,o)=>e+(t=>{if(true===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(s)+t[o+1],t[0]);return new n$3(o,t,s$2)},S$1=(s,o)=>{if(e$4)s.adoptedStyleSheets=o.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const e of o){const o=document.createElement("style"),n=t$2.litNonce;void 0!==n&&o.setAttribute("nonce",n),o.textContent=e.cssText,s.appendChild(o);}},c$2=e$4?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const s of t.cssRules)e+=s.cssText;return r$4(e)})(t):t;
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const{is:i$2,defineProperty:e$3,getOwnPropertyDescriptor:h$1,getOwnPropertyNames:r$3,getOwnPropertySymbols:o$3,getPrototypeOf:n$2}=Object,a$1=globalThis,c$1=a$1.trustedTypes,l$1=c$1?c$1.emptyScript:"",p$1=a$1.reactiveElementPolyfillSupport,d$1=(t,s)=>t,u$1={toAttribute(t,s){switch(s){case Boolean:t=t?l$1:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t);}return t},fromAttribute(t,s){let i=t;switch(s){case Boolean:i=null!==t;break;case Number:i=null===t?null:Number(t);break;case Object:case Array:try{i=JSON.parse(t);}catch(t){i=null;}}return i}},f$1=(t,s)=>!i$2(t,s),b$1={attribute:true,type:String,converter:u$1,reflect:false,useDefault:false,hasChanged:f$1};Symbol.metadata??=Symbol("metadata"),a$1.litPropertyMetadata??=new WeakMap;let y$1 = class y extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t);}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,s=b$1){if(s.state&&(s.attribute=false),this._$Ei(),this.prototype.hasOwnProperty(t)&&((s=Object.create(s)).wrapped=true),this.elementProperties.set(t,s),!s.noAccessor){const i=Symbol(),h=this.getPropertyDescriptor(t,i,s);void 0!==h&&e$3(this.prototype,t,h);}}static getPropertyDescriptor(t,s,i){const{get:e,set:r}=h$1(this.prototype,t)??{get(){return this[s]},set(t){this[s]=t;}};return {get:e,set(s){const h=e?.call(this);r?.call(this,s),this.requestUpdate(t,h,i);},configurable:true,enumerable:true}}static getPropertyOptions(t){return this.elementProperties.get(t)??b$1}static _$Ei(){if(this.hasOwnProperty(d$1("elementProperties")))return;const t=n$2(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties);}static finalize(){if(this.hasOwnProperty(d$1("finalized")))return;if(this.finalized=true,this._$Ei(),this.hasOwnProperty(d$1("properties"))){const t=this.properties,s=[...r$3(t),...o$3(t)];for(const i of s)this.createProperty(i,t[i]);}const t=this[Symbol.metadata];if(null!==t){const s=litPropertyMetadata.get(t);if(void 0!==s)for(const[t,i]of s)this.elementProperties.set(t,i);}this._$Eh=new Map;for(const[t,s]of this.elementProperties){const i=this._$Eu(t,s);void 0!==i&&this._$Eh.set(i,t);}this.elementStyles=this.finalizeStyles(this.styles);}static finalizeStyles(s){const i=[];if(Array.isArray(s)){const e=new Set(s.flat(1/0).reverse());for(const s of e)i.unshift(c$2(s));}else void 0!==s&&i.push(c$2(s));return i}static _$Eu(t,s){const i=s.attribute;return  false===i?void 0:"string"==typeof i?i:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=false,this.hasUpdated=false,this._$Em=null,this._$Ev();}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this));}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.();}removeController(t){this._$EO?.delete(t);}_$E_(){const t=new Map,s=this.constructor.elementProperties;for(const i of s.keys())this.hasOwnProperty(i)&&(t.set(i,this[i]),delete this[i]);t.size>0&&(this._$Ep=t);}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return S$1(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(true),this._$EO?.forEach(t=>t.hostConnected?.());}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.());}attributeChangedCallback(t,s,i){this._$AK(t,i);}_$ET(t,s){const i=this.constructor.elementProperties.get(t),e=this.constructor._$Eu(t,i);if(void 0!==e&&true===i.reflect){const h=(void 0!==i.converter?.toAttribute?i.converter:u$1).toAttribute(s,i.type);this._$Em=t,null==h?this.removeAttribute(e):this.setAttribute(e,h),this._$Em=null;}}_$AK(t,s){const i=this.constructor,e=i._$Eh.get(t);if(void 0!==e&&this._$Em!==e){const t=i.getPropertyOptions(e),h="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:u$1;this._$Em=e;const r=h.fromAttribute(s,t.type);this[e]=r??this._$Ej?.get(e)??r,this._$Em=null;}}requestUpdate(t,s,i,e=false,h){if(void 0!==t){const r=this.constructor;if(false===e&&(h=this[t]),i??=r.getPropertyOptions(t),!((i.hasChanged??f$1)(h,s)||i.useDefault&&i.reflect&&h===this._$Ej?.get(t)&&!this.hasAttribute(r._$Eu(t,i))))return;this.C(t,s,i);} false===this.isUpdatePending&&(this._$ES=this._$EP());}C(t,s,{useDefault:i,reflect:e,wrapped:h},r){i&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,r??s??this[t]),true!==h||void 0!==r)||(this._$AL.has(t)||(this.hasUpdated||i||(s=void 0),this._$AL.set(t,s)),true===e&&this._$Em!==t&&(this._$Eq??=new Set).add(t));}async _$EP(){this.isUpdatePending=true;try{await this._$ES;}catch(t){Promise.reject(t);}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,s]of this._$Ep)this[t]=s;this._$Ep=void 0;}const t=this.constructor.elementProperties;if(t.size>0)for(const[s,i]of t){const{wrapped:t}=i,e=this[s];true!==t||this._$AL.has(s)||void 0===e||this.C(s,void 0,i,e);}}let t=false;const s=this._$AL;try{t=this.shouldUpdate(s),t?(this.willUpdate(s),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(s)):this._$EM();}catch(s){throw t=false,this._$EM(),s}t&&this._$AE(s);}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=true,this.firstUpdated(t)),this.updated(t);}_$EM(){this._$AL=new Map,this.isUpdatePending=false;}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return  true}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM();}updated(t){}firstUpdated(t){}};y$1.elementStyles=[],y$1.shadowRootOptions={mode:"open"},y$1[d$1("elementProperties")]=new Map,y$1[d$1("finalized")]=new Map,p$1?.({ReactiveElement:y$1}),(a$1.reactiveElementVersions??=[]).push("2.1.2");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t$1=globalThis,i$1=t=>t,s$1=t$1.trustedTypes,e$2=s$1?s$1.createPolicy("lit-html",{createHTML:t=>t}):void 0,h="$lit$",o$2=`lit$${Math.random().toFixed(9).slice(2)}$`,n$1="?"+o$2,r$2=`<${n$1}>`,l=document,c=()=>l.createComment(""),a=t=>null===t||"object"!=typeof t&&"function"!=typeof t,u=Array.isArray,d=t=>u(t)||"function"==typeof t?.[Symbol.iterator],f="[ \t\n\f\r]",v=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,_=/-->/g,m=/>/g,p=RegExp(`>|${f}(?:([^\\s"'>=/]+)(${f}*=${f}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),g=/'/g,$=/"/g,y=/^(?:script|style|textarea|title)$/i,x=t=>(i,...s)=>({_$litType$:t,strings:i,values:s}),b=x(1),E=Symbol.for("lit-noChange"),A=Symbol.for("lit-nothing"),C=new WeakMap,P=l.createTreeWalker(l,129);function V(t,i){if(!u(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==e$2?e$2.createHTML(i):i}const N=(t,i)=>{const s=t.length-1,e=[];let n,l=2===i?"<svg>":3===i?"<math>":"",c=v;for(let i=0;i<s;i++){const s=t[i];let a,u,d=-1,f=0;for(;f<s.length&&(c.lastIndex=f,u=c.exec(s),null!==u);)f=c.lastIndex,c===v?"!--"===u[1]?c=_:void 0!==u[1]?c=m:void 0!==u[2]?(y.test(u[2])&&(n=RegExp("</"+u[2],"g")),c=p):void 0!==u[3]&&(c=p):c===p?">"===u[0]?(c=n??v,d=-1):void 0===u[1]?d=-2:(d=c.lastIndex-u[2].length,a=u[1],c=void 0===u[3]?p:'"'===u[3]?$:g):c===$||c===g?c=p:c===_||c===m?c=v:(c=p,n=void 0);const x=c===p&&t[i+1].startsWith("/>")?" ":"";l+=c===v?s+r$2:d>=0?(e.push(a),s.slice(0,d)+h+s.slice(d)+o$2+x):s+o$2+(-2===d?i:x);}return [V(t,l+(t[s]||"<?>")+(2===i?"</svg>":3===i?"</math>":"")),e]};class S{constructor({strings:t,_$litType$:i},e){let r;this.parts=[];let l=0,a=0;const u=t.length-1,d=this.parts,[f,v]=N(t,i);if(this.el=S.createElement(f,e),P.currentNode=this.el.content,2===i||3===i){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes);}for(;null!==(r=P.nextNode())&&d.length<u;){if(1===r.nodeType){if(r.hasAttributes())for(const t of r.getAttributeNames())if(t.endsWith(h)){const i=v[a++],s=r.getAttribute(t).split(o$2),e=/([.?@])?(.*)/.exec(i);d.push({type:1,index:l,name:e[2],strings:s,ctor:"."===e[1]?I:"?"===e[1]?L:"@"===e[1]?z:H}),r.removeAttribute(t);}else t.startsWith(o$2)&&(d.push({type:6,index:l}),r.removeAttribute(t));if(y.test(r.tagName)){const t=r.textContent.split(o$2),i=t.length-1;if(i>0){r.textContent=s$1?s$1.emptyScript:"";for(let s=0;s<i;s++)r.append(t[s],c()),P.nextNode(),d.push({type:2,index:++l});r.append(t[i],c());}}}else if(8===r.nodeType)if(r.data===n$1)d.push({type:2,index:l});else {let t=-1;for(;-1!==(t=r.data.indexOf(o$2,t+1));)d.push({type:7,index:l}),t+=o$2.length-1;}l++;}}static createElement(t,i){const s=l.createElement("template");return s.innerHTML=t,s}}function M(t,i,s=t,e){if(i===E)return i;let h=void 0!==e?s._$Co?.[e]:s._$Cl;const o=a(i)?void 0:i._$litDirective$;return h?.constructor!==o&&(h?._$AO?.(false),void 0===o?h=void 0:(h=new o(t),h._$AT(t,s,e)),void 0!==e?(s._$Co??=[])[e]=h:s._$Cl=h),void 0!==h&&(i=M(t,h._$AS(t,i.values),h,e)),i}class R{constructor(t,i){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=i;}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:i},parts:s}=this._$AD,e=(t?.creationScope??l).importNode(i,true);P.currentNode=e;let h=P.nextNode(),o=0,n=0,r=s[0];for(;void 0!==r;){if(o===r.index){let i;2===r.type?i=new k(h,h.nextSibling,this,t):1===r.type?i=new r.ctor(h,r.name,r.strings,this,t):6===r.type&&(i=new Z(h,this,t)),this._$AV.push(i),r=s[++n];}o!==r?.index&&(h=P.nextNode(),o++);}return P.currentNode=l,e}p(t){let i=0;for(const s of this._$AV) void 0!==s&&(void 0!==s.strings?(s._$AI(t,s,i),i+=s.strings.length-2):s._$AI(t[i])),i++;}}class k{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,i,s,e){this.type=2,this._$AH=A,this._$AN=void 0,this._$AA=t,this._$AB=i,this._$AM=s,this.options=e,this._$Cv=e?.isConnected??true;}get parentNode(){let t=this._$AA.parentNode;const i=this._$AM;return void 0!==i&&11===t?.nodeType&&(t=i.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,i=this){t=M(this,t,i),a(t)?t===A||null==t||""===t?(this._$AH!==A&&this._$AR(),this._$AH=A):t!==this._$AH&&t!==E&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):d(t)?this.k(t):this._(t);}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t));}_(t){this._$AH!==A&&a(this._$AH)?this._$AA.nextSibling.data=t:this.T(l.createTextNode(t)),this._$AH=t;}$(t){const{values:i,_$litType$:s}=t,e="number"==typeof s?this._$AC(t):(void 0===s.el&&(s.el=S.createElement(V(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===e)this._$AH.p(i);else {const t=new R(e,this),s=t.u(this.options);t.p(i),this.T(s),this._$AH=t;}}_$AC(t){let i=C.get(t.strings);return void 0===i&&C.set(t.strings,i=new S(t)),i}k(t){u(this._$AH)||(this._$AH=[],this._$AR());const i=this._$AH;let s,e=0;for(const h of t)e===i.length?i.push(s=new k(this.O(c()),this.O(c()),this,this.options)):s=i[e],s._$AI(h),e++;e<i.length&&(this._$AR(s&&s._$AB.nextSibling,e),i.length=e);}_$AR(t=this._$AA.nextSibling,s){for(this._$AP?.(false,true,s);t!==this._$AB;){const s=i$1(t).nextSibling;i$1(t).remove(),t=s;}}setConnected(t){ void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t));}}class H{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,i,s,e,h){this.type=1,this._$AH=A,this._$AN=void 0,this.element=t,this.name=i,this._$AM=e,this.options=h,s.length>2||""!==s[0]||""!==s[1]?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=A;}_$AI(t,i=this,s,e){const h=this.strings;let o=false;if(void 0===h)t=M(this,t,i,0),o=!a(t)||t!==this._$AH&&t!==E,o&&(this._$AH=t);else {const e=t;let n,r;for(t=h[0],n=0;n<h.length-1;n++)r=M(this,e[s+n],i,n),r===E&&(r=this._$AH[n]),o||=!a(r)||r!==this._$AH[n],r===A?t=A:t!==A&&(t+=(r??"")+h[n+1]),this._$AH[n]=r;}o&&!e&&this.j(t);}j(t){t===A?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"");}}class I extends H{constructor(){super(...arguments),this.type=3;}j(t){this.element[this.name]=t===A?void 0:t;}}class L extends H{constructor(){super(...arguments),this.type=4;}j(t){this.element.toggleAttribute(this.name,!!t&&t!==A);}}class z extends H{constructor(t,i,s,e,h){super(t,i,s,e,h),this.type=5;}_$AI(t,i=this){if((t=M(this,t,i,0)??A)===E)return;const s=this._$AH,e=t===A&&s!==A||t.capture!==s.capture||t.once!==s.once||t.passive!==s.passive,h=t!==A&&(s===A||e);e&&this.element.removeEventListener(this.name,this,s),h&&this.element.addEventListener(this.name,this,t),this._$AH=t;}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t);}}class Z{constructor(t,i,s){this.element=t,this.type=6,this._$AN=void 0,this._$AM=i,this.options=s;}get _$AU(){return this._$AM._$AU}_$AI(t){M(this,t);}}const B=t$1.litHtmlPolyfillSupport;B?.(S,k),(t$1.litHtmlVersions??=[]).push("3.3.2");const D=(t,i,s)=>{const e=s?.renderBefore??i;let h=e._$litPart$;if(void 0===h){const t=s?.renderBefore??null;e._$litPart$=h=new k(i.insertBefore(c(),t),t,void 0,s??{});}return h._$AI(t),h};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const s=globalThis;class i extends y$1{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0;}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const r=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=D(r,this.renderRoot,this.renderOptions);}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(true);}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(false);}render(){return E}}i._$litElement$=true,i["finalized"]=true,s.litElementHydrateSupport?.({LitElement:i});const o$1=s.litElementPolyfillSupport;o$1?.({LitElement:i});(s.litElementVersions??=[]).push("4.2.2");
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const t=t=>(e,o)=>{ void 0!==o?o.addInitializer(()=>{customElements.define(t,e);}):customElements.define(t,e);};
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */const o={attribute:true,type:String,converter:u$3,reflect:false,hasChanged:f$3},r$1=(t=o,e,r)=>{const{kind:n,metadata:i}=r;let s=globalThis.litPropertyMetadata.get(i);if(void 0===s&&globalThis.litPropertyMetadata.set(i,s=new Map),"setter"===n&&((t=Object.create(t)).wrapped=true),s.set(r.name,t),"accessor"===n){const{name:o}=r;return {set(r){const n=e.get.call(this);e.set.call(this,r),this.requestUpdate(o,n,t,true,r);},init(e){return void 0!==e&&this.C(o,void 0,t,e),e}}}if("setter"===n){const{name:o}=r;return function(r){const n=this[o];e.call(this,r),this.requestUpdate(o,n,t,true,r);}}throw Error("Unsupported decorator location: "+n)};function n(t){return (e,o)=>"object"==typeof o?r$1(t,e,o):((t,e,o)=>{const r=e.hasOwnProperty(o);return e.constructor.createProperty(o,t),r?Object.getOwnPropertyDescriptor(e,o):void 0})(t,e,o)}
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function r(r){return n({...r,state:true,attribute:false})}
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */
-const e$1=(e,t,c)=>(c.configurable=true,c.enumerable=true,Reflect.decorate&&"object"!=typeof t&&Object.defineProperty(e,t,c),c);
-
-/**
- * @license
- * Copyright 2017 Google LLC
- * SPDX-License-Identifier: BSD-3-Clause
- */function e(e,r){return (n,s,i)=>{const o=t=>t.renderRoot?.querySelector(e)??null;return e$1(n,s,{get(){return o(this)}})}}
-
-/**
- * Shared types used across the card, all panels, and model adapters.
- * Model-specific types live in src/models/<model>/types.ts.
- */
-const DEFAULT_CALIBRATION = {
-    radar_x: 0, radar_y: 0, radar_height: 220,
-    yaw: 0, pitch: 0, roll: 0,
-    polygon: [],
-};
-const DEFAULT_CARD_CONFIG = {
-    room_w: 400,
-    room_d: 350,
-};
-
-/**
- * R60ABD1  60 GHz breathing / sleep radar adapter
- *
- * Protocol reference: MicRadar R60ABD1 User Manual v3.4
- *
- * Key characteristics:
- *   - Single target, 3-D coordinates (x, y, z)
- *   - Coordinate unit: cm
- *   - Position update rate: 2 s (0.5 Hz)
- *   - Coordinate encoding: bit15 = sign (0=positive, 1=negative),
- *     bit14-0 = 15-bit magnitude  [v2.5 errata]
- *   - Internal DSP already handles filtering — no external EMA needed
- */
-// ── Model info ────────────────────────────────────────────────────────────────
-const INFO$1 = {
-    id: "r60abd1",
-    displayName: "MicRadar R60ABD1 (60 GHz)",
-    fovDegrees: 100,
-    maxRangeM: 3,
-    updateRateHz: 0.5, // 2 s between position frames
-    maxTargets: 1,
-    hasZAxis: true,
-    hasBreathing: true,
-    hasHeartRate: true,
-    hasSleep: true,
-};
-// ── Entity schema ─────────────────────────────────────────────────────────────
-const ENTITY_SCHEMA$1 = [
-    { key: "presence_entity", labelKey: "editor.presence_entity", required: true, domain: "binary_sensor" },
-    { key: "x_entity", labelKey: "editor.x_entity", required: true, domain: "sensor" },
-    { key: "y_entity", labelKey: "editor.y_entity", required: true, domain: "sensor" },
-    { key: "z_entity", labelKey: "editor.z_entity", required: false, domain: "sensor" },
-    { key: "breath_entity", labelKey: "editor.breath_entity", required: false, domain: "sensor" },
-    { key: "heart_entity", labelKey: "editor.heart_entity", required: false, domain: "sensor" },
-    { key: "sleep_entity", labelKey: "editor.sleep_entity", required: false, domain: "sensor" },
-];
-// ── Adapter implementation ────────────────────────────────────────────────────
-const r60abd1Adapter = {
-    info: INFO$1,
-    getEntitySchema: () => ENTITY_SCHEMA$1,
-    validateConfig(config) {
-        const errors = [];
-        for (const field of ENTITY_SCHEMA$1) {
-            if (field.required && !config[field.key]) {
-                errors.push(`Missing required entity: ${field.key}`);
-            }
-        }
-        return errors;
-    },
-    readFromHass(hass, config) {
-        const get = (key) => {
-            const eid = config[key];
-            return eid ? hass.states[eid] : undefined;
-        };
-        const pres = get("presence_entity");
-        if (!pres || pres.state === "unavailable") {
-            return { present: false, targets: [] };
-        }
-        const present = pres.state === "on";
-        if (!present)
-            return { present: false, targets: [] };
-        const xs = get("x_entity");
-        const ys = get("y_entity");
-        const zs = get("z_entity");
-        if (!xs || !ys)
-            return { present: true, targets: [] };
-        const rawX = parseFloat(xs.state) || 0;
-        const rawY = parseFloat(ys.state) || 0;
-        const rawZ = zs ? (parseFloat(zs.state) || 0) : 0;
-        // (0,0,0) means "no valid position" for R60ABD1
-        if (rawX === 0 && rawY === 0 && rawZ === 0) {
-            return { present: true, targets: [] };
-        }
-        return {
-            present: true,
-            targets: [{ index: 0, rawX, rawY, rawZ }],
-        };
-    },
-    getDefaultCalibration() {
-        return {
-            ...DEFAULT_CALIBRATION,
-            radar_height: 220, // typical ceiling mount (cm)
-            pitch: 0,
-            roll: 0,
-        };
-    },
-};
-
-/**
- * HLK-LD2450  24 GHz presence radar adapter  (skeleton)
- *
- * Protocol reference: Hi-Link LD2450 datasheet
- *
- * Key characteristics:
- *   - Up to 3 simultaneous targets
- *   - 2-D coordinates (x, y) — no Z axis
- *   - Coordinate unit: mm  →  converted to cm here
- *   - Position update rate: ~20 Hz
- *   - Horizontal FOV: ±60° (120° total)
- *
- * Implementation status:
- *   readFromHass() reads the entity convention used by the ESPHome
- *   community LD2450 component (target_N_x / target_N_y).
- *   Extend getEntitySchema() if your component uses different names.
- */
-// ── Model info ────────────────────────────────────────────────────────────────
-const INFO = {
-    id: "ld2450",
-    displayName: "Hi-Link LD2450 (24 GHz)",
-    fovDegrees: 120,
-    maxRangeM: 6,
-    updateRateHz: 20,
-    maxTargets: 3,
-    hasZAxis: false,
-    hasBreathing: false,
-    hasHeartRate: false,
-    hasSleep: false,
-};
-// ── Entity schema ─────────────────────────────────────────────────────────────
-// Convention: target_1_x / target_1_y  …  target_3_x / target_3_y
-// plus a presence binary sensor from the ESPHome component.
-const ENTITY_SCHEMA = [
-    { key: "presence_entity", labelKey: "editor.presence_entity", required: true, domain: "binary_sensor" },
-    { key: "target1_x", labelKey: "editor.target1_x", required: true, domain: "sensor" },
-    { key: "target1_y", labelKey: "editor.target1_y", required: true, domain: "sensor" },
-    { key: "target2_x", labelKey: "editor.target2_x", required: false, domain: "sensor" },
-    { key: "target2_y", labelKey: "editor.target2_y", required: false, domain: "sensor" },
-    { key: "target3_x", labelKey: "editor.target3_x", required: false, domain: "sensor" },
-    { key: "target3_y", labelKey: "editor.target3_y", required: false, domain: "sensor" },
-];
-// ── Adapter implementation ────────────────────────────────────────────────────
-const ld2450Adapter = {
-    info: INFO,
-    getEntitySchema: () => ENTITY_SCHEMA,
-    validateConfig(config) {
-        const errors = [];
-        for (const field of ENTITY_SCHEMA) {
-            if (field.required && !config[field.key]) {
-                errors.push(`Missing required entity: ${field.key}`);
-            }
-        }
-        return errors;
-    },
-    readFromHass(hass, config) {
-        const get = (key) => {
-            const eid = config[key];
-            return eid ? hass.states[eid] : undefined;
-        };
-        const pres = get("presence_entity");
-        if (!pres || pres.state === "unavailable") {
-            return { present: false, targets: [] };
-        }
-        const present = pres.state === "on";
-        if (!present)
-            return { present: false, targets: [] };
-        const targets = [];
-        // LD2450 reports (0,0) for "slot empty"; filter those out.
-        for (let i = 1; i <= INFO.maxTargets; i++) {
-            const xs = get(`target${i}_x`);
-            const ys = get(`target${i}_y`);
-            if (!xs || !ys)
-                continue;
-            // LD2450 unit is mm; convert to cm
-            const rawX = (parseFloat(xs.state) || 0) / 10;
-            const rawY = (parseFloat(ys.state) || 0) / 10;
-            if (rawX === 0 && rawY === 0)
-                continue;
-            const speedState = get(`target${i}_speed`);
-            const speed = speedState ? Math.abs(parseFloat(speedState.state) || 0) : undefined;
-            targets.push({ index: i - 1, rawX, rawY, rawZ: 0, speed });
-        }
-        return { present: true, targets };
-    },
-    getDefaultCalibration() {
-        return {
-            ...DEFAULT_CALIBRATION,
-            radar_height: 250, // LD2450 is often wall-mounted higher (cm)
-            pitch: 0,
-            roll: 0,
-        };
-    },
-};
-
-/**
- * Model registry
- *
- * To add a new radar model:
- *   1. Create src/models/<your_model>/index.ts implementing RadarModelAdapter.
- *   2. Import the adapter here and add it to RADAR_MODELS.
- *   3. That's it — the card, editor, and all panels update automatically.
- */
-/**
- * Central registry: model ID → adapter.
- * The ID string is what users write in their Lovelace YAML:
- *   radar_model: r60abd1
- */
-const RADAR_MODELS = {
-    r60abd1: r60abd1Adapter,
-    ld2450: ld2450Adapter,
-};
-function getAdapter(modelId) {
-    return RADAR_MODELS[modelId];
-}
-/** Sorted list for the editor drop-down. */
-function getModelList() {
-    return Object.entries(RADAR_MODELS)
-        .map(([id, a]) => ({ id, label: a.info.displayName }))
-        .sort((a, b) => a.label.localeCompare(b.label));
-}
-
-/**
- * 3-D coordinate transform  (model-agnostic)
- * Rotation order: Rz(yaw) · Rx(pitch) · Ry(roll)
- */
-function buildRotation(yawDeg, pitchDeg, rollDeg) {
-    const d = Math.PI / 180;
-    const γ = yawDeg * d, α = pitchDeg * d, β = rollDeg * d;
-    const [sγ, cγ, sα, cα, sβ, cβ] = [Math.sin(γ), Math.cos(γ), Math.sin(α), Math.cos(α), Math.sin(β), Math.cos(β)];
-    return [
-        [cγ * cβ + sγ * sα * sβ, sγ * cα, -cγ * sβ + sγ * sα * cβ],
-        [-sγ * cβ + cγ * sα * sβ, cγ * cα, sγ * sβ + cγ * sα * cβ],
-        [cα * sβ, -sα, cα * cβ],
-    ];
-}
-/**射线法点在多边形内测试；顶点 < 3 时始终返回 true（不过滤）。 */
-function pointInPolygon(px, py, poly) {
-    const n = poly.length;
-    if (n < 3)
-        return true;
-    let inside = false;
-    for (let i = 0, j = n - 1; i < n; j = i++) {
-        const xi = poly[i].x, yi = poly[i].y, xj = poly[j].x, yj = poly[j].y;
-        if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi))
-            inside = !inside;
-    }
-    return inside;
-}
-/** Apply full 3-D rotation + translation + boundary test. */
-function applyTransform(rx, ry, rz, cal) {
-    const R = buildRotation(cal.yaw, cal.pitch, cal.roll);
-    const wx = R[0][0] * rx + R[0][1] * ry + R[0][2] * rz;
-    const wy = R[1][0] * rx + R[1][1] * ry + R[1][2] * rz;
-    const wz = R[2][0] * rx + R[2][1] * ry + R[2][2] * rz;
-    const roomX = cal.radar_x + wx;
-    const roomY = cal.radar_y + wy;
-    const heightFloor = cal.radar_height - wz;
-    return { roomX, roomY, heightFloor, inBoundary: pointInPolygon(roomX, roomY, cal.polygon) };
-}
-/** Two-point geometric yaw calculation. */
-function calcYawFromTwoPoints(mapA, mapB, detA, detB) {
-    const am = Math.atan2(mapB.y - mapA.y, mapB.x - mapA.x);
-    const ad = Math.atan2(detB.y - detA.y, detB.x - detA.x);
-    let y = (am - ad) * (180 / Math.PI);
-    while (y > 180)
-        y -= 360;
-    while (y < -180)
-        y += 360;
-    return Math.round(y * 10) / 10;
-}
-function calcCalibrationResidual(mapA, mapB, detA, detB, cal) {
-    const tA = applyTransform(detA.x, detA.y, 0, cal);
-    const tB = applyTransform(detB.x, detB.y, 0, cal);
-    return (Math.hypot(tA.roomX - mapA.x, tA.roomY - mapA.y) +
-        Math.hypot(tB.roomX - mapB.x, tB.roomY - mapB.y)) / 2;
-}
-
-/** Shared canvas drawing utilities (model-agnostic). */
-const roomToCanvas = (x, y, m) => ({ cx: (x / m.roomW) * m.W, cy: m.H - (y / m.roomD) * m.H });
-const canvasToRoom = (cx, cy, m) => ({ x: (cx / m.W) * m.roomW, y: ((m.H - cy) / m.H) * m.roomD });
-function eventToCanvasPt(e, cv) {
-    const r = cv.getBoundingClientRect();
-    const sx = cv.width / r.width, sy = cv.height / r.height;
-    const cx = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const cy = "touches" in e ? e.touches[0].clientY : e.clientY;
-    return { x: (cx - r.left) * sx, y: (cy - r.top) * sy };
-}
-function setupCanvas(cv, cssH) {
-    const dpr = window.devicePixelRatio || 1;
-    const W = cv.offsetWidth || 400;
-    cv.width = W * dpr;
-    cv.height = cssH * dpr;
-    cv.style.height = `${cssH}px`;
-    const ctx = cv.getContext("2d");
-    ctx.scale(dpr, dpr);
-    return ctx;
-}
-function drawBase(ctx, m) {
-    ctx.clearRect(0, 0, m.W, m.H);
-    ctx.strokeStyle = "rgba(128,128,128,.06)";
-    ctx.lineWidth = .5;
-    for (let x = 0; x < m.W; x += 40) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, m.H);
-        ctx.stroke();
-    }
-    for (let y = 0; y < m.H; y += 40) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(m.W, y);
-        ctx.stroke();
-    }
-    ctx.strokeStyle = "rgba(255,255,255,.15)";
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(1, 1, m.W - 2, m.H - 2);
-    const sw = Math.round(m.roomW / 100) * 100;
-    const sx = (sw / m.roomW) * m.W;
-    ctx.beginPath();
-    ctx.moveTo(10, m.H - 10);
-    ctx.lineTo(10 + sx, m.H - 10);
-    ctx.strokeStyle = "rgba(255,255,255,.3)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.fillStyle = "rgba(255,255,255,.4)";
-    ctx.font = "9px system-ui";
-    ctx.textAlign = "center";
-    ctx.fillText(`${sw}cm`, 10 + sx / 2, m.H - 14);
-}
-function drawPolygon(ctx, poly, m, faded = false) {
-    if (poly.length < 2)
-        return;
-    const pts = poly.map(p => roomToCanvas(p.x, p.y, m));
-    ctx.beginPath();
-    pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.cx, p.cy) : ctx.lineTo(p.cx, p.cy));
-    if (poly.length >= 3) {
-        ctx.closePath();
-        ctx.fillStyle = faded ? "rgba(100,181,246,.04)" : "rgba(100,181,246,.07)";
-        ctx.fill();
-    }
-    ctx.strokeStyle = faded ? "rgba(100,181,246,.22)" : "rgba(100,181,246,.55)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    if (!faded)
-        pts.forEach(p => { ctx.beginPath(); ctx.arc(p.cx, p.cy, 3, 0, Math.PI * 2); ctx.fillStyle = "rgba(100,181,246,.8)"; ctx.fill(); });
-}
-function drawRadarIcon(ctx, cx, cy, yawDeg, fovDeg = 100) {
-    const FOV = (fovDeg / 2) * (Math.PI / 180);
-    const R = 65, yr = (yawDeg - 90) * (Math.PI / 180);
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    for (let a = -FOV; a <= FOV; a += .04)
-        ctx.lineTo(cx + Math.cos(yr + a) * R, cy + Math.sin(yr + a) * R);
-    ctx.closePath();
-    ctx.fillStyle = "rgba(100,181,246,.07)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(100,181,246,.22)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(15,15,30,.85)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(100,181,246,.85)";
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    [[7, 0], [-7, 0], [0, -7], [0, 7]].forEach(([dx, dy]) => {
-        ctx.beginPath();
-        ctx.moveTo(cx + dx * .3, cy + dy * .3);
-        ctx.lineTo(cx + dx, cy + dy);
-        ctx.strokeStyle = "rgba(100,181,246,.65)";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-    });
-}
-function drawDot(ctx, x, y, label, color, hollow = false) {
-    ctx.beginPath();
-    ctx.arc(x, y, 7, 0, Math.PI * 2);
-    if (hollow) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-    }
-    else {
-        ctx.fillStyle = color;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,.5)";
-        ctx.lineWidth = 1.2;
-        ctx.stroke();
-    }
-    ctx.fillStyle = hollow ? color : "#fff";
-    ctx.font = "bold 9px system-ui";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.fillText(label, x, y);
-    ctx.textBaseline = "alphabetic";
-}
-/** Draw one target dot; color / style differs based on inBoundary. */
-function drawTarget(ctx, cx, cy, inBoundary) {
-    if (inBoundary) {
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(100,181,246,.15)";
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-        ctx.fillStyle = "var(--primary-color,#64b5f6)";
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,.6)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    }
-    else {
-        ctx.setLineDash([2, 2]);
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(244,67,54,.5)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(244,67,54,.7)";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-    }
-}
-
-var card_name$1 = "MMWave Radar Card";
-var tabs$1 = {
-	geo: "① Geometry & Boundary",
-	yaw: "② Yaw Calibration",
-	live: "③ Live View"
-};
-var geo$1 = {
-	install_params: "Installation Parameters (measure with tape)",
-	radar_x: "Radar X",
-	radar_y: "Radar Y",
-	radar_height: "Height",
-	yaw_rough: "Rough Yaw",
-	pitch: "Pitch",
-	roll: "Roll",
-	geo_note: "Origin: room bottom-left, X→right, Y→forward.\nYaw = radar forward axis vs room Y-axis (clockwise+).\nPitch/Roll: manual entry or from IMU sensor.",
-	boundary: "Room Boundary (optional)",
-	poly_hint_none: "Click canvas to draw boundary (≥ 3 points)",
-	poly_hint_ok: "Boundary active — {n} vertices",
-	poly_undo: "Undo",
-	poly_clear: "Clear",
-	boundary_note: "No boundary = no filtering. Targets outside the polygon are ignored."
-};
-var yaw$1 = {
-	ref_a_title: "Reference Point A",
-	ref_b_title: "Reference Point B",
-	ref_a_idle: "Click the preview to mark a known position",
-	ref_a_marked: "Marked — walk there, then Capture",
-	ref_a_done: "Captured",
-	ref_b_idle: "Complete point A first",
-	ref_b_step: "Click another known position (> 80 cm from A)",
-	ref_b_marked: "Marked — walk there, then Capture",
-	ref_b_done: "Captured",
-	capture_btn: "Walk to marked position → Capture radar reading",
-	capture_wait: "Waiting for radar data…",
-	result_idle: "Click the preview map to start — mark reference point A",
-	result_ok: "Yaw {yaw}° · Residual {residual} cm"
-};
-var live$1 = {
-	title: "Room Top-Down View",
-	badge_none: "No presence",
-	badge_present: "Present",
-	badge_filtered: "Outside boundary",
-	room_x: "Room X (cm)",
-	room_y: "Room Y (cm)",
-	height: "Height (cm)",
-	targets: "Targets"
-};
-var actions$1 = {
-	save: "Save",
-	saved: "Saved ✓",
-	reset: "Reset",
-	reset_confirm: "Clear all calibration data?"
-};
-var editor$2 = {
-	model: "Radar model",
-	entities: "Entities",
-	presence_entity: "Presence entity",
-	x_entity: "X coordinate entity",
-	y_entity: "Y coordinate entity",
-	z_entity: "Z coordinate entity (optional)",
-	breath_entity: "Breathing rate entity (optional)",
-	heart_entity: "Heart rate entity (optional)",
-	sleep_entity: "Sleep state entity (optional)",
-	target1_x: "Target 1 X entity",
-	target1_y: "Target 1 Y entity",
-	target2_x: "Target 2 X entity (optional)",
-	target2_y: "Target 2 Y entity (optional)",
-	target3_x: "Target 3 X entity (optional)",
-	target3_y: "Target 3 Y entity (optional)",
-	room_dimensions: "Room Dimensions",
-	room_w: "Room width (cm)",
-	room_d: "Room depth (cm)"
-};
-var en = {
-	card_name: card_name$1,
-	tabs: tabs$1,
-	geo: geo$1,
-	yaw: yaw$1,
-	live: live$1,
-	actions: actions$1,
-	editor: editor$2
-};
-
-var card_name = "毫米波雷达校准卡片";
-var tabs = {
-	geo: "① 几何 & 边界",
-	yaw: "② 偏航校准",
-	live: "③ 实时验证"
-};
-var geo = {
-	install_params: "安装参数（卷尺测量后填入）",
-	radar_x: "雷达 X",
-	radar_y: "雷达 Y",
-	radar_height: "安装高度",
-	yaw_rough: "粗略偏航",
-	pitch: "俯仰角",
-	roll: "横滚角",
-	geo_note: "坐标原点为房间左下角，X 向右，Y 向前。\n偏航角 = 雷达正前方相对房间 Y 轴的夹角，顺时针为正。\nPitch/Roll：可手动填写，或接入 IMU 传感器后自动读取。",
-	boundary: "房间边界过滤（可选）",
-	poly_hint_none: "点击画布添加顶点，绘制有效区域（≥ 3 个点）",
-	poly_hint_ok: "边界过滤已启用 — {n} 个顶点",
-	poly_undo: "撤销",
-	poly_clear: "清除",
-	boundary_note: "不绘制边界 = 不过滤。绘制后，落在多边形外的目标将被忽略。"
-};
-var yaw = {
-	ref_a_title: "参考点 A",
-	ref_b_title: "参考点 B",
-	ref_a_idle: "在预览图上点击一个你能走到的已知位置",
-	ref_a_marked: "已标记 → 走到该位置后点击「捕获」",
-	ref_a_done: "捕获完成",
-	ref_b_idle: "完成 A 点后操作",
-	ref_b_step: "点击另一个已知位置（与 A 距离 > 80 cm）",
-	ref_b_marked: "已标记 → 走到该位置后点击「捕获」",
-	ref_b_done: "捕获完成",
-	capture_btn: "走到标记位置后 → 点此捕获雷达读数",
-	capture_wait: "等待雷达数据…",
-	result_idle: "在预览图上点击参考点 A 开始校准",
-	result_ok: "偏航角 {yaw}° · 残差 {residual} cm"
-};
-var live = {
-	title: "房间俯视图",
-	badge_none: "无人",
-	badge_present: "有人",
-	badge_filtered: "边界外",
-	room_x: "房间 X (cm)",
-	room_y: "房间 Y (cm)",
-	height: "离地高度 (cm)",
-	targets: "目标数"
-};
-var actions = {
-	save: "保存",
-	saved: "已保存 ✓",
-	reset: "重置",
-	reset_confirm: "清除所有校准数据？"
-};
-var editor$1 = {
-	model: "雷达型号",
-	entities: "实体配置",
-	presence_entity: "存在感知实体",
-	x_entity: "X 坐标实体",
-	y_entity: "Y 坐标实体",
-	z_entity: "Z 坐标实体（可选）",
-	breath_entity: "呼吸频率实体（可选）",
-	heart_entity: "心率实体（可选）",
-	sleep_entity: "睡眠状态实体（可选）",
-	target1_x: "目标 1 X 实体",
-	target1_y: "目标 1 Y 实体",
-	target2_x: "目标 2 X 实体（可选）",
-	target2_y: "目标 2 Y 实体（可选）",
-	target3_x: "目标 3 X 实体（可选）",
-	target3_y: "目标 3 Y 实体（可选）",
-	room_dimensions: "房间尺寸",
-	room_w: "房间宽度 (cm)",
-	room_d: "房间深度 (cm)"
-};
-var zhHans = {
-	card_name: card_name,
-	tabs: tabs,
-	geo: geo,
-	yaw: yaw,
-	live: live,
-	actions: actions,
-	editor: editor$1
-};
-
-const languages = {
-    en,
-    'zh-Hans': zhHans,
-};
-/**
- * 返回本地化字符串
- * @param key  例如 "tabs.geo"
- * @param lang 例如 "zh-Hans"；省略时尝试读取浏览器语言
- */
-function localize(key, lang) {
-    const language = lang ?? navigator.language?.split('-')[0] ?? 'en';
-    // 完整匹配（如 zh-Hans）优先，再 fallback 到前缀（如 zh→zh-Hans）
-    const dict = languages[lang ?? ''] ?? Object.entries(languages).find(([k]) => k.startsWith(language))?.[1] ?? languages['en'];
-    const keys = key.split('.');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let result = dict;
-    for (const k of keys) {
-        result = result?.[k];
-        if (result === undefined)
-            break;
-    }
-    return typeof result === 'string' ? result : key;
-}
-
-const CARD_VERSION = "1.0.0";
-const CARD_TAG = "mmwave-card";
-const EDITOR_TAG = "mmwave-card-editor";
-const STORAGE_KEY = "mmwave_cal_v1"; // prefix; full key = `${STORAGE_KEY}_${modelId}`
-const TRAIL_MAX_MS = 90_000; // trail retention: 90 s
-
-let GeoPanel = class GeoPanel extends i {
-    constructor() {
-        super(...arguments);
-        this.lang = "en";
-        this._rafId = 0;
-    }
-    _L(k) { return localize(k, this.lang); }
-    connectedCallback() {
-        super.connectedCallback();
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    disconnectedCallback() { super.disconnectedCallback(); cancelAnimationFrame(this._rafId); }
-    // ── emit calibration-changed ───────────────────────────────────────────────
-    _emit(patch) {
-        this.dispatchEvent(new CustomEvent("calibration-changed", { detail: { ...this.calibration, ...patch }, bubbles: true, composed: true }));
-    }
-    // ── polygon interactions ───────────────────────────────────────────────────
-    _onCanvasClick(e) {
-        const cv = this._cv;
-        if (!cv)
-            return;
-        const pt = eventToCanvasPt(e, cv);
-        const dpr = window.devicePixelRatio || 1;
-        this.dispatchEvent(new CustomEvent("polygon-point-added", { detail: { canvasX: pt.x / dpr, canvasY: pt.y / dpr }, bubbles: true, composed: true }));
-    }
-    _undo() { const p = [...this.calibration.polygon]; p.pop(); this._emit({ polygon: p }); }
-    _clear() { this._emit({ polygon: [] }); }
-    // ── canvas draw ────────────────────────────────────────────────────────────
-    _draw() {
-        const cv = this._cv;
-        if (cv) {
-            // room dimensions are stored on the element by the card (as data attributes)
-            const roomW = parseFloat(cv.dataset.roomW ?? "400");
-            const roomD = parseFloat(cv.dataset.roomD ?? "350");
-            const cssH = 165;
-            const ctx = setupCanvas(cv, cssH);
-            const m = { W: cv.offsetWidth || 400, H: cssH, roomW, roomD };
-            drawBase(ctx, m);
-            drawPolygon(ctx, this.calibration.polygon, m);
-        }
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    // ── helpers ────────────────────────────────────────────────────────────────
-    _numField(label, key, value, step = 5, min = -9999) {
-        return b `
-      <div class="field">
-        <label>${label}</label>
-        <input type="number" .value=${String(value)} step=${step} min=${min}
-          @change=${(e) => {
-            const v = parseFloat(e.target.value) || 0;
-            this._emit({ [key]: v });
-        }}>
-        <span class="unit">cm</span>
-      </div>`;
-    }
-    _degField(label, key, value, min = -180, max = 180) {
-        return b `
-      <div class="field">
-        <label>${label}</label>
-        <input type="number" .value=${String(value)} step="0.5" min=${min} max=${max}
-          @change=${(e) => {
-            const v = parseFloat(e.target.value) || 0;
-            this._emit({ [key]: v });
-        }}>
-        <span class="unit">°</span>
-      </div>`;
-    }
-    // ── render ─────────────────────────────────────────────────────────────────
-    render() {
-        const c = this.calibration;
-        const pn = c.polygon.length;
-        const hint = pn >= 3
-            ? this._L("geo.poly_hint_ok").replace("{n}", String(pn))
-            : this._L("geo.poly_hint_none");
-        return b `
+function t(t,e,r,i){var a,s=arguments.length,o=s<3?e:null===i?i=Object.getOwnPropertyDescriptor(e,r):i;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)o=Reflect.decorate(t,e,r,i);else for(var n=t.length-1;n>=0;n--)(a=t[n])&&(o=(s<3?a(o):s>3?a(e,r,o):a(e,r))||o);return s>3&&o&&Object.defineProperty(e,r,o),o}"function"==typeof SuppressedError&&SuppressedError;const e=globalThis,r=e.ShadowRoot&&(void 0===e.ShadyCSS||e.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,i=Symbol(),a=new WeakMap;let s=class{constructor(t,e,r){if(this._$cssResult$=!0,r!==i)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=t,this.t=e}get styleSheet(){let t=this.o;const e=this.t;if(r&&void 0===t){const r=void 0!==e&&1===e.length;r&&(t=a.get(e)),void 0===t&&((this.o=t=new CSSStyleSheet).replaceSync(this.cssText),r&&a.set(e,t))}return t}toString(){return this.cssText}};const o=(t,...e)=>{const r=1===t.length?t[0]:e.reduce((e,r,i)=>e+(t=>{if(!0===t._$cssResult$)return t.cssText;if("number"==typeof t)return t;throw Error("Value passed to 'css' function must be a 'css' function result: "+t+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(r)+t[i+1],t[0]);return new s(r,t,i)},n=r?t=>t:t=>t instanceof CSSStyleSheet?(t=>{let e="";for(const r of t.cssRules)e+=r.cssText;return(t=>new s("string"==typeof t?t:t+"",void 0,i))(e)})(t):t,{is:l,defineProperty:d,getOwnPropertyDescriptor:c,getOwnPropertyNames:h,getOwnPropertySymbols:p,getPrototypeOf:_}=Object,y=globalThis,u=y.trustedTypes,g=u?u.emptyScript:"",f=y.reactiveElementPolyfillSupport,m=(t,e)=>t,b={toAttribute(t,e){switch(e){case Boolean:t=t?g:null;break;case Object:case Array:t=null==t?t:JSON.stringify(t)}return t},fromAttribute(t,e){let r=t;switch(e){case Boolean:r=null!==t;break;case Number:r=null===t?null:Number(t);break;case Object:case Array:try{r=JSON.parse(t)}catch(t){r=null}}return r}},v=(t,e)=>!l(t,e),x={attribute:!0,type:String,converter:b,reflect:!1,useDefault:!1,hasChanged:v};Symbol.metadata??=Symbol("metadata"),y.litPropertyMetadata??=new WeakMap;let $=class extends HTMLElement{static addInitializer(t){this._$Ei(),(this.l??=[]).push(t)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(t,e=x){if(e.state&&(e.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(t)&&((e=Object.create(e)).wrapped=!0),this.elementProperties.set(t,e),!e.noAccessor){const r=Symbol(),i=this.getPropertyDescriptor(t,r,e);void 0!==i&&d(this.prototype,t,i)}}static getPropertyDescriptor(t,e,r){const{get:i,set:a}=c(this.prototype,t)??{get(){return this[e]},set(t){this[e]=t}};return{get:i,set(e){const s=i?.call(this);a?.call(this,e),this.requestUpdate(t,s,r)},configurable:!0,enumerable:!0}}static getPropertyOptions(t){return this.elementProperties.get(t)??x}static _$Ei(){if(this.hasOwnProperty(m("elementProperties")))return;const t=_(this);t.finalize(),void 0!==t.l&&(this.l=[...t.l]),this.elementProperties=new Map(t.elementProperties)}static finalize(){if(this.hasOwnProperty(m("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(m("properties"))){const t=this.properties,e=[...h(t),...p(t)];for(const r of e)this.createProperty(r,t[r])}const t=this[Symbol.metadata];if(null!==t){const e=litPropertyMetadata.get(t);if(void 0!==e)for(const[t,r]of e)this.elementProperties.set(t,r)}this._$Eh=new Map;for(const[t,e]of this.elementProperties){const r=this._$Eu(t,e);void 0!==r&&this._$Eh.set(r,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(t){const e=[];if(Array.isArray(t)){const r=new Set(t.flat(1/0).reverse());for(const t of r)e.unshift(n(t))}else void 0!==t&&e.push(n(t));return e}static _$Eu(t,e){const r=e.attribute;return!1===r?void 0:"string"==typeof r?r:"string"==typeof t?t.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(t=>this.enableUpdating=t),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(t=>t(this))}addController(t){(this._$EO??=new Set).add(t),void 0!==this.renderRoot&&this.isConnected&&t.hostConnected?.()}removeController(t){this._$EO?.delete(t)}_$E_(){const t=new Map,e=this.constructor.elementProperties;for(const r of e.keys())this.hasOwnProperty(r)&&(t.set(r,this[r]),delete this[r]);t.size>0&&(this._$Ep=t)}createRenderRoot(){const t=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return((t,i)=>{if(r)t.adoptedStyleSheets=i.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(const r of i){const i=document.createElement("style"),a=e.litNonce;void 0!==a&&i.setAttribute("nonce",a),i.textContent=r.cssText,t.appendChild(i)}})(t,this.constructor.elementStyles),t}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(t=>t.hostConnected?.())}enableUpdating(t){}disconnectedCallback(){this._$EO?.forEach(t=>t.hostDisconnected?.())}attributeChangedCallback(t,e,r){this._$AK(t,r)}_$ET(t,e){const r=this.constructor.elementProperties.get(t),i=this.constructor._$Eu(t,r);if(void 0!==i&&!0===r.reflect){const a=(void 0!==r.converter?.toAttribute?r.converter:b).toAttribute(e,r.type);this._$Em=t,null==a?this.removeAttribute(i):this.setAttribute(i,a),this._$Em=null}}_$AK(t,e){const r=this.constructor,i=r._$Eh.get(t);if(void 0!==i&&this._$Em!==i){const t=r.getPropertyOptions(i),a="function"==typeof t.converter?{fromAttribute:t.converter}:void 0!==t.converter?.fromAttribute?t.converter:b;this._$Em=i;const s=a.fromAttribute(e,t.type);this[i]=s??this._$Ej?.get(i)??s,this._$Em=null}}requestUpdate(t,e,r,i=!1,a){if(void 0!==t){const s=this.constructor;if(!1===i&&(a=this[t]),r??=s.getPropertyOptions(t),!((r.hasChanged??v)(a,e)||r.useDefault&&r.reflect&&a===this._$Ej?.get(t)&&!this.hasAttribute(s._$Eu(t,r))))return;this.C(t,e,r)}!1===this.isUpdatePending&&(this._$ES=this._$EP())}C(t,e,{useDefault:r,reflect:i,wrapped:a},s){r&&!(this._$Ej??=new Map).has(t)&&(this._$Ej.set(t,s??e??this[t]),!0!==a||void 0!==s)||(this._$AL.has(t)||(this.hasUpdated||r||(e=void 0),this._$AL.set(t,e)),!0===i&&this._$Em!==t&&(this._$Eq??=new Set).add(t))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}const t=this.scheduleUpdate();return null!=t&&await t,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(const[t,e]of this._$Ep)this[t]=e;this._$Ep=void 0}const t=this.constructor.elementProperties;if(t.size>0)for(const[e,r]of t){const{wrapped:t}=r,i=this[e];!0!==t||this._$AL.has(e)||void 0===i||this.C(e,void 0,r,i)}}let t=!1;const e=this._$AL;try{t=this.shouldUpdate(e),t?(this.willUpdate(e),this._$EO?.forEach(t=>t.hostUpdate?.()),this.update(e)):this._$EM()}catch(e){throw t=!1,this._$EM(),e}t&&this._$AE(e)}willUpdate(t){}_$AE(t){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(t)),this.updated(t)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(t){return!0}update(t){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(t){}firstUpdated(t){}};$.elementStyles=[],$.shadowRootOptions={mode:"open"},$[m("elementProperties")]=new Map,$[m("finalized")]=new Map,f?.({ReactiveElement:$}),(y.reactiveElementVersions??=[]).push("2.1.2");const w=globalThis,k=t=>t,A=w.trustedTypes,S=A?A.createPolicy("lit-html",{createHTML:t=>t}):void 0,C="$lit$",M=`lit$${Math.random().toFixed(9).slice(2)}$`,P="?"+M,E=`<${P}>`,R=document,H=()=>R.createComment(""),T=t=>null===t||"object"!=typeof t&&"function"!=typeof t,q=Array.isArray,L="[ \t\n\f\r]",z=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,D=/-->/g,W=/>/g,B=RegExp(`>|${L}(?:([^\\s"'>=/]+)(${L}*=${L}*(?:[^ \t\n\f\r"'\`<>=]|("|')|))|$)`,"g"),K=/'/g,U=/"/g,N=/^(?:script|style|textarea|title)$/i,O=(t=>(e,...r)=>({_$litType$:t,strings:e,values:r}))(1),Y=Symbol.for("lit-noChange"),F=Symbol.for("lit-nothing"),I=new WeakMap,X=R.createTreeWalker(R,129);function j(t,e){if(!q(t)||!t.hasOwnProperty("raw"))throw Error("invalid template strings array");return void 0!==S?S.createHTML(e):e}const Z=(t,e)=>{const r=t.length-1,i=[];let a,s=2===e?"<svg>":3===e?"<math>":"",o=z;for(let e=0;e<r;e++){const r=t[e];let n,l,d=-1,c=0;for(;c<r.length&&(o.lastIndex=c,l=o.exec(r),null!==l);)c=o.lastIndex,o===z?"!--"===l[1]?o=D:void 0!==l[1]?o=W:void 0!==l[2]?(N.test(l[2])&&(a=RegExp("</"+l[2],"g")),o=B):void 0!==l[3]&&(o=B):o===B?">"===l[0]?(o=a??z,d=-1):void 0===l[1]?d=-2:(d=o.lastIndex-l[2].length,n=l[1],o=void 0===l[3]?B:'"'===l[3]?U:K):o===U||o===K?o=B:o===D||o===W?o=z:(o=B,a=void 0);const h=o===B&&t[e+1].startsWith("/>")?" ":"";s+=o===z?r+E:d>=0?(i.push(n),r.slice(0,d)+C+r.slice(d)+M+h):r+M+(-2===d?e:h)}return[j(t,s+(t[r]||"<?>")+(2===e?"</svg>":3===e?"</math>":"")),i]};class G{constructor({strings:t,_$litType$:e},r){let i;this.parts=[];let a=0,s=0;const o=t.length-1,n=this.parts,[l,d]=Z(t,e);if(this.el=G.createElement(l,r),X.currentNode=this.el.content,2===e||3===e){const t=this.el.content.firstChild;t.replaceWith(...t.childNodes)}for(;null!==(i=X.nextNode())&&n.length<o;){if(1===i.nodeType){if(i.hasAttributes())for(const t of i.getAttributeNames())if(t.endsWith(C)){const e=d[s++],r=i.getAttribute(t).split(M),o=/([.?@])?(.*)/.exec(e);n.push({type:1,index:a,name:o[2],strings:r,ctor:"."===o[1]?et:"?"===o[1]?rt:"@"===o[1]?it:tt}),i.removeAttribute(t)}else t.startsWith(M)&&(n.push({type:6,index:a}),i.removeAttribute(t));if(N.test(i.tagName)){const t=i.textContent.split(M),e=t.length-1;if(e>0){i.textContent=A?A.emptyScript:"";for(let r=0;r<e;r++)i.append(t[r],H()),X.nextNode(),n.push({type:2,index:++a});i.append(t[e],H())}}}else if(8===i.nodeType)if(i.data===P)n.push({type:2,index:a});else{let t=-1;for(;-1!==(t=i.data.indexOf(M,t+1));)n.push({type:7,index:a}),t+=M.length-1}a++}}static createElement(t,e){const r=R.createElement("template");return r.innerHTML=t,r}}function V(t,e,r=t,i){if(e===Y)return e;let a=void 0!==i?r._$Co?.[i]:r._$Cl;const s=T(e)?void 0:e._$litDirective$;return a?.constructor!==s&&(a?._$AO?.(!1),void 0===s?a=void 0:(a=new s(t),a._$AT(t,r,i)),void 0!==i?(r._$Co??=[])[i]=a:r._$Cl=a),void 0!==a&&(e=V(t,a._$AS(t,e.values),a,i)),e}class J{constructor(t,e){this._$AV=[],this._$AN=void 0,this._$AD=t,this._$AM=e}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(t){const{el:{content:e},parts:r}=this._$AD,i=(t?.creationScope??R).importNode(e,!0);X.currentNode=i;let a=X.nextNode(),s=0,o=0,n=r[0];for(;void 0!==n;){if(s===n.index){let e;2===n.type?e=new Q(a,a.nextSibling,this,t):1===n.type?e=new n.ctor(a,n.name,n.strings,this,t):6===n.type&&(e=new at(a,this,t)),this._$AV.push(e),n=r[++o]}s!==n?.index&&(a=X.nextNode(),s++)}return X.currentNode=R,i}p(t){let e=0;for(const r of this._$AV)void 0!==r&&(void 0!==r.strings?(r._$AI(t,r,e),e+=r.strings.length-2):r._$AI(t[e])),e++}}class Q{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(t,e,r,i){this.type=2,this._$AH=F,this._$AN=void 0,this._$AA=t,this._$AB=e,this._$AM=r,this.options=i,this._$Cv=i?.isConnected??!0}get parentNode(){let t=this._$AA.parentNode;const e=this._$AM;return void 0!==e&&11===t?.nodeType&&(t=e.parentNode),t}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(t,e=this){t=V(this,t,e),T(t)?t===F||null==t||""===t?(this._$AH!==F&&this._$AR(),this._$AH=F):t!==this._$AH&&t!==Y&&this._(t):void 0!==t._$litType$?this.$(t):void 0!==t.nodeType?this.T(t):(t=>q(t)||"function"==typeof t?.[Symbol.iterator])(t)?this.k(t):this._(t)}O(t){return this._$AA.parentNode.insertBefore(t,this._$AB)}T(t){this._$AH!==t&&(this._$AR(),this._$AH=this.O(t))}_(t){this._$AH!==F&&T(this._$AH)?this._$AA.nextSibling.data=t:this.T(R.createTextNode(t)),this._$AH=t}$(t){const{values:e,_$litType$:r}=t,i="number"==typeof r?this._$AC(t):(void 0===r.el&&(r.el=G.createElement(j(r.h,r.h[0]),this.options)),r);if(this._$AH?._$AD===i)this._$AH.p(e);else{const t=new J(i,this),r=t.u(this.options);t.p(e),this.T(r),this._$AH=t}}_$AC(t){let e=I.get(t.strings);return void 0===e&&I.set(t.strings,e=new G(t)),e}k(t){q(this._$AH)||(this._$AH=[],this._$AR());const e=this._$AH;let r,i=0;for(const a of t)i===e.length?e.push(r=new Q(this.O(H()),this.O(H()),this,this.options)):r=e[i],r._$AI(a),i++;i<e.length&&(this._$AR(r&&r._$AB.nextSibling,i),e.length=i)}_$AR(t=this._$AA.nextSibling,e){for(this._$AP?.(!1,!0,e);t!==this._$AB;){const e=k(t).nextSibling;k(t).remove(),t=e}}setConnected(t){void 0===this._$AM&&(this._$Cv=t,this._$AP?.(t))}}class tt{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(t,e,r,i,a){this.type=1,this._$AH=F,this._$AN=void 0,this.element=t,this.name=e,this._$AM=i,this.options=a,r.length>2||""!==r[0]||""!==r[1]?(this._$AH=Array(r.length-1).fill(new String),this.strings=r):this._$AH=F}_$AI(t,e=this,r,i){const a=this.strings;let s=!1;if(void 0===a)t=V(this,t,e,0),s=!T(t)||t!==this._$AH&&t!==Y,s&&(this._$AH=t);else{const i=t;let o,n;for(t=a[0],o=0;o<a.length-1;o++)n=V(this,i[r+o],e,o),n===Y&&(n=this._$AH[o]),s||=!T(n)||n!==this._$AH[o],n===F?t=F:t!==F&&(t+=(n??"")+a[o+1]),this._$AH[o]=n}s&&!i&&this.j(t)}j(t){t===F?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,t??"")}}class et extends tt{constructor(){super(...arguments),this.type=3}j(t){this.element[this.name]=t===F?void 0:t}}class rt extends tt{constructor(){super(...arguments),this.type=4}j(t){this.element.toggleAttribute(this.name,!!t&&t!==F)}}class it extends tt{constructor(t,e,r,i,a){super(t,e,r,i,a),this.type=5}_$AI(t,e=this){if((t=V(this,t,e,0)??F)===Y)return;const r=this._$AH,i=t===F&&r!==F||t.capture!==r.capture||t.once!==r.once||t.passive!==r.passive,a=t!==F&&(r===F||i);i&&this.element.removeEventListener(this.name,this,r),a&&this.element.addEventListener(this.name,this,t),this._$AH=t}handleEvent(t){"function"==typeof this._$AH?this._$AH.call(this.options?.host??this.element,t):this._$AH.handleEvent(t)}}class at{constructor(t,e,r){this.element=t,this.type=6,this._$AN=void 0,this._$AM=e,this.options=r}get _$AU(){return this._$AM._$AU}_$AI(t){V(this,t)}}const st=w.litHtmlPolyfillSupport;st?.(G,Q),(w.litHtmlVersions??=[]).push("3.3.2");const ot=globalThis;class nt extends ${constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){const t=super.createRenderRoot();return this.renderOptions.renderBefore??=t.firstChild,t}update(t){const e=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(t),this._$Do=((t,e,r)=>{const i=r?.renderBefore??e;let a=i._$litPart$;if(void 0===a){const t=r?.renderBefore??null;i._$litPart$=a=new Q(e.insertBefore(H(),t),t,void 0,r??{})}return a._$AI(t),a})(e,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return Y}}nt._$litElement$=!0,nt.finalized=!0,ot.litElementHydrateSupport?.({LitElement:nt});const lt=ot.litElementPolyfillSupport;lt?.({LitElement:nt}),(ot.litElementVersions??=[]).push("4.2.2");const dt=t=>(e,r)=>{void 0!==r?r.addInitializer(()=>{customElements.define(t,e)}):customElements.define(t,e)},ct={attribute:!0,type:String,converter:b,reflect:!1,hasChanged:v},ht=(t=ct,e,r)=>{const{kind:i,metadata:a}=r;let s=globalThis.litPropertyMetadata.get(a);if(void 0===s&&globalThis.litPropertyMetadata.set(a,s=new Map),"setter"===i&&((t=Object.create(t)).wrapped=!0),s.set(r.name,t),"accessor"===i){const{name:i}=r;return{set(r){const a=e.get.call(this);e.set.call(this,r),this.requestUpdate(i,a,t,!0,r)},init(e){return void 0!==e&&this.C(i,void 0,t,e),e}}}if("setter"===i){const{name:i}=r;return function(r){const a=this[i];e.call(this,r),this.requestUpdate(i,a,t,!0,r)}}throw Error("Unsupported decorator location: "+i)};function pt(t){return(e,r)=>"object"==typeof r?ht(t,e,r):((t,e,r)=>{const i=e.hasOwnProperty(r);return e.constructor.createProperty(r,t),i?Object.getOwnPropertyDescriptor(e,r):void 0})(t,e,r)}function _t(t){return pt({...t,state:!0,attribute:!1})}function yt(t,e){return(e,r,i)=>((t,e,r)=>(r.configurable=!0,r.enumerable=!0,Reflect.decorate&&"object"!=typeof e&&Object.defineProperty(t,e,r),r))(e,r,{get(){return(e=>e.renderRoot?.querySelector(t)??null)(this)}})}const ut={radar_x:0,radar_y:0,radar_z:220,yaw:0,pitch:0,roll:0,polygon:[]},gt={room_w:400,room_d:350,presence_entity:"binary_sensor.r60abd1_presence",x_entity:"sensor.r60abd1_x",y_entity:"sensor.r60abd1_y",z_entity:"sensor.r60abd1_z"},ft=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"x_entity",labelKey:"editor.x_entity",required:!0,domain:"sensor"},{key:"y_entity",labelKey:"editor.y_entity",required:!0,domain:"sensor"},{key:"z_entity",labelKey:"editor.z_entity",required:!1,domain:"sensor"},{key:"breath_entity",labelKey:"editor.breath_entity",required:!1,domain:"sensor"},{key:"heart_entity",labelKey:"editor.heart_entity",required:!1,domain:"sensor"},{key:"sleep_entity",labelKey:"editor.sleep_entity",required:!1,domain:"sensor"}],mt={info:{id:"r60abd1",displayName:"MicRadar R60ABD1 (60 GHz)",fovDegrees:40,maxRangeM:2.5,minRangeM:.4,vitalRangeM:1.5,updateRateHz:.5,maxTargets:1,hasZAxis:!0,hasBreathing:!0,hasHeartRate:!0,hasSleep:!0},getEntitySchema:()=>ft,validateConfig(t){const e=[];for(const r of ft)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("x_entity"),s=r("y_entity"),o=r("z_entity");if(!a||!s)return{present:!0,targets:[]};const n=parseFloat(a.state)||0,l=parseFloat(s.state)||0,d=o&&parseFloat(o.state)||0;return 0===n&&0===l&&0===d?{present:!0,targets:[]}:{present:!0,targets:[{index:0,rawX:n,rawY:l,rawZ:d}]}},getDefaultCalibration:()=>({...ut,radar_z:220,pitch:0,roll:0})},bt={id:"ld2450",displayName:"Hi-Link LD2450 (24 GHz)",fovDegrees:120,maxRangeM:6,minRangeM:.2,updateRateHz:10,maxTargets:3,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},vt=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"target_1_x_entity",labelKey:"editor.target_1_x",required:!0,domain:"sensor"},{key:"target_1_y_entity",labelKey:"editor.target_1_y",required:!0,domain:"sensor"},{key:"target_1_speed_entity",labelKey:"editor.target_1_speed",required:!1,domain:"sensor"},{key:"target_2_x_entity",labelKey:"editor.target_2_x",required:!1,domain:"sensor"},{key:"target_2_y_entity",labelKey:"editor.target_2_y",required:!1,domain:"sensor"},{key:"target_2_speed_entity",labelKey:"editor.target_2_speed",required:!1,domain:"sensor"},{key:"target_3_x_entity",labelKey:"editor.target_3_x",required:!1,domain:"sensor"},{key:"target_3_y_entity",labelKey:"editor.target_3_y",required:!1,domain:"sensor"},{key:"target_3_speed_entity",labelKey:"editor.target_3_speed",required:!1,domain:"sensor"}],xt={info:bt,getEntitySchema:()=>vt,validateConfig(t){const e=[];for(const r of vt)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=[];for(let t=1;t<=bt.maxTargets;t++){const e=r(`target_${t}_x_entity`),i=r(`target_${t}_y_entity`);if(!e||!i)continue;const s=(parseFloat(e.state)||0)/10,o=(parseFloat(i.state)||0)/10;if(0===s&&0===o)continue;const n=r(`target_${t}_speed_entity`),l=n?Math.abs(parseFloat(n.state)||0):void 0;a.push({index:t-1,rawX:s,rawY:o,rawZ:0,speed:l})}return{present:!0,targets:a}},getDefaultCalibration:()=>({...ut,radar_z:250,pitch:0,roll:0})},$t=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"distance_entity",labelKey:"editor.distance_entity",required:!0,domain:"sensor"},{key:"motion_state_entity",labelKey:"editor.motion_state_entity",required:!1,domain:"sensor"}],wt={info:{id:"rd03e",displayName:"Ai-Thinker RD03E (24 GHz)",fovDegrees:0,maxRangeM:6,minRangeM:.3,updateRateHz:10,maxTargets:1,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},getEntitySchema:()=>$t,validateConfig(t){const e=[];for(const r of $t)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("distance_entity");if(!a)return{present:!0,targets:[]};const s=parseFloat(a.state)||0;if(s<=0)return{present:!0,targets:[]};const o=[];return o.push({index:0,rawX:0,rawY:s,rawZ:0}),{present:!0,targets:o}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},kt=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"distance_entity",labelKey:"editor.distance_entity",required:!0,domain:"sensor"},{key:"motion_state_entity",labelKey:"editor.motion_state_entity",required:!1,domain:"sensor"}],At={info:{id:"ld2411",displayName:"Hi-Link LD2411 (24 GHz)",fovDegrees:0,maxRangeM:6,minRangeM:.3,updateRateHz:10,maxTargets:1,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},getEntitySchema:()=>kt,validateConfig(t){const e=[];for(const r of kt)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("distance_entity");if(!a)return{present:!0,targets:[]};const s=parseFloat(a.state)||0;if(s<=0)return{present:!0,targets:[]};const o=[];return o.push({index:0,rawX:0,rawY:s,rawZ:0}),{present:!0,targets:o}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},St={id:"ld2451",displayName:"Hi-Link LD2451 (24 GHz)",fovDegrees:120,maxRangeM:6,minRangeM:.2,updateRateHz:10,maxTargets:3,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},Ct=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"target_1_x_entity",labelKey:"editor.target_1_x",required:!0,domain:"sensor"},{key:"target_1_y_entity",labelKey:"editor.target_1_y",required:!0,domain:"sensor"},{key:"target_1_speed_entity",labelKey:"editor.target_1_speed",required:!1,domain:"sensor"},{key:"target_2_x_entity",labelKey:"editor.target_2_x",required:!1,domain:"sensor"},{key:"target_2_y_entity",labelKey:"editor.target_2_y",required:!1,domain:"sensor"},{key:"target_2_speed_entity",labelKey:"editor.target_2_speed",required:!1,domain:"sensor"},{key:"target_3_x_entity",labelKey:"editor.target_3_x",required:!1,domain:"sensor"},{key:"target_3_y_entity",labelKey:"editor.target_3_y",required:!1,domain:"sensor"},{key:"target_3_speed_entity",labelKey:"editor.target_3_speed",required:!1,domain:"sensor"}],Mt={info:St,getEntitySchema:()=>Ct,validateConfig(t){const e=[];for(const r of Ct)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=[];for(let t=1;t<=St.maxTargets;t++){const e=r(`target_${t}_x_entity`),i=r(`target_${t}_y_entity`);if(!e||!i)continue;const s=parseFloat(e.state)||0,o=parseFloat(i.state)||0;if(0===s&&0===o)continue;const n=r(`target_${t}_speed_entity`),l=n?Math.abs(parseFloat(n.state)||0):void 0;a.push({index:t-1,rawX:s,rawY:o,rawZ:0,speed:l})}return{present:!0,targets:a}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},Pt={id:"ld2453",displayName:"Hi-Link LD2453 (24 GHz)",fovDegrees:120,maxRangeM:6,minRangeM:.2,updateRateHz:10,maxTargets:3,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},Et=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"target_1_x_entity",labelKey:"editor.target_1_x",required:!0,domain:"sensor"},{key:"target_1_y_entity",labelKey:"editor.target_1_y",required:!0,domain:"sensor"},{key:"target_1_speed_entity",labelKey:"editor.target_1_speed",required:!1,domain:"sensor"},{key:"target_2_x_entity",labelKey:"editor.target_2_x",required:!1,domain:"sensor"},{key:"target_2_y_entity",labelKey:"editor.target_2_y",required:!1,domain:"sensor"},{key:"target_2_speed_entity",labelKey:"editor.target_2_speed",required:!1,domain:"sensor"},{key:"target_3_x_entity",labelKey:"editor.target_3_x",required:!1,domain:"sensor"},{key:"target_3_y_entity",labelKey:"editor.target_3_y",required:!1,domain:"sensor"},{key:"target_3_speed_entity",labelKey:"editor.target_3_speed",required:!1,domain:"sensor"}],Rt={info:Pt,getEntitySchema:()=>Et,validateConfig(t){const e=[];for(const r of Et)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=[];for(let t=1;t<=Pt.maxTargets;t++){const e=r(`target_${t}_x_entity`),i=r(`target_${t}_y_entity`);if(!e||!i)continue;const s=parseFloat(e.state)||0,o=parseFloat(i.state)||0;if(0===s&&0===o)continue;const n=r(`target_${t}_speed_entity`),l=n?Math.abs(parseFloat(n.state)||0):void 0;a.push({index:t-1,rawX:s,rawY:o,rawZ:0,speed:l})}return{present:!0,targets:a}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},Ht=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"distance_entity",labelKey:"editor.distance_entity",required:!0,domain:"sensor"},{key:"target_state_entity",labelKey:"editor.target_state_entity",required:!1,domain:"sensor"}],Tt=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"distance_entity",labelKey:"editor.distance_entity",required:!0,domain:"sensor"},{key:"target_state_entity",labelKey:"editor.target_state_entity",required:!1,domain:"sensor"}],qt=[{key:"presence_entity",labelKey:"editor.presence_entity",required:!0,domain:"binary_sensor"},{key:"x_entity",labelKey:"editor.x_entity",required:!1,domain:"sensor"},{key:"y_entity",labelKey:"editor.y_entity",required:!1,domain:"sensor"},{key:"distance_entity",labelKey:"editor.distance_entity",required:!1,domain:"sensor"},{key:"respiration_entity",labelKey:"editor.respiration_entity",required:!1,domain:"sensor"},{key:"heart_rate_entity",labelKey:"editor.heart_rate_entity",required:!1,domain:"sensor"}],Lt={r60abd1:mt,ld2450:xt,rd03e:wt,ld2411:At,ld2451:Mt,ld2453:Rt,ld2410b:{info:{id:"ld2410b",displayName:"Hi-Link LD2410B (24 GHz)",fovDegrees:0,maxRangeM:8,minRangeM:0,updateRateHz:10,maxTargets:1,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},getEntitySchema:()=>Ht,validateConfig(t){const e=[];for(const r of Ht)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("distance_entity");if(!a)return{present:!0,targets:[]};const s=parseFloat(a.state)||0;if(s<=0)return{present:!0,targets:[]};const o=[];return o.push({index:0,rawX:0,rawY:s,rawZ:0}),{present:!0,targets:o}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},ld2410c:{info:{id:"ld2410c",displayName:"Hi-Link LD2410C (24 GHz)",fovDegrees:0,maxRangeM:8,minRangeM:0,updateRateHz:10,maxTargets:1,hasZAxis:!1,hasBreathing:!1,hasHeartRate:!1,hasSleep:!1},getEntitySchema:()=>Tt,validateConfig(t){const e=[];for(const r of Tt)r.required&&!t[r.key]&&e.push(`Missing required entity: ${r.key}`);return e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("distance_entity");if(!a)return{present:!0,targets:[]};const s=parseFloat(a.state)||0;if(s<=0)return{present:!0,targets:[]};const o=[];return o.push({index:0,rawX:0,rawY:s,rawZ:0}),{present:!0,targets:o}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})},ld6002:{info:{id:"ld6002",displayName:"Hi-Link LD6002 (60 GHz)",fovDegrees:120,maxRangeM:6,minRangeM:0,updateRateHz:1,maxTargets:1,hasZAxis:!1,hasBreathing:!0,hasHeartRate:!0,hasSleep:!1},getEntitySchema:()=>qt,validateConfig(t){const e=[];return t.presence_entity||e.push("Missing required entity: presence_entity"),t.distance_entity||t.x_entity&&t.y_entity||e.push("You must provide either distance_entity OR both x_entity and y_entity."),e},readFromHass(t,e){const r=r=>{const i=e[r];return i?t.states[i]:void 0},i=r("presence_entity");if(!i||"unavailable"===i.state)return{present:!1,targets:[]};if(!("on"===i.state))return{present:!1,targets:[]};const a=r("x_entity"),s=r("y_entity"),o=r("distance_entity");let n=0,l=0;if(a&&s?(n=parseFloat(a.state)||0,l=parseFloat(s.state)||0):o&&(l=parseFloat(o.state)||0),0===n&&l<=0)return{present:!0,targets:[]};return{present:!0,targets:[{index:0,rawX:n,rawY:l,rawZ:0}]}},getDefaultCalibration:()=>({...ut,radar_z:240,pitch:0,roll:0})}};function zt(t){return Lt[t]}function Dt(t,e,r){const i=r.length;if(i<3)return!0;let a=!1;for(let s=0,o=i-1;s<i;o=s++){const i=r[s].x,n=r[s].y,l=r[o].x,d=r[o].y;n>e!=d>e&&t<(l-i)*(e-n)/(d-n)+i&&(a=!a)}return a}function Wt(t,e,r,i){const a=function(t,e,r){const i=Math.PI/180,a=t*i,s=e*i,o=r*i,[n,l,d,c,h,p]=[Math.sin(a),Math.cos(a),Math.sin(s),Math.cos(s),Math.sin(o),Math.cos(o)];return[[l*p+n*d*h,n*c,-l*h+n*d*p],[-n*p+l*d*h,l*c,n*h+l*d*p],[c*h,-d,c*p]]}(i.yaw,i.pitch,i.roll),s=a[0][0]*t+a[0][1]*e+a[0][2]*r,o=a[1][0]*t+a[1][1]*e+a[1][2]*r,n=a[2][0]*t+a[2][1]*e+a[2][2]*r,l=i.radar_x+s,d=i.radar_y+o;return{roomX:l,roomY:d,roomZ:i.radar_z-n,inBoundary:Dt(l,d,i.polygon)}}const Bt=(t,e,r)=>({cx:t/r.roomW*r.W,cy:e/r.roomD*r.H}),Kt=(t,e,r)=>({x:t/r.W*r.roomW,y:e/r.H*r.roomD});function Ut(t,e){const r=e.getBoundingClientRect(),i="touches"in t?t.touches[0].clientX:t.clientX,a="touches"in t?t.touches[0].clientY:t.clientY;return{x:i-r.left,y:a-r.top}}function Nt(t,e){const r=window.devicePixelRatio||1,i=t.offsetWidth||400;t.width=i*r,t.height=e*r,t.style.height=`${e}px`;const a=t.getContext("2d");return a.scale(r,r),a}function Ot(t,e){t.clearRect(0,0,e.W,e.H),t.strokeStyle="rgba(128,128,128,.06)",t.lineWidth=.5;for(let r=0;r<e.W;r+=40)t.beginPath(),t.moveTo(r,0),t.lineTo(r,e.H),t.stroke();for(let r=0;r<e.H;r+=40)t.beginPath(),t.moveTo(0,r),t.lineTo(e.W,r),t.stroke();t.strokeStyle="rgba(255,255,255,.15)",t.lineWidth=1.5,t.strokeRect(1,1,e.W-2,e.H-2);const r=100*Math.round(e.roomW/4/100)||100,i=r/e.roomW*e.W,a=e.H-10,s=e.W-i-8;t.beginPath(),t.moveTo(s,a),t.lineTo(s+i,a),t.strokeStyle="rgba(255,255,255,.35)",t.lineWidth=1.2,t.stroke(),t.beginPath(),t.moveTo(s,a-3),t.lineTo(s,a+3),t.moveTo(s+i,a-3),t.lineTo(s+i,a+3),t.stroke(),t.fillStyle="rgba(255,255,255,.45)",t.font="9px system-ui",t.textAlign="center",t.textBaseline="bottom",t.fillText(`${r}cm`,s+i/2,a-3),t.font="bold 9px system-ui",t.fillStyle="rgba(100,181,246,.6)",t.textAlign="right",t.textBaseline="top",t.fillText("X →",e.W-4,4),t.textAlign="left",t.textBaseline="bottom",t.fillText("Y ↓",4,e.H-4),t.textAlign="left",t.textBaseline="top",t.fillStyle="rgba(255,255,255,.3)",t.fillText("0",4,4),t.textBaseline="alphabetic"}function Yt(t,e,r,i=!1){if(e.length<2)return;const a=e.map(t=>Bt(t.x,t.y,r));t.beginPath(),a.forEach((e,r)=>0===r?t.moveTo(e.cx,e.cy):t.lineTo(e.cx,e.cy)),e.length>=3&&(t.closePath(),t.fillStyle=i?"rgba(100,181,246,.04)":"rgba(100,181,246,.07)",t.fill()),t.strokeStyle=i?"rgba(100,181,246,.22)":"rgba(100,181,246,.55)",t.lineWidth=1.5,t.stroke(),i||a.forEach(e=>{t.beginPath(),t.arc(e.cx,e.cy,3,0,2*Math.PI),t.fillStyle="rgba(100,181,246,.8)",t.fill()})}function Ft(t,e,r,i,a,s,o,n,l){const d=Math.sqrt(n.W/n.roomW*(n.H/n.roomD)),c=t=>Math.max(100*t*d,1),h=a/2*(Math.PI/180),p=Math.PI/2+i*(Math.PI/180),_=c(s),y=c(o),u=(i,a,s,o,n=1.2)=>{const l=e+a*Math.cos(p-h),d=r+a*Math.sin(p-h);t.beginPath(),t.moveTo(l,d),t.arc(e,r,a,p-h,p+h,!1),t.arc(e,r,i,p+h,p-h,!0),t.closePath(),t.fillStyle=s,t.fill("evenodd"),t.strokeStyle=o,t.lineWidth=n,t.stroke()};if(null!=l&&l>s&&l<o){const t=c(l);u(t,y,"rgba(100,181,246,.18)","rgba(100,181,246,.45)"),u(_,t,"rgba(100,181,246,.40)","rgba(100,181,246,.85)",1.5)}else u(_,y,"rgba(100,181,246,.32)","rgba(100,181,246,.70)");t.beginPath(),t.moveTo(e,r),t.arc(e,r,_,p-h,p+h,!1),t.closePath(),t.fillStyle="rgba(0,0,0,.50)",t.fill(),t.beginPath(),t.arc(e,r,_,p-h,p+h,!1),t.strokeStyle="rgba(244,99,99,.80)",t.lineWidth=1.5,t.setLineDash([3,3]),t.stroke(),t.setLineDash([]);const g=(i,a,s)=>{const o=e+a*Math.cos(p),n=r+a*Math.sin(p),l=`${i}m`;t.font="bold 9px system-ui",t.textAlign="center",t.textBaseline="middle";const d=t.measureText(l).width;t.fillStyle="rgba(10,10,24,.82)",t.beginPath(),t.roundRect?.(o-d/2-3,n-7,d+6,14,3),t.fill(),t.fillStyle=s,t.fillText(l,o,n)};null!=l&&g(l,c(l),"rgba(100,181,246,1)"),g(o,y,"rgba(160,210,255,.85)"),t.textBaseline="alphabetic",t.beginPath(),t.arc(e,r,9,0,2*Math.PI),t.fillStyle="rgba(10,10,24,.92)",t.fill(),t.strokeStyle="rgba(100,181,246,.95)",t.lineWidth=1.5,t.stroke();for(const[i,a]of[[7,0],[-7,0],[0,7],[0,-7]])t.beginPath(),t.moveTo(e+.3*i,r+.3*a),t.lineTo(e+i,r+a),t.strokeStyle="rgba(100,181,246,.7)",t.lineWidth=1.2,t.stroke()}function It(t,e,r,i){i?(t.beginPath(),t.arc(e,r,9,0,2*Math.PI),t.fillStyle="rgba(100,181,246,.15)",t.fill(),t.beginPath(),t.arc(e,r,5,0,2*Math.PI),t.fillStyle="var(--primary-color,#64b5f6)",t.fill(),t.strokeStyle="rgba(255,255,255,.6)",t.lineWidth=1.5,t.stroke()):(t.setLineDash([2,2]),t.beginPath(),t.arc(e,r,9,0,2*Math.PI),t.strokeStyle="rgba(244,67,54,.5)",t.lineWidth=1.5,t.stroke(),t.setLineDash([]),t.beginPath(),t.arc(e,r,4,0,2*Math.PI),t.strokeStyle="rgba(244,67,54,.7)",t.lineWidth=1.5,t.stroke())}function Xt(t,e,r,i,a,s=!1){t.beginPath(),t.arc(e,r,7,0,2*Math.PI),s?(t.strokeStyle=a,t.lineWidth=1.8,t.stroke()):(t.fillStyle=a,t.fill(),t.strokeStyle="rgba(255,255,255,.5)",t.lineWidth=1.2,t.stroke()),t.fillStyle=s?a:"#fff",t.font="bold 9px system-ui",t.textAlign="center",t.textBaseline="middle",t.fillText(i,e,r),t.textBaseline="alphabetic"}const jt={en:{card_name:"MMWave Radar HA Card",tabs:{geo:"① Geometry & Boundary",yaw:"② Yaw Calibration",live:"③ Live View"},geo:{install_params:"Installation Parameters (measure with tape)",radar_x:"Radar X",radar_y:"Radar Y",radar_z:"Height",yaw_rough:"Rough Yaw",pitch:"Pitch",roll:"Roll",geo_note:"Origin: top-left corner. X → right. Y ↓ down (toward foot of bed).\nYaw = angle of radar forward axis from Y-axis, clockwise positive.\nPitch/Roll: 0 for horizontal mount; enter tilt angle or read from IMU.",boundary:"Room Boundary (optional)",poly_hint_none:"Click canvas to draw boundary (≥ 3 points)",poly_hint_ok:"Boundary active — {n} vertices",poly_undo:"Undo",poly_clear:"Clear",boundary_note:"No boundary = no filtering. Targets outside the polygon are ignored."},yaw:{ref_a_title:"Reference Point A",ref_b_title:"Reference Point B",ref_a_idle:"Click the preview to mark a known position",ref_a_marked:"Marked at ({x}, {y}) cm — walk there, then Capture",ref_a_done:"Captured",ref_b_idle:"Complete point A first",ref_b_step:"Click another known position (> 80 cm from A)",ref_b_marked:"Marked at ({x}, {y}) cm — walk there, then Capture",ref_b_done:"Captured",capture_btn:"Walk to marked position → Capture radar reading",capture_wait:"Waiting for radar data…",result_idle:"Click the preview map to start — mark reference point A",result_ok:"Yaw {yaw}° · Residual {residual} cm"},live:{title:"Room Top-Down View",badge_none:"No presence",badge_present:"Present",badge_filtered:"Outside boundary",room_x:"Room X (cm)",room_y:"Room Y (cm)",room_z:"Height (cm)",targets:"Targets"},actions:{save:"Save",saved:"Saved ✓",reset:"Reset",reset_confirm:"Clear all calibration data?"},editor:{model:"Radar model",entities:"Entities",presence_entity:"Presence entity",x_entity:"X coordinate entity",y_entity:"Y coordinate entity",z_entity:"Z coordinate entity (optional)",breath_entity:"Breathing rate entity (optional)",heart_entity:"Heart rate entity (optional)",sleep_entity:"Sleep state entity (optional)",target1_x:"Target 1 X entity",target1_y:"Target 1 Y entity",target2_x:"Target 2 X entity (optional)",target2_y:"Target 2 Y entity (optional)",target3_x:"Target 3 X entity (optional)",target3_y:"Target 3 Y entity (optional)",room_dimensions:"Room Dimensions",room_w:"Room width (cm)",room_d:"Room depth (cm)"}},"zh-Hans":{card_name:"毫米波雷达校准卡片",tabs:{geo:"① 几何 & 边界",yaw:"② 偏航校准",live:"③ 实时验证"},geo:{install_params:"安装参数（卷尺测量后填入）",radar_x:"雷达 X",radar_y:"雷达 Y",radar_z:"安装高度",yaw_rough:"粗略偏航",pitch:"俯仰角",roll:"横滚角",geo_note:"坐标原点为预览图左上角，X 向右，Y 向下（从床头到床尾方向为正）。\n偏航角 = 雷达正前方相对 Y 轴（向下）的夹角，顺时针为正。\nPitch/Roll：水平安装填 0；有倾斜时填实测值或接入 IMU 传感器后自动读取。",boundary:"房间边界过滤（可选）",poly_hint_none:"点击画布添加顶点，绘制有效区域（≥ 3 个点）",poly_hint_ok:"边界过滤已启用 — {n} 个顶点",poly_undo:"撤销",poly_clear:"清除",boundary_note:"不绘制边界 = 不过滤。绘制后，落在多边形外的目标将被忽略。"},yaw:{ref_a_title:"参考点 A",ref_b_title:"参考点 B",ref_a_idle:"在预览图上点击一个你能走到的已知位置",ref_a_marked:"已标记 (X={x}, Y={y}) cm → 走到该位置后点击「捕获」",ref_a_done:"捕获完成",ref_b_idle:"完成 A 点后操作",ref_b_step:"点击另一个已知位置（与 A 距离 > 80 cm）",ref_b_marked:"已标记 (X={x}, Y={y}) cm → 走到该位置后点击「捕获」",ref_b_done:"捕获完成",capture_btn:"走到标记位置后 → 点此捕获雷达读数",capture_wait:"等待雷达数据…",result_idle:"在预览图上点击参考点 A 开始校准",result_ok:"偏航角 {yaw}° · 残差 {residual} cm"},live:{title:"房间俯视图",badge_none:"无人",badge_present:"有人",badge_filtered:"边界外",room_x:"房间 X (cm)",room_y:"房间 Y (cm)",room_z:"离地高度 (cm)",targets:"目标数"},actions:{save:"保存",saved:"已保存 ✓",reset:"重置",reset_confirm:"清除所有校准数据？"},editor:{model:"雷达型号",entities:"实体配置",presence_entity:"存在感知实体",x_entity:"X 坐标实体",y_entity:"Y 坐标实体",z_entity:"Z 坐标实体（可选）",breath_entity:"呼吸频率实体（可选）",heart_entity:"心率实体（可选）",sleep_entity:"睡眠状态实体（可选）",target1_x:"目标 1 X 实体",target1_y:"目标 1 Y 实体",target2_x:"目标 2 X 实体（可选）",target2_y:"目标 2 Y 实体（可选）",target3_x:"目标 3 X 实体（可选）",target3_y:"目标 3 Y 实体（可选）",room_dimensions:"房间尺寸",room_w:"房间宽度 (cm)",room_d:"房间深度 (cm)"}}};function Zt(t,e){const r=e??navigator.language?.split("-")[0]??"en",i=jt[e??""]??Object.entries(jt).find(([t])=>t.startsWith(r))?.[1]??jt.en;let a=i;for(const e of t.split("."))if(a=a?.[e],void 0===a)break;return"string"==typeof a?a:t}const Gt="mmwave-card",Vt="mmwave-card-editor";let Jt=class extends nt{constructor(){super(...arguments),this.lang="en",this.roomW=400,this.roomD=350,this._rafId=0}_L(t){return Zt(t,this.lang)}connectedCallback(){super.connectedCallback(),this._loop()}disconnectedCallback(){super.disconnectedCallback(),cancelAnimationFrame(this._rafId)}_cssH(){const t=this._cv?.offsetWidth;if(!t||0===t)return 280;const e=this.roomD/this.roomW;return Math.max(140,Math.min(280,Math.round(t*e)))}_m(){return{W:this._cv?.offsetWidth||400,H:this._cssH(),roomW:this.roomW,roomD:this.roomD}}_onCanvasClick(t){const e=this._cv;if(!e)return;const r=Ut(t,e),i=Kt(r.x,r.y,this._m());this._emit({polygon:[...this.calibration.polygon,i]})}_undo(){const t=[...this.calibration.polygon];t.pop(),this._emit({polygon:t})}_clear(){this._emit({polygon:[]})}_emit(t){this.dispatchEvent(new CustomEvent("calibration-changed",{detail:{...this.calibration,...t},bubbles:!0,composed:!0}))}_loop(){const t=this._cv;if(t&&t.offsetWidth>0){const e=Nt(t,this._cssH()),r=this._m();if(Ot(e,r),this.adapter){const t=Bt(this.calibration.radar_x,this.calibration.radar_y,r);Ft(e,t.cx,t.cy,this.calibration.yaw,this.adapter.info.fovDegrees,this.adapter.info.minRangeM,this.adapter.info.maxRangeM,r,this.adapter.info.vitalRangeM)}Yt(e,this.calibration.polygon,r)}this._rafId=requestAnimationFrame(()=>this._loop())}_numField(t,e,r,i=5,a=-9999){return O` <div class="field">
+      <label>${t}</label>
+      <input
+        type="number"
+        .value=${String(r)}
+        step=${i}
+        min=${a}
+        @change=${t=>{const r=parseFloat(t.target.value)||0,i={[e]:r};this._emit(i)}}
+      />
+      <span class="unit">cm</span>
+    </div>`}_degField(t,e,r,i=-180,a=180){return O` <div class="field">
+      <label>${t}</label>
+      <input
+        type="number"
+        .value=${String(r)}
+        step="0.5"
+        min=${i}
+        max=${a}
+        @change=${t=>{const r=parseFloat(t.target.value)||0,i={[e]:r};this._emit(i)}}
+      />
+      <span class="unit">°</span>
+    </div>`}render(){const t=this.calibration,e=t.polygon.length,r=e>=3?this._L("geo.poly_hint_ok").replace("{n}",String(e)):this._L("geo.poly_hint_none");return O`
       <p class="sec-title">${this._L("geo.install_params")}</p>
-      ${this._numField(this._L("geo.radar_x"), "radar_x", c.radar_x)}
-      ${this._numField(this._L("geo.radar_y"), "radar_y", c.radar_y)}
-      ${this._numField(this._L("geo.radar_height"), "radar_height", c.radar_height, 5, 0)}
-      ${this._degField(this._L("geo.yaw_rough"), "yaw", c.yaw)}
-      ${this._degField(this._L("geo.pitch"), "pitch", c.pitch, -90, 90)}
-      ${this._degField(this._L("geo.roll"), "roll", c.roll, -90, 90)}
+      ${this._numField(this._L("geo.radar_x"),"radar_x",t.radar_x)}
+      ${this._numField(this._L("geo.radar_y"),"radar_y",t.radar_y)}
+      ${this._numField(this._L("geo.radar_z"),"radar_z",t.radar_z,5,0)}
+      ${this._degField(this._L("geo.yaw_rough"),"yaw",t.yaw)}
+      ${this._degField(this._L("geo.pitch"),"pitch",t.pitch,-90,90)}
+      ${this._degField(this._L("geo.roll"),"roll",t.roll,-90,90)}
       <p class="note">${this._L("geo.geo_note")}</p>
 
       <p class="sec-title" style="margin-top:14px">${this._L("geo.boundary")}</p>
       <div class="poly-bar">
-        <span class="poly-hint ${pn >= 3 ? "ok" : ""}">${hint}</span>
+        <span class="poly-hint ${e>=3?"ok":""}">${r}</span>
         <div class="poly-btns">
           <button class="pbtn" @click=${this._undo}>${this._L("geo.poly_undo")}</button>
           <button class="pbtn" @click=${this._clear}>${this._L("geo.poly_clear")}</button>
@@ -826,227 +39,130 @@ let GeoPanel = class GeoPanel extends i {
       </div>
       <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
       <p class="note">${this._L("geo.boundary_note")}</p>
-    `;
+    `}static{this.styles=o`
+    :host {
+      display: block;
     }
-    static { this.styles = i$3 `
-    :host { display: block; }
     .sec-title {
-      font-size:10px;letter-spacing:.07em;text-transform:uppercase;
-      color:var(--secondary-text-color);margin:0 0 8px;
+      font-size: 10px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--secondary-text-color);
+      margin: 0 0 8px;
     }
     .field {
-      display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:5px;
-      background:rgba(128,128,128,.06);
-      border:1px solid var(--divider-color,rgba(128,128,128,.15));
-      border-radius:8px;transition:border-color .15s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      margin-bottom: 5px;
+      background: rgba(128, 128, 128, 0.06);
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      border-radius: 8px;
+      transition: border-color 0.15s;
     }
-    .field:focus-within { border-color:var(--primary-color); }
-    .field label { font-size:12px;color:var(--secondary-text-color);width:90px;flex-shrink:0; }
+    .field:focus-within {
+      border-color: var(--primary-color);
+    }
+    .field label {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+      width: 90px;
+      flex-shrink: 0;
+    }
     .field input {
-      flex:1;background:none;border:none;outline:none;
-      font-size:13px;font-weight:500;text-align:right;
-      color:var(--primary-text-color);
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 13px;
+      font-weight: 500;
+      text-align: right;
+      color: var(--primary-text-color);
     }
-    .unit { font-size:11px;color:var(--secondary-text-color);min-width:18px;text-align:right; }
+    .unit {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      min-width: 18px;
+      text-align: right;
+    }
     .note {
-      font-size:10px;color:var(--secondary-text-color);line-height:1.6;
-      margin:5px 0;padding:7px 9px;white-space:pre-line;
-      background:rgba(128,128,128,.04);
-      border-left:2px solid var(--divider-color);border-radius:0 5px 5px 0;
+      font-size: 10px;
+      color: var(--secondary-text-color);
+      line-height: 1.6;
+      margin: 5px 0;
+      padding: 7px 9px;
+      white-space: pre-line;
+      background: rgba(128, 128, 128, 0.04);
+      border-left: 2px solid var(--divider-color);
+      border-radius: 0 5px 5px 0;
     }
-    .poly-bar { display:flex;align-items:center;justify-content:space-between;margin-bottom:6px; }
-    .poly-hint { font-size:11px;color:var(--secondary-text-color); }
-    .poly-hint.ok { color:var(--success-color,#4caf50); }
-    .poly-btns { display:flex;gap:4px; }
+    .poly-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .poly-hint {
+      font-size: 11px;
+      color: var(--secondary-text-color);
+    }
+    .poly-hint.ok {
+      color: var(--success-color, #4caf50);
+    }
+    .poly-btns {
+      display: flex;
+      gap: 4px;
+    }
     .pbtn {
-      background:rgba(128,128,128,.1);border:1px solid var(--divider-color);
-      border-radius:6px;padding:3px 9px;font-size:11px;
-      color:var(--secondary-text-color);cursor:pointer;
+      background: rgba(128, 128, 128, 0.1);
+      border: 1px solid var(--divider-color);
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 11px;
+      color: var(--secondary-text-color);
+      cursor: pointer;
     }
-    .pbtn:hover { background:rgba(128,128,128,.2); }
+    .pbtn:hover {
+      background: rgba(128, 128, 128, 0.2);
+    }
     canvas {
-      display:block;width:100%;border-radius:8px;
-      border:1px solid var(--divider-color,rgba(128,128,128,.15));
-      background:rgba(0,0,0,.15);touch-action:none;cursor:crosshair;
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      background: rgba(0, 0, 0, 0.15);
+      touch-action: none;
+      cursor: crosshair;
     }
-  `; }
-};
-__decorate([
-    n({ attribute: false })
-], GeoPanel.prototype, "adapter", void 0);
-__decorate([
-    n({ attribute: false })
-], GeoPanel.prototype, "calibration", void 0);
-__decorate([
-    n({ attribute: false })
-], GeoPanel.prototype, "lang", void 0);
-__decorate([
-    e("#poly-cv")
-], GeoPanel.prototype, "_cv", void 0);
-GeoPanel = __decorate([
-    t("mmwave-geo-panel")
-], GeoPanel);
-
-let YawPanel = class YawPanel extends i {
-    constructor() {
-        super(...arguments);
-        this.lang = "en";
-        /** Room dimensions (cm) — needed for canvas ↔ room coordinate conversion. */
-        this.roomW = 400;
-        this.roomD = 350;
-        this._yw = { sub: 0, capturing: false };
-        this._rafId = 0;
-    }
-    _L(k) { return localize(k, this.lang); }
-    connectedCallback() {
-        super.connectedCallback();
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    disconnectedCallback() { super.disconnectedCallback(); cancelAnimationFrame(this._rafId); }
-    // ── public API called by the card when a new radar reading arrives ────────
-    offerReading(rawX, rawY) {
-        if (!this._yw.capturing)
-            return;
-        this._capture(rawX, rawY);
-        this._yw = { ...this._yw, capturing: false };
-    }
-    // ── canvas interaction ────────────────────────────────────────────────────
-    _m() {
-        const cv = this._cv;
-        return { W: cv?.offsetWidth ?? 400, H: 155, roomW: this.roomW, roomD: this.roomD };
-    }
-    _onCanvasClick(e) {
-        const cv = this._cv;
-        if (!cv)
-            return;
-        const yw = this._yw;
-        if (yw.sub !== 0 && yw.sub !== 1)
-            return;
-        const dpr = window.devicePixelRatio || 1;
-        const raw = eventToCanvasPt(e, cv);
-        const pt = { x: raw.x / dpr, y: raw.y / dpr };
-        if (yw.sub === 0) {
-            this._yw = { ...yw, refA: { canvasPt: pt }, sub: 0.5 };
-        }
-        else {
-            this._yw = { ...yw, refB: { canvasPt: pt }, sub: 1.5 };
-        }
-        this.requestUpdate();
-    }
-    _onCapture() {
-        this._yw = { ...this._yw, capturing: true };
-        this.dispatchEvent(new CustomEvent("capture-requested", { bubbles: true, composed: true }));
-    }
-    _capture(rawX, rawY) {
-        const yw = this._yw;
-        if (yw.sub === 0.5 && yw.refA) {
-            this._yw = { ...yw, refA: { ...yw.refA, detPt: { x: rawX, y: rawY } }, sub: 1 };
-        }
-        else if (yw.sub === 1.5 && yw.refB) {
-            this._yw = { ...yw, refB: { ...yw.refB, detPt: { x: rawX, y: rawY } }, sub: 2 };
-            this._computeYaw();
-        }
-    }
-    _computeYaw() {
-        const yw = this._yw;
-        if (!yw.refA?.detPt || !yw.refB?.detPt)
-            return;
-        const m = this._m();
-        const mapA = canvasToRoom(yw.refA.canvasPt.x, yw.refA.canvasPt.y, m);
-        const mapB = canvasToRoom(yw.refB.canvasPt.x, yw.refB.canvasPt.y, m);
-        const detA = yw.refA.detPt, detB = yw.refB.detPt;
-        const newYaw = calcYawFromTwoPoints(mapA, mapB, detA, detB);
-        const updCal = { ...this.calibration, yaw: newYaw };
-        const residual = calcCalibrationResidual(mapA, mapB, detA, detB, updCal);
-        this._yw = { ...this._yw, residual };
-        this.dispatchEvent(new CustomEvent("calibration-changed", { detail: updCal, bubbles: true, composed: true }));
-    }
-    // ── canvas draw ────────────────────────────────────────────────────────────
-    _draw() {
-        const cv = this._cv;
-        if (cv) {
-            const ctx = setupCanvas(cv, 155);
-            const m = this._m();
-            drawBase(ctx, m);
-            drawPolygon(ctx, this.calibration.polygon, m, true);
-            const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
-            drawRadarIcon(ctx, rp.cx, rp.cy, this.calibration.yaw, this.adapter.info.fovDegrees);
-            const drawRef = (ref, label) => {
-                if (!ref)
-                    return;
-                drawDot(ctx, ref.canvasPt.x, ref.canvasPt.y, label, "#64b5f6");
-                if (ref.detPt) {
-                    const tr = applyTransform(ref.detPt.x, ref.detPt.y, 0, this.calibration);
-                    const det = roomToCanvas(tr.roomX, tr.roomY, m);
-                    ctx.beginPath();
-                    ctx.moveTo(ref.canvasPt.x, ref.canvasPt.y);
-                    ctx.lineTo(det.cx, det.cy);
-                    ctx.strokeStyle = "rgba(244,99,99,.4)";
-                    ctx.lineWidth = 1;
-                    ctx.setLineDash([3, 3]);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    drawDot(ctx, det.cx, det.cy, label, "rgba(244,99,99,.85)", true);
-                }
-            };
-            drawRef(this._yw.refA, "A");
-            drawRef(this._yw.refB, "B");
-        }
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    // ── render ─────────────────────────────────────────────────────────────────
-    _refStep(step) {
-        const yw = this._yw;
-        // Normalise sub relative to this step (step 0 uses sub as-is; step 1 uses sub-1)
-        const rel = step === 0 ? yw.sub : yw.sub - 1;
-        const cls = rel >= 1 ? "done" : rel >= 0 ? "act" : "";
-        const isA = step === 0;
-        const sub = rel >= 1 ? this._L(isA ? "yaw.ref_a_done" : "yaw.ref_b_done") :
-            rel === 0.5 ? this._L(isA ? "yaw.ref_a_marked" : "yaw.ref_b_marked") :
-                rel === 0 ? this._L(isA ? "yaw.ref_a_idle" : "yaw.ref_b_step") :
-                    this._L("yaw.ref_b_idle");
-        return b `
-      <div class="ref-step ${cls}">
-        <div class="ref-num">${rel >= 1 ? "✓" : isA ? "A" : "B"}</div>
+  `}};t([pt({attribute:!1})],Jt.prototype,"adapter",void 0),t([pt({attribute:!1})],Jt.prototype,"calibration",void 0),t([pt({attribute:!1})],Jt.prototype,"lang",void 0),t([pt({type:Number})],Jt.prototype,"roomW",void 0),t([pt({type:Number})],Jt.prototype,"roomD",void 0),t([yt("#poly-cv")],Jt.prototype,"_cv",void 0),Jt=t([dt("mmwave-geo-panel")],Jt);let Qt=class extends nt{constructor(){super(...arguments),this.lang="en",this.roomW=400,this.roomD=350,this._yw={sub:0,capturing:!1},this._rafId=0}_L(t){return Zt(t,this.lang)}connectedCallback(){super.connectedCallback(),this._loop()}disconnectedCallback(){super.disconnectedCallback(),cancelAnimationFrame(this._rafId)}offerReading(t,e){this._yw.capturing&&(this._capture(t,e),this._yw={...this._yw,capturing:!1})}_cssH(){const t=this._cv?.offsetWidth;if(!t||0===t)return 280;const e=this.roomD/this.roomW;return Math.max(140,Math.min(280,Math.round(t*e)))}_m(){return{W:this._cv?.offsetWidth||400,H:this._cssH(),roomW:this.roomW,roomD:this.roomD}}_onCanvasClick(t){const e=this._cv;if(!e)return;const r=this._yw;if(0!==r.sub&&1!==r.sub)return;const i=Ut(t,e),a=Kt(i.x,i.y,this._m());0===r.sub?this._yw={...r,refA:{canvasPt:i,roomPt:a},sub:.5}:this._yw={...r,refB:{canvasPt:i,roomPt:a},sub:1.5},this.requestUpdate()}_onCapture(){this._yw={...this._yw,capturing:!0},this.dispatchEvent(new CustomEvent("capture-requested",{bubbles:!0,composed:!0}))}_capture(t,e){const r=this._yw;.5===r.sub&&r.refA?this._yw={...r,refA:{...r.refA,detPt:{x:t,y:e}},sub:1}:1.5===r.sub&&r.refB&&(this._yw={...r,refB:{...r.refB,detPt:{x:t,y:e}},sub:2},this._computeYaw())}_computeYaw(){const t=this._yw;if(!t.refA?.detPt||!t.refB?.detPt)return;const e=this._m(),r=Kt(t.refA.canvasPt.x,t.refA.canvasPt.y,e),i=Kt(t.refB.canvasPt.x,t.refB.canvasPt.y,e),a=t.refA.detPt,s=t.refB.detPt,o=function(t,e,r,i){let a=(Math.atan2(e.y-t.y,e.x-t.x)-Math.atan2(i.y-r.y,i.x-r.x))*(180/Math.PI);for(;a>180;)a-=360;for(;a<-180;)a+=360;return Math.round(10*a)/10}(r,i,a,s),n={...this.calibration,yaw:o},l=function(t,e,r,i,a){const s=Wt(r.x,r.y,0,a),o=Wt(i.x,i.y,0,a);return(Math.hypot(s.roomX-t.x,s.roomY-t.y)+Math.hypot(o.roomX-e.x,o.roomY-e.y))/2}(r,i,a,s,n);this._yw={...this._yw,residual:l},this.dispatchEvent(new CustomEvent("calibration-changed",{detail:n,bubbles:!0,composed:!0}))}_loop(){const t=this._cv;if(t&&t.offsetWidth>0&&this.adapter){const e=Nt(t,this._cssH()),r=this._m();Ot(e,r),Yt(e,this.calibration.polygon,r,!0);const i=Bt(this.calibration.radar_x,this.calibration.radar_y,r);Ft(e,i.cx,i.cy,this.calibration.yaw,this.adapter.info.fovDegrees,this.adapter.info.minRangeM,this.adapter.info.maxRangeM,r,this.adapter.info.vitalRangeM);const a=(t,i)=>{if(t&&(Xt(e,t.canvasPt.x,t.canvasPt.y,i,"#64b5f6"),t.detPt)){const a=Wt(t.detPt.x,t.detPt.y,0,this.calibration),s=Bt(a.roomX,a.roomY,r);e.beginPath(),e.moveTo(t.canvasPt.x,t.canvasPt.y),e.lineTo(s.cx,s.cy),e.strokeStyle="rgba(244,99,99,.4)",e.lineWidth=1,e.setLineDash([3,3]),e.stroke(),e.setLineDash([]),Xt(e,s.cx,s.cy,i,"rgba(244,99,99,.85)",!0)}};a(this._yw.refA,"A"),a(this._yw.refB,"B")}this._rafId=requestAnimationFrame(()=>this._loop())}_fmtMarked(t,e){return t.replace("{x}",String(Math.round(e.x))).replace("{y}",String(Math.round(e.y)))}_refStep(t){const e=this._yw,r=0===t?e.sub:e.sub-1,i=r>=1?"done":r>=0?"act":"",a=0===t,s=a?e.refA:e.refB;let o;if(r>=1)o=this._L(a?"yaw.ref_a_done":"yaw.ref_b_done");else if(.5===r)if(null!=s?.roomPt){const t=Math.round(s.roomPt.x),e=Math.round(s.roomPt.y),r=this._L(a?"yaw.ref_a_marked":"yaw.ref_b_marked");o=r.includes("{x}")?r.replace("{x}",String(t)).replace("{y}",String(e)):`(X=${t}, Y=${e} cm) — ${this._L(a?"yaw.ref_a_idle":"yaw.ref_b_step")}`}else o=this._L(a?"yaw.ref_a_marked":"yaw.ref_b_marked").replace("{x}","?").replace("{y}","?");else o=0===r?this._L(a?"yaw.ref_a_idle":"yaw.ref_b_step"):this._L("yaw.ref_b_idle");return O`
+      <div class="ref-step ${i}">
+        <div class="ref-num">${r>=1?"✓":a?"A":"B"}</div>
         <div>
-          <div class="ref-title">${this._L(isA ? "yaw.ref_a_title" : "yaw.ref_b_title")}</div>
-          <div class="ref-sub">${sub}</div>
+          <div class="ref-title">${this._L(a?"yaw.ref_a_title":"yaw.ref_b_title")}</div>
+          <div class="ref-sub">${o}</div>
         </div>
-      </div>`;
-    }
-    render() {
-        const yw = this._yw;
-        const canCap = yw.sub === 0.5 || yw.sub === 1.5;
-        const ok = yw.sub >= 2;
-        const resText = ok
-            ? this._L("yaw.result_ok")
-                .replace("{yaw}", String(this.calibration.yaw))
-                .replace("{residual}", String((yw.residual ?? 0).toFixed(1)))
-            : this._L("yaw.result_idle");
-        return b `
+      </div>`}render(){const t=this._yw,e=.5===t.sub||1.5===t.sub,r=t.sub>=2,i=r?this._L("yaw.result_ok").replace("{yaw}",String(this.calibration.yaw)).replace("{residual}",String((t.residual??0).toFixed(1))):this._L("yaw.result_idle");return O`
       ${this._refStep(0)}
       ${this._refStep(1)}
       <canvas id="yaw-cv" @click=${this._onCanvasClick}></canvas>
-      <button class="cap-btn" ?disabled=${!canCap || yw.capturing} @click=${this._onCapture}>
-        ${yw.capturing ? this._L("yaw.capture_wait") : this._L("yaw.capture_btn")}
+      <button class="cap-btn" ?disabled=${!e||t.capturing}
+        @click=${this._onCapture}>
+        ${t.capturing?this._L("yaw.capture_wait"):this._L("yaw.capture_btn")}
       </button>
-      <div class="result-line ${ok ? "ok" : ""}">${resText}</div>
-    `;
-    }
-    static { this.styles = i$3 `
+      <div class="result-line ${r?"ok":""}">${i}</div>
+    `}static{this.styles=o`
     :host { display:block; }
     canvas {
       display:block;width:100%;border-radius:8px;
       border:1px solid var(--divider-color,rgba(128,128,128,.15));
-      background:rgba(0,0,0,.15);touch-action:none;cursor:crosshair;
-      margin:8px 0;
+      background:rgba(0,0,0,.15);touch-action:none;cursor:crosshair;margin:8px 0;
     }
     .ref-step {
       display:flex;align-items:center;gap:9px;padding:8px 10px;
-      border-radius:8px;border:1px solid var(--divider-color);
-      margin-bottom:5px;transition:all .22s;
+      border-radius:8px;border:1px solid var(--divider-color);margin-bottom:5px;transition:all .22s;
     }
-    .ref-step.act { border-color:var(--primary-color);background:rgba(3,169,244,.07); }
+    .ref-step.act  { border-color:var(--primary-color);background:rgba(3,169,244,.07); }
     .ref-step.done { border-color:var(--success-color,#4caf50);background:rgba(76,175,80,.05); }
     .ref-num {
       width:21px;height:21px;border-radius:50%;flex-shrink:0;
@@ -1054,409 +170,117 @@ let YawPanel = class YawPanel extends i {
       font-size:11px;font-weight:700;
       background:var(--divider-color);color:var(--secondary-text-color);transition:all .2s;
     }
-    .ref-step.act .ref-num { background:var(--primary-color);color:#fff; }
+    .ref-step.act  .ref-num { background:var(--primary-color);color:#fff; }
     .ref-step.done .ref-num { background:var(--success-color,#4caf50);color:#fff; }
     .ref-title { font-size:12px;font-weight:500; }
-    .ref-sub { font-size:11px;color:var(--secondary-text-color);margin-top:1px; }
+    .ref-sub   { font-size:11px;color:var(--secondary-text-color);margin-top:1px; }
     .cap-btn {
-      width:100%;margin-top:9px;
+      width:100%;margin-top:9px;padding:9px;
       background:rgba(3,169,244,.12);border:1px solid rgba(3,169,244,.35);
-      border-radius:8px;padding:9px;font-size:13px;font-weight:500;
+      border-radius:8px;font-size:13px;font-weight:500;
       cursor:pointer;color:var(--primary-color);transition:background .15s;
     }
     .cap-btn:disabled { opacity:.4;cursor:not-allowed; }
     .cap-btn:not(:disabled):hover { background:rgba(3,169,244,.22); }
-    .result-line { font-size:11px;text-align:center;min-height:15px;margin-top:5px;color:var(--secondary-text-color); }
+    .result-line {
+      font-size:11px;text-align:center;min-height:15px;margin-top:5px;
+      color:var(--secondary-text-color);
+    }
     .result-line.ok { color:var(--success-color,#4caf50); }
-  `; }
-};
-__decorate([
-    n({ attribute: false })
-], YawPanel.prototype, "adapter", void 0);
-__decorate([
-    n({ attribute: false })
-], YawPanel.prototype, "calibration", void 0);
-__decorate([
-    n({ attribute: false })
-], YawPanel.prototype, "lang", void 0);
-__decorate([
-    n({ type: Number })
-], YawPanel.prototype, "roomW", void 0);
-__decorate([
-    n({ type: Number })
-], YawPanel.prototype, "roomD", void 0);
-__decorate([
-    r()
-], YawPanel.prototype, "_yw", void 0);
-__decorate([
-    e("#yaw-cv")
-], YawPanel.prototype, "_cv", void 0);
-YawPanel = __decorate([
-    t("mmwave-yaw-panel")
-], YawPanel);
-
-let LivePanel = class LivePanel extends i {
-    constructor() {
-        super(...arguments);
-        this.lang = "en";
-        this.roomW = 400;
-        this.roomD = 350;
-        /** Targets already transformed by the card (room coords populated). */
-        this.targets = [];
-        this.present = false;
-        this._trail = [];
-        this._rafId = 0;
-    }
-    _L(k) { return localize(k, this.lang); }
-    connectedCallback() {
-        super.connectedCallback();
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    disconnectedCallback() { super.disconnectedCallback(); cancelAnimationFrame(this._rafId); }
-    /** Called by the card when a new reading arrives. */
-    addTrailPoints(targets) {
-        const now = Date.now();
-        for (const t of targets) {
-            if (t.room?.inBoundary) {
-                this._trail.push({ x: t.room.roomX, y: t.room.roomY, t: now });
-            }
-        }
-        const cutoff = now - TRAIL_MAX_MS;
-        this._trail = this._trail.filter(p => p.t > cutoff);
-    }
-    clearTrail() { this._trail = []; }
-    _m() {
-        return { W: this._cv?.offsetWidth ?? 400, H: 210, roomW: this.roomW, roomD: this.roomD };
-    }
-    _draw() {
-        const cv = this._cv;
-        if (cv) {
-            const ctx = setupCanvas(cv, 210);
-            const m = this._m();
-            drawBase(ctx, m);
-            drawPolygon(ctx, this.calibration.polygon, m);
-            // Radar icon
-            const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
-            drawRadarIcon(ctx, rp.cx, rp.cy, this.calibration.yaw, this.adapter.info.fovDegrees);
-            // Time-faded trail
-            if (this._trail.length > 1) {
-                const now = Date.now();
-                this._trail.forEach((p, i) => {
-                    if (i === 0)
-                        return;
-                    const prev = this._trail[i - 1];
-                    const age = (now - p.t) / TRAIL_MAX_MS;
-                    const a = Math.max(0, 0.5 - age * 0.5);
-                    const pa = roomToCanvas(prev.x, prev.y, m);
-                    const pb = roomToCanvas(p.x, p.y, m);
-                    ctx.beginPath();
-                    ctx.moveTo(pa.cx, pa.cy);
-                    ctx.lineTo(pb.cx, pb.cy);
-                    ctx.strokeStyle = `rgba(100,181,246,${a})`;
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                });
-            }
-            // Targets
-            for (const t of this.targets) {
-                if (!t.room)
-                    continue;
-                const cp = roomToCanvas(t.room.roomX, t.room.roomY, m);
-                drawTarget(ctx, cp.cx, cp.cy, t.room.inBoundary);
-                // Target index label for multi-target models
-                if (this.adapter.info.maxTargets > 1) {
-                    ctx.fillStyle = "rgba(255,255,255,.7)";
-                    ctx.font = "9px system-ui";
-                    ctx.textAlign = "center";
-                    ctx.textBaseline = "middle";
-                    ctx.fillText(String(t.index + 1), cp.cx, cp.cy - 14);
-                    ctx.textBaseline = "alphabetic";
-                }
-            }
-        }
-        this._rafId = requestAnimationFrame(() => this._draw());
-    }
-    // ── status helpers ─────────────────────────────────────────────────────────
-    _badgeText() {
-        if (!this.present)
-            return this._L("live.badge_none");
-        const insideCount = this.targets.filter(t => t.room?.inBoundary).length;
-        if (insideCount === 0)
-            return this._L("live.badge_filtered");
-        return this._L("live.badge_present");
-    }
-    _badgeCls() {
-        if (!this.present)
-            return "";
-        const inside = this.targets.some(t => t.room?.inBoundary);
-        return inside ? "on" : "filtered";
-    }
-    /** First inside-boundary target (for coordinate display). */
-    _primaryTarget() {
-        return this.targets.find(t => t.room?.inBoundary)?.room;
-    }
-    render() {
-        const pos = this._primaryTarget();
-        return b `
-      <div class="live-hdr">
+  `}};t([pt({attribute:!1})],Qt.prototype,"adapter",void 0),t([pt({attribute:!1})],Qt.prototype,"calibration",void 0),t([pt({attribute:!1})],Qt.prototype,"lang",void 0),t([pt({type:Number})],Qt.prototype,"roomW",void 0),t([pt({type:Number})],Qt.prototype,"roomD",void 0),t([_t()],Qt.prototype,"_yw",void 0),t([yt("#yaw-cv")],Qt.prototype,"_cv",void 0),Qt=t([dt("mmwave-yaw-panel")],Qt);let te=class extends nt{constructor(){super(...arguments),this.lang="en",this.roomW=400,this.roomD=350,this.targets=[],this.present=!1,this._trail=[],this._rafId=0}_L(t){return Zt(t,this.lang)}connectedCallback(){super.connectedCallback(),this._loop()}disconnectedCallback(){super.disconnectedCallback(),cancelAnimationFrame(this._rafId)}addTrailPoints(t){const e=Date.now();for(const r of t)r.room?.inBoundary&&this._trail.push({x:r.room.roomX,y:r.room.roomY,t:e});const r=e-9e4;this._trail=this._trail.filter(t=>t.t>r)}clearTrail(){this._trail=[]}_cssH(){const t=this._cv?.offsetWidth;if(!t||0===t)return 340;const e=this.roomD/this.roomW;return Math.max(140,Math.min(340,Math.round(t*e)))}_m(){return{W:this._cv?.offsetWidth||400,H:this._cssH(),roomW:this.roomW,roomD:this.roomD}}_loop(){const t=this._cv;if(t&&t.offsetWidth>0&&this.adapter){const e=Nt(t,this._cssH()),r=this._m();Ot(e,r),Yt(e,this.calibration.polygon,r);const i=Bt(this.calibration.radar_x,this.calibration.radar_y,r);if(Ft(e,i.cx,i.cy,this.calibration.yaw,this.adapter.info.fovDegrees,this.adapter.info.minRangeM,this.adapter.info.maxRangeM,r,this.adapter.info.vitalRangeM),this._trail.length>1){const t=Date.now();for(let i=1;i<this._trail.length;i++){const a=this._trail[i-1],s=this._trail[i],o=(t-s.t)/9e4,n=Math.max(0,.5-.5*o),l=Bt(a.x,a.y,r),d=Bt(s.x,s.y,r);e.beginPath(),e.moveTo(l.cx,l.cy),e.lineTo(d.cx,d.cy),e.strokeStyle=`rgba(100,181,246,${n})`,e.lineWidth=2,e.stroke()}}for(const t of this.targets){if(!t.room)continue;const i=Bt(t.room.roomX,t.room.roomY,r);It(e,i.cx,i.cy,t.room.inBoundary),this.adapter.info.maxTargets>1&&(e.fillStyle="rgba(255,255,255,.7)",e.font="9px system-ui",e.textAlign="center",e.textBaseline="middle",e.fillText(String(t.index+1),i.cx,i.cy-14),e.textBaseline="alphabetic")}}this._rafId=requestAnimationFrame(()=>this._loop())}_badgeText(){if(!this.present)return this._L("live.badge_none");const t=this.targets.filter(t=>t.room?.inBoundary).length;return t>0?this._L("live.badge_present"):this._L("live.badge_filtered")}_badgeCls(){return this.present?this.targets.some(t=>t.room?.inBoundary)?"on":"filtered":""}_primaryTarget(){return this.targets.find(t=>t.room?.inBoundary)?.room}render(){const t=this._primaryTarget();return O` <div class="live-hdr">
         <span class="live-title">${this._L("live.title")}</span>
         <span class="badge ${this._badgeCls()}">${this._badgeText()}</span>
       </div>
       <canvas id="live-cv"></canvas>
       <div class="coords">
         <div class="cbox">
-          <div class="cval">${pos ? Math.round(pos.roomX) : "—"}</div>
+          <div class="cval">${t?Math.round(t.roomX):"—"}</div>
           <div class="clbl">${this._L("live.room_x")}</div>
         </div>
         <div class="cbox">
-          <div class="cval">${pos ? Math.round(pos.roomY) : "—"}</div>
+          <div class="cval">${t?Math.round(t.roomY):"—"}</div>
           <div class="clbl">${this._L("live.room_y")}</div>
         </div>
-        ${this.adapter.info.hasZAxis ? b `
-          <div class="cbox">
-            <div class="cval">${pos ? Math.round(pos.heightFloor) : "—"}</div>
-            <div class="clbl">${this._L("live.height")}</div>
-          </div>` : A}
-        ${this.adapter.info.maxTargets > 1 ? b `
-          <div class="cbox">
-            <div class="cval">${this.targets.filter(t => t.room?.inBoundary).length}</div>
-            <div class="clbl">${this._L("live.targets")}</div>
-          </div>` : A}
-      </div>`;
+        ${this.adapter?.info.hasZAxis?O` <div class="cbox">
+              <div class="cval">${t?Math.round(t.roomZ):"—"}</div>
+              <div class="clbl">${this._L("live.room_z")}</div>
+            </div>`:F}
+        ${this.adapter?.info.maxTargets>1?O` <div class="cbox">
+              <div class="cval">${this.targets.filter(t=>t.room?.inBoundary).length}</div>
+              <div class="clbl">${this._L("live.targets")}</div>
+            </div>`:F}
+      </div>`}static{this.styles=o`
+    :host {
+      display: block;
     }
-    static { this.styles = i$3 `
-    :host { display:block; }
-    .live-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
-    .live-title { font-size:12px;color:var(--secondary-text-color); }
+    .live-hdr {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .live-title {
+      font-size: 12px;
+      color: var(--secondary-text-color);
+    }
     .badge {
-      font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
-      padding:3px 10px;border-radius:20px;
-      background:rgba(128,128,128,.12);color:var(--secondary-text-color);transition:all .3s;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 20px;
+      background: rgba(128, 128, 128, 0.12);
+      color: var(--secondary-text-color);
+      transition: all 0.3s;
     }
-    .badge.on { background:rgba(3,169,244,.2);color:var(--primary-color,#64b5f6); }
-    .badge.filtered { background:rgba(244,67,54,.15);color:#ef9a9a; }
+    .badge.on {
+      background: rgba(3, 169, 244, 0.2);
+      color: var(--primary-color, #64b5f6);
+    }
+    .badge.filtered {
+      background: rgba(244, 67, 54, 0.15);
+      color: #ef9a9a;
+    }
     canvas {
-      display:block;width:100%;border-radius:8px;
-      border:1px solid var(--divider-color,rgba(128,128,128,.15));
-      background:rgba(0,0,0,.15);touch-action:none;
+      display: block;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      background: rgba(0, 0, 0, 0.15);
+      touch-action: none;
     }
-    .coords { display:flex;gap:6px;margin-top:9px; }
+    .coords {
+      display: flex;
+      gap: 6px;
+      margin-top: 9px;
+    }
     .cbox {
-      flex:1;text-align:center;padding:8px;
-      background:rgba(128,128,128,.06);
-      border:1px solid var(--divider-color,rgba(128,128,128,.15));border-radius:8px;
+      flex: 1;
+      text-align: center;
+      padding: 8px;
+      background: rgba(128, 128, 128, 0.06);
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      border-radius: 8px;
     }
-    .cval { font-size:17px;font-weight:600;color:var(--primary-color,#64b5f6);font-variant-numeric:tabular-nums; }
-    .clbl { font-size:10px;color:var(--secondary-text-color);margin-top:2px; }
-  `; }
-};
-__decorate([
-    n({ attribute: false })
-], LivePanel.prototype, "adapter", void 0);
-__decorate([
-    n({ attribute: false })
-], LivePanel.prototype, "calibration", void 0);
-__decorate([
-    n({ attribute: false })
-], LivePanel.prototype, "lang", void 0);
-__decorate([
-    n({ type: Number })
-], LivePanel.prototype, "roomW", void 0);
-__decorate([
-    n({ type: Number })
-], LivePanel.prototype, "roomD", void 0);
-__decorate([
-    n({ attribute: false })
-], LivePanel.prototype, "targets", void 0);
-__decorate([
-    n({ type: Boolean })
-], LivePanel.prototype, "present", void 0);
-__decorate([
-    e("#live-cv")
-], LivePanel.prototype, "_cv", void 0);
-LivePanel = __decorate([
-    t("mmwave-live-panel")
-], LivePanel);
-
-/**
- * MMWave Radar Card  —  main orchestrator
- *
- * Responsibilities:
- *   1. Read radar_model from config, look up the adapter in the registry
- *   2. On every hass update: call adapter.readFromHass(), apply transform,
- *      push results into the active panel
- *   3. Own the CalibrationConfig state and persist it to localStorage
- *   4. Route polygon-point-added events from GeoPanel using the room
- *      dimensions to convert canvas px → room cm
- *   5. Route capture-requested events to YawPanel via offerReading()
- *
- * Panels are pure Lit elements that receive data and fire events.
- * They contain zero model-specific logic.
- */
-// ── Card registration ────────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-window.customCards ??= [];
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-window.customCards.push({
-    type: CARD_TAG,
-    name: "MMWave Radar Card",
-    description: "Multi-model mmWave radar calibration & live visualization",
-    preview: true,
-    documentationURL: "https://github.com/zomco/ha-mmwave-card",
-});
-console.info(`%c MMWAVE-CARD %c v${CARD_VERSION} `, "background:#03a9f4;color:#fff;font-weight:700", "background:#1c1c2e;color:#03a9f4;font-weight:700");
-// ── Tab indices ──────────────────────────────────────────────────────────────
-const TAB_GEO = 0;
-const TAB_YAW = 1;
-const TAB_LIVE = 2;
-// ── Component ────────────────────────────────────────────────────────────────
-let MMWaveCard = class MMWaveCard extends i {
-    constructor() {
-        // ── Lovelace public API ───────────────────────────────────────────────────
-        super(...arguments);
-        this._tab = TAB_GEO;
-        this._targets = [];
-        this._present = false;
+    .cval {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--primary-color, #64b5f6);
+      font-variant-numeric: tabular-nums;
     }
-    setConfig(config) {
-        if (!config.radar_model)
-            throw new Error("radar_model is required");
-        const adapter = getAdapter(config.radar_model);
-        if (!adapter)
-            throw new Error(`Unknown radar_model: "${config.radar_model}". Check src/models/index.ts.`);
-        const errors = adapter.validateConfig(config);
-        if (errors.length)
-            throw new Error(errors.join("; "));
-        this._config = { ...DEFAULT_CARD_CONFIG, ...config };
-        this._adapter = adapter;
-        this._cal = this._loadCal(config.radar_model, adapter);
+    .clbl {
+      font-size: 10px;
+      color: var(--secondary-text-color);
+      margin-top: 2px;
     }
-    static async getConfigElement() {
-        await Promise.resolve().then(function () { return editor; });
-        return document.createElement(EDITOR_TAG);
-    }
-    static getStubConfig() {
-        return {
-            ...DEFAULT_CARD_CONFIG,
-            radar_model: "r60abd1",
-            presence_entity: "binary_sensor.r60abd1_presence",
-            x_entity: "sensor.r60abd1_x",
-            y_entity: "sensor.r60abd1_y",
-            z_entity: "sensor.r60abd1_z",
-        };
-    }
-    getCardSize() { return 7; }
-    set hass(hass) {
-        this._hass = hass;
-        if (!this._adapter || !this._config)
-            return;
-        const reading = this._adapter.readFromHass(hass, this._config);
-        this._present = reading.present;
-        // Apply transform to every target
-        this._targets = reading.targets.map(t => ({
-            ...t,
-            room: applyTransform(t.rawX, t.rawY, t.rawZ, this._cal),
-        }));
-        // Push data into panels imperatively (avoids re-rendering the entire card)
-        if (this._tab === TAB_LIVE && this._livePanel) {
-            this._livePanel.present = this._present;
-            this._livePanel.targets = this._targets;
-            this._livePanel.addTrailPoints(this._targets);
-        }
-        // Yaw panel: if it's waiting for a capture reading, offer it
-        if (this._tab === TAB_YAW && this._yawPanel) {
-            const first = reading.targets[0];
-            if (first)
-                this._yawPanel.offerReading(first.rawX, first.rawY);
-        }
-    }
-    // ── Localisation helper ──────────────────────────────────────────────────
-    _L(k) { return localize(k, this._hass?.language); }
-    // ── Tab management ───────────────────────────────────────────────────────
-    _gotoTab(tab) {
-        this._tab = tab;
-        this._livePanel?.clearTrail();
-        this.requestUpdate();
-    }
-    // ── Event handlers from panels ───────────────────────────────────────────
-    /** GeoPanel fires this when the user clicks the polygon canvas. */
-    _onPolygonPointAdded(e) {
-        const cv = this.shadowRoot?.querySelector("#poly-cv");
-        const W = cv?.offsetWidth ?? 400;
-        const m = {
-            W,
-            H: 165,
-            roomW: this._config.room_w,
-            roomD: this._config.room_d,
-        };
-        const room = canvasToRoom(e.detail.canvasX, e.detail.canvasY, m);
-        const updated = {
-            ...this._cal,
-            polygon: [...this._cal.polygon, room],
-        };
-        this._cal = updated;
-        this.requestUpdate();
-    }
-    /** All panels fire this when calibration values change. */
-    _onCalibrationChanged(e) {
-        this._cal = e.detail;
-        this.requestUpdate();
-    }
-    /** YawPanel fires this when user clicks "Capture". */
-    _onCaptureRequested() {
-        // Nothing extra — the hass setter already calls offerReading() on the panel.
-        // This event is here in case we need to add a visual indicator in future.
-    }
-    // ── Persistence ─────────────────────────────────────────────────────────
-    _storageKey(modelId) { return `${STORAGE_KEY}_${modelId}`; }
-    _loadCal(modelId, adapter) {
-        try {
-            const s = localStorage.getItem(this._storageKey(modelId));
-            return s
-                ? { ...adapter.getDefaultCalibration(), ...JSON.parse(s) }
-                : adapter.getDefaultCalibration();
-        }
-        catch {
-            return adapter.getDefaultCalibration();
-        }
-    }
-    _save() {
-        const key = this._storageKey(this._config.radar_model);
-        localStorage.setItem(key, JSON.stringify(this._cal));
-        const btn = this.shadowRoot?.getElementById("btn-save");
-        if (btn) {
-            const orig = btn.textContent;
-            btn.textContent = this._L("actions.saved");
-            btn.style.opacity = "0.65";
-            setTimeout(() => { btn.textContent = orig; btn.style.opacity = ""; }, 2000);
-        }
-    }
-    _reset() {
-        if (!confirm(this._L("actions.reset_confirm")))
-            return;
-        localStorage.removeItem(this._storageKey(this._config.radar_model));
-        this._cal = this._adapter.getDefaultCalibration();
-        this._gotoTab(TAB_GEO);
-    }
-    // ── Render ───────────────────────────────────────────────────────────────
-    render() {
-        if (!this._config || !this._adapter)
-            return A;
-        const tabs = [
-            this._L("tabs.geo"),
-            this._L("tabs.yaw"),
-            this._L("tabs.live"),
-        ];
-        const roomW = this._config.room_w;
-        const roomD = this._config.room_d;
-        const lang = this._hass?.language ?? "en";
-        return b `
+  `}};t([pt({attribute:!1})],te.prototype,"adapter",void 0),t([pt({attribute:!1})],te.prototype,"calibration",void 0),t([pt({attribute:!1})],te.prototype,"lang",void 0),t([pt({type:Number})],te.prototype,"roomW",void 0),t([pt({type:Number})],te.prototype,"roomD",void 0),t([pt({attribute:!1})],te.prototype,"targets",void 0),t([pt({type:Boolean})],te.prototype,"present",void 0),t([yt("#live-cv")],te.prototype,"_cv",void 0),te=t([dt("mmwave-live-panel")],te),window.customCards??=[],window.customCards.push({type:Gt,name:"MMWave Radar HA Card",description:"Multi-model mmWave radar calibration & live visualization",preview:!0,documentationURL:"https://github.com/YOUR_GITHUB_USERNAME/lovelace-mmwave-card"}),console.info("%c MMWAVE-CARD %c v1.0.0 ","background:#03a9f4;color:#fff;font-weight:700","background:#1c1c2e;color:#03a9f4;font-weight:700");let ee=class extends nt{constructor(){super(...arguments),this._tab=0,this._targets=[],this._present=!1}setConfig(t){if(!t.radar_model)throw new Error("radar_model is required");const e=zt(t.radar_model);if(!e)throw new Error(`Unknown radar_model: "${t.radar_model}". Check src/models/index.ts.`);const r=e.validateConfig(t);if(r.length)throw new Error(r.join("; "));this._config={...gt,...t},this._adapter=e,this._cal=this._loadCal(t.radar_model,e)}static async getConfigElement(){return await Promise.resolve().then(function(){return ie}),document.createElement(Vt)}static getStubConfig(){return{...gt,radar_model:"r60abd1",presence_entity:"binary_sensor.r60abd1_presence",x_entity:"sensor.r60abd1_x",y_entity:"sensor.r60abd1_y",z_entity:"sensor.r60abd1_z"}}getCardSize(){return 7}set hass(t){if(this._hass=t,!this._adapter||!this._config)return;const e=this._adapter.readFromHass(t,this._config);if(this._present=e.present,this._targets=e.targets.map(t=>({...t,room:Wt(t.rawX,t.rawY,t.rawZ,this._cal)})),2===this._tab&&this._livePanel&&(this._livePanel.present=this._present,this._livePanel.targets=this._targets,this._livePanel.addTrailPoints(this._targets)),1===this._tab&&this._yawPanel){const t=e.targets[0];t&&this._yawPanel.offerReading(t.rawX,t.rawY)}}_L(t){return Zt(t,this._hass?.language)}_gotoTab(t){this._tab=t,this._livePanel?.clearTrail(),this.requestUpdate()}_onPolygonPointAdded(t){const e=this.shadowRoot?.querySelector("#poly-cv"),r={W:e?.offsetWidth??400,H:165,roomW:this._config.room_w,roomD:this._config.room_d},i=Kt(t.detail.canvasX,t.detail.canvasY,r),a={...this._cal,polygon:[...this._cal.polygon,i]};this._cal=a,this.requestUpdate()}_onCalibrationChanged(t){this._cal=t.detail,this.requestUpdate()}_onCaptureRequested(){}_storageKey(t){return`mmwave_cal_v1_${t}`}_loadCal(t,e){try{const r=localStorage.getItem(this._storageKey(t));return r?{...e.getDefaultCalibration(),...JSON.parse(r)}:e.getDefaultCalibration()}catch{return e.getDefaultCalibration()}}_save(){const t=this._storageKey(this._config.radar_model);localStorage.setItem(t,JSON.stringify(this._cal));const e=this.shadowRoot?.getElementById("btn-save");if(e){const t=e.textContent;e.textContent=this._L("actions.saved"),e.style.opacity="0.65",setTimeout(()=>{e.textContent=t,e.style.opacity=""},2e3)}}_reset(){confirm(this._L("actions.reset_confirm"))&&(localStorage.removeItem(this._storageKey(this._config.radar_model)),this._cal=this._adapter.getDefaultCalibration(),this._gotoTab(0))}render(){if(!this._config||!this._adapter)return F;const t=[this._L("tabs.geo"),this._L("tabs.yaw"),this._L("tabs.live")],e=this._config.room_w,r=this._config.room_d,i=this._hass?.language??"en";return O`
       <ha-card>
         <!-- Tab bar -->
         <div id="tabs">
-          ${tabs.map((label, i) => b `
-            <button class="tab ${this._tab === i ? "act" : ""}"
-              @click=${() => this._gotoTab(i)}>${label}</button>`)}
+          ${t.map((t,e)=>O`
+            <button class="tab ${this._tab===e?"act":""}"
+              @click=${()=>this._gotoTab(e)}>${t}</button>`)}
         </div>
 
         <!-- Body -->
@@ -1465,32 +289,34 @@ let MMWaveCard = class MMWaveCard extends i {
           @polygon-point-added=${this._onPolygonPointAdded}
           @capture-requested=${this._onCaptureRequested}>
 
-          ${this._tab === TAB_GEO ? b `
+          ${0===this._tab?O`
             <mmwave-geo-panel
               .adapter=${this._adapter}
               .calibration=${this._cal}
-              .lang=${lang}>
-            </mmwave-geo-panel>` : A}
+              .lang=${i}
+              .roomW=${e}
+              .roomD=${r}>
+            </mmwave-geo-panel>`:F}
 
-          ${this._tab === TAB_YAW ? b `
+          ${1===this._tab?O`
             <mmwave-yaw-panel
               .adapter=${this._adapter}
               .calibration=${this._cal}
-              .lang=${lang}
-              .roomW=${roomW}
-              .roomD=${roomD}>
-            </mmwave-yaw-panel>` : A}
+              .lang=${i}
+              .roomW=${e}
+              .roomD=${r}>
+            </mmwave-yaw-panel>`:F}
 
-          ${this._tab === TAB_LIVE ? b `
+          ${2===this._tab?O`
             <mmwave-live-panel
               .adapter=${this._adapter}
               .calibration=${this._cal}
-              .lang=${lang}
-              .roomW=${roomW}
-              .roomD=${roomD}
+              .lang=${i}
+              .roomW=${e}
+              .roomD=${r}
               .targets=${this._targets}
               .present=${this._present}>
-            </mmwave-live-panel>` : A}
+            </mmwave-live-panel>`:F}
         </div>
 
         <!-- Footer -->
@@ -1499,10 +325,7 @@ let MMWaveCard = class MMWaveCard extends i {
           <button class="btn-save" id="btn-save" @click=${this._save}>${this._L("actions.save")}</button>
         </div>
       </ha-card>
-    `;
-    }
-    // ── Styles ───────────────────────────────────────────────────────────────
-    static { this.styles = i$3 `
+    `}static{this.styles=o`
     :host { display: block; }
     ha-card {
       background: var(--card-background-color);
@@ -1548,88 +371,47 @@ let MMWaveCard = class MMWaveCard extends i {
       border-radius: 8px; padding: 8px 14px;
       font-size: 13px; color: var(--secondary-text-color); cursor: pointer;
     }
-  `; }
-};
-__decorate([
-    r()
-], MMWaveCard.prototype, "_config", void 0);
-__decorate([
-    r()
-], MMWaveCard.prototype, "_adapter", void 0);
-__decorate([
-    r()
-], MMWaveCard.prototype, "_cal", void 0);
-__decorate([
-    r()
-], MMWaveCard.prototype, "_tab", void 0);
-__decorate([
-    e("mmwave-yaw-panel")
-], MMWaveCard.prototype, "_yawPanel", void 0);
-__decorate([
-    e("mmwave-live-panel")
-], MMWaveCard.prototype, "_livePanel", void 0);
-MMWaveCard = __decorate([
-    t(CARD_TAG)
-], MMWaveCard);
-
-let MMWaveCardEditor = class MMWaveCardEditor extends i {
-    setConfig(config) {
-        this._config = { ...DEFAULT_CARD_CONFIG, ...config };
-    }
-    _L(k) { return localize(k, this.hass?.language); }
-    _changed(key, value) {
-        this._config = { ...this._config, [key]: value };
-        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config } }));
-    }
-    render() {
-        if (!this.hass || !this._config)
-            return A;
-        const modelId = (this._config.radar_model ?? "");
-        const adapter = getAdapter(modelId);
-        const models = getModelList();
-        return b `
+  `}};t([_t()],ee.prototype,"_config",void 0),t([_t()],ee.prototype,"_adapter",void 0),t([_t()],ee.prototype,"_cal",void 0),t([_t()],ee.prototype,"_tab",void 0),t([yt("mmwave-yaw-panel")],ee.prototype,"_yawPanel",void 0),t([yt("mmwave-live-panel")],ee.prototype,"_livePanel",void 0),ee=t([dt(Gt)],ee);let re=class extends nt{setConfig(t){this._config={...gt,...t}}_L(t){return Zt(t,this.hass?.language)}_changed(t,e){this._config={...this._config,[t]:e},this.dispatchEvent(new CustomEvent("config-changed",{detail:{config:this._config}}))}render(){if(!this.hass||!this._config)return F;const t=this._config.radar_model??"",e=zt(t),r=Object.entries(Lt).map(([t,e])=>({id:t,label:e.info.displayName})).sort((t,e)=>t.label.localeCompare(e.label));return O`
       <div class="card-config">
         <!-- Model selector -->
         <h3>${this._L("editor.model")}</h3>
         <div class="field">
           <label>${this._L("editor.model")}</label>
-          <select .value=${modelId} @change=${(e) => this._changed("radar_model", e.target.value)}>
+          <select .value=${t} @change=${t=>this._changed("radar_model",t.target.value)}>
             <option value="" disabled>${this._L("editor.model")}…</option>
-            ${models.map(m => b `
-              <option value=${m.id} ?selected=${m.id === modelId}>${m.label}</option>`)}
+            ${r.map(e=>O`
+              <option value=${e.id} ?selected=${e.id===t}>${e.label}</option>`)}
           </select>
         </div>
 
         <!-- Entity fields (model-specific) -->
-        ${adapter ? b `
+        ${e?O`
           <h3>${this._L("editor.entities")}</h3>
-          ${adapter.getEntitySchema().map(f => b `
+          ${e.getEntitySchema().map(t=>O`
             <div class="field">
-              <label>${this._L(f.labelKey)}${f.required ? "" : " *"}</label>
+              <label>${this._L(t.labelKey)}${t.required?"":" *"}</label>
               <ha-entity-picker
                 .hass=${this.hass}
-                .value=${(this._config[f.key] ?? "")}
-                .includeDomains=${f.domain ? [f.domain] : undefined}
-                @value-changed=${(e) => this._changed(f.key, e.detail.value)}
+                .value=${this._config[t.key]??""}
+                .includeDomains=${t.domain?[t.domain]:void 0}
+                @value-changed=${e=>this._changed(t.key,e.detail.value)}
                 allow-custom-entity
               ></ha-entity-picker>
-            </div>`)}` : A}
+            </div>`)}`:F}
 
         <!-- Room dimensions -->
         <h3>${this._L("editor.room_dimensions")}</h3>
         <div class="field">
           <label>${this._L("editor.room_w")}</label>
-          <input type="number" .value=${String(this._config.room_w ?? 400)} min="50" step="10"
-            @change=${(e) => this._changed("room_w", Number(e.target.value))}>
+          <input type="number" .value=${String(this._config.room_w??400)} min="50" step="10"
+            @change=${t=>this._changed("room_w",Number(t.target.value))}>
         </div>
         <div class="field">
           <label>${this._L("editor.room_d")}</label>
-          <input type="number" .value=${String(this._config.room_d ?? 350)} min="50" step="10"
-            @change=${(e) => this._changed("room_d", Number(e.target.value))}>
+          <input type="number" .value=${String(this._config.room_d??350)} min="50" step="10"
+            @change=${t=>this._changed("room_d",Number(t.target.value))}>
         </div>
-      </div>`;
-    }
-    static { this.styles = i$3 `
+      </div>`}static{this.styles=o`
     .card-config { padding: 4px 0; }
     h3 {
       font-size: 11px; font-weight: 600; letter-spacing: .06em;
@@ -1644,22 +426,4 @@ let MMWaveCardEditor = class MMWaveCardEditor extends i {
       border-radius: 6px; background: var(--card-background-color);
       color: var(--primary-text-color); font-size: 13px;
     }
-  `; }
-};
-__decorate([
-    n({ attribute: false })
-], MMWaveCardEditor.prototype, "hass", void 0);
-__decorate([
-    n({ attribute: false })
-], MMWaveCardEditor.prototype, "_config", void 0);
-MMWaveCardEditor = __decorate([
-    t(EDITOR_TAG)
-], MMWaveCardEditor);
-
-var editor = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    get MMWaveCardEditor () { return MMWaveCardEditor; }
-});
-
-export { MMWaveCard };
-//# sourceMappingURL=mmwave-card.js.map
+  `}};t([pt({attribute:!1})],re.prototype,"hass",void 0),t([pt({attribute:!1})],re.prototype,"_config",void 0),re=t([dt(Vt)],re);var ie=Object.freeze({__proto__:null,get MMWaveCardEditor(){return re}});export{ee as MMWaveCard};

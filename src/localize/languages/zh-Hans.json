@@ -9,7 +9,7 @@
     "install_params": "安装参数（卷尺测量后填入）",
     "radar_x": "雷达 X",
     "radar_y": "雷达 Y",
-    "radar_height": "安装高度",
+    "radar_z": "安装高度",
     "yaw_rough": "粗略偏航",
     "pitch": "俯仰角",
     "roll": "横滚角",
@@ -43,7 +43,7 @@
     "badge_filtered": "边界外",
     "room_x": "房间 X (cm)",
     "room_y": "房间 Y (cm)",
-    "height": "离地高度 (cm)",
+    "room_z": "离地高度 (cm)",
     "targets": "目标数"
   },
   "actions": {

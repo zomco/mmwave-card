@@ -16,8 +16,8 @@
  *   Extend getEntitySchema() if your component uses different names.
  */
 
-import type { HomeAssistant } from "custom-card-helpers";
-import type { RadarModelAdapter } from "../base";
+import type { HomeAssistant } from 'custom-card-helpers';
+import type { RadarModelAdapter } from '../base';
 import type {
   RadarModelInfo,
   EntitySchemaField,
@@ -25,23 +25,23 @@ import type {
   RadarTarget,
   MMWaveCardConfig,
   CalibrationConfig,
-} from "../../types";
-import { DEFAULT_CALIBRATION } from "../../types";
+} from '../../types';
+import { DEFAULT_CALIBRATION } from '../../types';
 
 // ── Model info ────────────────────────────────────────────────────────────────
 
 const INFO: RadarModelInfo = {
-  id:           "ld2450",
-  displayName:  "Hi-Link LD2450 (24 GHz)",
-  fovDegrees:   120,
-  maxRangeM:    6,
-  minRangeM:    0.2,   // LD2450 typical blind zone ~20 cm
+  id: 'ld2450',
+  displayName: 'Hi-Link LD2450 (24 GHz)',
+  fovDegrees: 120,
+  maxRangeM: 6,
+  minRangeM: 0.2, // LD2450 typical blind zone ~20 cm
   updateRateHz: 10,
-  maxTargets:   3,
-  hasZAxis:     false,
+  maxTargets: 3,
+  hasZAxis: false,
   hasBreathing: false,
   hasHeartRate: false,
-  hasSleep:     false,
+  hasSleep: false,
 };
 
 // ── Entity schema ─────────────────────────────────────────────────────────────
@@ -49,16 +49,16 @@ const INFO: RadarModelInfo = {
 // plus a presence binary sensor from the ESPHome component.
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
-  { key: "presence_entity",       labelKey: "editor.presence_entity",       required: true,  domain: "binary_sensor" },
-  { key: "target_1_x_entity",     labelKey: "editor.target_1_x",            required: true,  domain: "sensor" },
-  { key: "target_1_y_entity",     labelKey: "editor.target_1_y",            required: true,  domain: "sensor" },
-  { key: "target_1_speed_entity", labelKey: "editor.target_1_speed",        required: false, domain: "sensor" },
-  { key: "target_2_x_entity",     labelKey: "editor.target_2_x",            required: false, domain: "sensor" },
-  { key: "target_2_y_entity",     labelKey: "editor.target_2_y",            required: false, domain: "sensor" },
-  { key: "target_2_speed_entity", labelKey: "editor.target_2_speed",        required: false, domain: "sensor" },
-  { key: "target_3_x_entity",     labelKey: "editor.target_3_x",            required: false, domain: "sensor" },
-  { key: "target_3_y_entity",     labelKey: "editor.target_3_y",            required: false, domain: "sensor" },
-  { key: "target_3_speed_entity", labelKey: "editor.target_3_speed",        required: false, domain: "sensor" },
+  { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
+  { key: 'target_1_x_entity', labelKey: 'editor.target_1_x', required: true, domain: 'sensor' },
+  { key: 'target_1_y_entity', labelKey: 'editor.target_1_y', required: true, domain: 'sensor' },
+  { key: 'target_1_speed_entity', labelKey: 'editor.target_1_speed', required: false, domain: 'sensor' },
+  { key: 'target_2_x_entity', labelKey: 'editor.target_2_x', required: false, domain: 'sensor' },
+  { key: 'target_2_y_entity', labelKey: 'editor.target_2_y', required: false, domain: 'sensor' },
+  { key: 'target_2_speed_entity', labelKey: 'editor.target_2_speed', required: false, domain: 'sensor' },
+  { key: 'target_3_x_entity', labelKey: 'editor.target_3_x', required: false, domain: 'sensor' },
+  { key: 'target_3_y_entity', labelKey: 'editor.target_3_y', required: false, domain: 'sensor' },
+  { key: 'target_3_speed_entity', labelKey: 'editor.target_3_speed', required: false, domain: 'sensor' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────
@@ -84,11 +84,11 @@ export const ld2450Adapter: RadarModelAdapter = {
       return eid ? hass.states[eid] : undefined;
     };
 
-    const pres = get("presence_entity");
-    if (!pres || pres.state === "unavailable") {
+    const pres = get('presence_entity');
+    if (!pres || pres.state === 'unavailable') {
       return { present: false, targets: [] };
     }
-    const present = pres.state === "on";
+    const present = pres.state === 'on';
     if (!present) return { present: false, targets: [] };
 
     const targets: RadarTarget[] = [];
@@ -116,9 +116,9 @@ export const ld2450Adapter: RadarModelAdapter = {
   getDefaultCalibration(): CalibrationConfig {
     return {
       ...DEFAULT_CALIBRATION,
-      radar_height: 250,   // LD2450 is often wall-mounted higher (cm)
+      radar_z: 250, // LD2450 is often wall-mounted higher (cm)
       pitch: 0,
-      roll:  0,
+      roll: 0,
     };
   },
 };
