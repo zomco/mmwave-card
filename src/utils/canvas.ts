@@ -208,6 +208,7 @@ export function drawRadarFov(
   ctx: CanvasRenderingContext2D,
   cx: number, cy: number,
   yawDeg: number,
+  pitchDeg: number,
   fovDeg: number,
   minRangeM: number,
   maxRangeM: number,
@@ -222,8 +223,12 @@ export function drawRadarFov(
   // yaw=0 → pointing down (+Y). Canvas angle 0=right, CW-positive.
   const base    = Math.PI / 2 + yawDeg * (Math.PI / 180);
 
-  const minR  = toPx(minRangeM);
-  const maxR  = toPx(maxRangeM);
+  // Calculate a pitch factor: 1.0 when looking straight down (pitch=0), approaches 0 when sideways (pitch=90 or -90)
+  // We use this to scale the perceived radius of the footprint on the floor.
+  const pf = Math.max(0.05, Math.cos(pitchDeg * (Math.PI / 180)));
+
+  const minR  = toPx(minRangeM * pf);
+  const maxR  = toPx(maxRangeM * pf);
 
   /**
    * Draw ONE filled annular sector.
@@ -231,7 +236,7 @@ export function drawRadarFov(
    */
   const drawAnnulus = (
     r_inner: number, r_outer: number,
-    fillColor: string, strokeColor: string, strokeW = 1.2,
+    fillColor: string | CanvasGradient, strokeColor: string, strokeW = 1.2,
   ) => {
     // Start point: outer arc's left edge
     const startX = cx + r_outer * Math.cos(base - halfFov);
@@ -252,25 +257,25 @@ export function drawRadarFov(
   // ── Draw zones (outer first so inner overdraws) ────────────────────────────
 
   if (vitalRangeM != null && vitalRangeM > minRangeM && vitalRangeM < maxRangeM) {
-    const vitalR = toPx(vitalRangeM);
+    const vitalR = toPx(vitalRangeM * pf);
 
-    // Outer zone (presence / sleep): vitalRange → maxRange  — dim cyan-blue
-    drawAnnulus(vitalR, maxR,
-      "rgba(100,181,246,.18)",   // fill
-      "rgba(100,181,246,.45)",   // stroke
-    );
+    // Outer zone (presence / sleep): vitalRange → maxRange
+    const gradOuter = ctx.createRadialGradient(cx, cy, vitalR, cx, cy, maxR);
+    gradOuter.addColorStop(0, "rgba(100,181,246,.25)");
+    gradOuter.addColorStop(1, "rgba(100,181,246,.05)");
+    drawAnnulus(vitalR, maxR, gradOuter, "rgba(100,181,246,.45)");
 
-    // Inner zone (breath / HR): minRange → vitalRange  — bright blue
-    drawAnnulus(minR, vitalR,
-      "rgba(100,181,246,.40)",   // fill  ← higher contrast
-      "rgba(100,181,246,.85)",   // stroke
-      1.5,
-    );
+    // Inner zone (breath / HR): minRange → vitalRange
+    const gradInner = ctx.createRadialGradient(cx, cy, minR, cx, cy, vitalR);
+    gradInner.addColorStop(0, "rgba(100,181,246,.55)");
+    gradInner.addColorStop(1, "rgba(100,181,246,.20)");
+    drawAnnulus(minR, vitalR, gradInner, "rgba(100,181,246,.85)", 1.5);
   } else {
     // Single zone fallback
-    drawAnnulus(minR, maxR,
-      "rgba(100,181,246,.32)",
-      "rgba(100,181,246,.70)");
+    const gradSingle = ctx.createRadialGradient(cx, cy, minR, cx, cy, maxR);
+    gradSingle.addColorStop(0, "rgba(100,181,246,.45)");
+    gradSingle.addColorStop(1, "rgba(100,181,246,.10)");
+    drawAnnulus(minR, maxR, gradSingle, "rgba(100,181,246,.70)");
   }
 
   // ── Blind zone: dark overlay (center → minR) so it looks invalid ──────────
@@ -310,9 +315,9 @@ export function drawRadarFov(
   };
 
   if (vitalRangeM != null) {
-    drawLabel(vitalRangeM, toPx(vitalRangeM), "rgba(100,181,246,1)");
+    drawLabel(Number((vitalRangeM * pf).toFixed(1)), toPx(vitalRangeM * pf), "rgba(100,181,246,1)");
   }
-  drawLabel(maxRangeM, maxR, "rgba(160,210,255,.85)");
+  drawLabel(Number((maxRangeM * pf).toFixed(1)), maxR, "rgba(160,210,255,.85)");
   ctx.textBaseline = "alphabetic";
 
   // ── Radar icon (drawn on top) ─────────────────────────────────────────────
@@ -345,9 +350,9 @@ export function drawTarget(
 ): void {
   if (inBoundary) {
     ctx.beginPath(); ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(100,181,246,.15)"; ctx.fill();
+    ctx.fillStyle = "rgba(255,152,0,.25)"; ctx.fill();
     ctx.beginPath(); ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-    ctx.fillStyle = "var(--primary-color,#64b5f6)"; ctx.fill();
+    ctx.fillStyle = "var(--accent-color,#ff9800)"; ctx.fill();
     ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 1.5; ctx.stroke();
   } else {
     ctx.setLineDash([2,2]);

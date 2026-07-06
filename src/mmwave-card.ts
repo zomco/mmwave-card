@@ -169,8 +169,8 @@ export class MMWaveCard extends LitElement {
     const m: CanvasMetrics = {
       W,
       H: 165,
-      roomW: this._config.room_w as number,
-      roomD: this._config.room_d as number,
+      roomW: (this._cal?.room_w ?? this._config.room_w) as number,
+      roomD: (this._cal?.room_d ?? this._config.room_d) as number,
     };
     const room = canvasToRoom(e.detail.canvasX, e.detail.canvasY, m);
     const updated: CalibrationConfig = {
@@ -183,7 +183,14 @@ export class MMWaveCard extends LitElement {
 
   /** All panels fire this when calibration values change. */
   private _onCalibrationChanged(e: CustomEvent<CalibrationConfig>) {
-    this._cal = e.detail;
+    let cal = e.detail;
+    const roomW = (cal.room_w ?? this._config.room_w) as number;
+    const roomD = (cal.room_d ?? this._config.room_d) as number;
+    
+    if (cal.radar_x > roomW) cal = { ...cal, radar_x: roomW };
+    if (cal.radar_y > roomD) cal = { ...cal, radar_y: roomD };
+    
+    this._cal = cal;
     this.requestUpdate();
   }
 
@@ -198,14 +205,27 @@ export class MMWaveCard extends LitElement {
   private _storageKey(modelId: string) { return `${STORAGE_KEY}_${modelId}`; }
 
   private _loadCal(modelId: string, adapter: RadarModelAdapter): CalibrationConfig {
+    const defaultCal = adapter.getDefaultCalibration();
+    const roomW = this._config.room_w as number;
+    const roomD = this._config.room_d as number;
+    defaultCal.radar_x = Math.round(roomW * 0.382);
+    defaultCal.radar_y = Math.round(roomD * 0.382);
+
+    let loaded = defaultCal;
     try {
       const s = localStorage.getItem(this._storageKey(modelId));
-      return s
-        ? { ...adapter.getDefaultCalibration(), ...JSON.parse(s) }
-        : adapter.getDefaultCalibration();
+      if (s) loaded = { ...defaultCal, ...JSON.parse(s) };
     } catch {
-      return adapter.getDefaultCalibration();
+      // ignore parse error
     }
+
+    // Clamp to boundaries
+    const lRoomW = loaded.room_w ?? roomW;
+    const lRoomD = loaded.room_d ?? roomD;
+    if (loaded.radar_x > lRoomW) loaded.radar_x = lRoomW;
+    if (loaded.radar_y > lRoomD) loaded.radar_y = lRoomD;
+
+    return loaded;
   }
 
   private _save() {
@@ -218,6 +238,75 @@ export class MMWaveCard extends LitElement {
       btn.textContent   = this._L("actions.saved");
       btn.style.opacity = "0.65";
       setTimeout(() => { btn.textContent = orig; btn.style.opacity = ""; }, 2000);
+    }
+  }
+
+  private async _sync() {
+    const xEntity = (this._config.x_entity as string) || "";
+    if (!xEntity) {
+      alert("Error: x_entity is not configured.");
+      return;
+    }
+    
+    // Extract device prefix from x_entity (e.g., sensor.r60abd1_test_x -> r60abd1_test)
+    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
+    let prefix = "";
+    if (match) {
+      prefix = match[1];
+    } else {
+      const parts = xEntity.split(".")[1]?.split("_") || [];
+      prefix = parts.slice(0, parts.length - 1).join("_");
+    }
+
+    const btn = this.shadowRoot?.getElementById("btn-sync") as HTMLButtonElement | null;
+    if (btn) {
+      btn.style.opacity = "0.5";
+      btn.textContent = "Syncing...";
+    }
+
+    try {
+      const params: Record<string, number> = {
+        radar_x: this._cal.radar_x,
+        radar_y: this._cal.radar_y,
+        radar_z: this._cal.radar_z,
+        yaw: this._cal.yaw,
+        pitch: this._cal.pitch,
+        roll: this._cal.roll
+      };
+      
+      for (const [key, val] of Object.entries(params)) {
+        const entityId = `number.${prefix}_${key}`;
+        try {
+          await this._hass.callService("number", "set_value", {
+            entity_id: entityId,
+            value: val
+          });
+        } catch (err) {
+          console.warn(`Failed to sync ${entityId}`, err);
+        }
+      }
+
+      const polyStr = this._cal.polygon.map(p => `${p.x},${p.y}`).join(";");
+      try {
+        await this._hass.callService("text", "set_value", {
+          entity_id: `text.${prefix}_polygon_config`,
+          value: polyStr
+        });
+      } catch (err) {
+        console.warn(`Failed to sync text.${prefix}_polygon_config`, err);
+      }
+
+      if (btn) btn.textContent = "Synced!";
+    } catch (e) {
+      if (btn) btn.textContent = "Error";
+      console.error(e);
+    } finally {
+      if (btn) {
+        setTimeout(() => {
+          btn.textContent = this._L("actions.sync") || "Sync Device";
+          btn.style.opacity = "";
+        }, 2000);
+      }
     }
   }
 
@@ -239,8 +328,8 @@ export class MMWaveCard extends LitElement {
       this._L("tabs.live"),
     ];
 
-    const roomW = this._config.room_w as number;
-    const roomD = this._config.room_d as number;
+    const roomW = (this._cal.room_w ?? this._config.room_w) as number;
+    const roomD = (this._cal.room_d ?? this._config.room_d) as number;
     const lang  = this._hass?.language ?? "en";
 
     return html`
@@ -291,6 +380,8 @@ export class MMWaveCard extends LitElement {
         <!-- Footer -->
         <div id="foot">
           <button class="btn-rst"  @click=${this._reset}>${this._L("actions.reset")}</button>
+          <div style="flex:1"></div>
+          <button class="btn-sync" id="btn-sync" @click=${this._sync}>${this._L("actions.sync") || "Sync Device"}</button>
           <button class="btn-save" id="btn-save" @click=${this._save}>${this._L("actions.save")}</button>
         </div>
       </ha-card>
@@ -336,6 +427,11 @@ export class MMWaveCard extends LitElement {
     }
     .btn-save {
       background: var(--primary-color); color: #fff;
+      border: none; border-radius: 8px; padding: 8px 20px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+    }
+    .btn-sync {
+      background: #4caf50; color: #fff;
       border: none; border-radius: 8px; padding: 8px 20px;
       font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s;
     }

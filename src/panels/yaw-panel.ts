@@ -116,7 +116,7 @@ export class YawPanel extends LitElement {
 
       const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
       // Pass adapter.info.fovDegrees explicitly — R60ABD1 = 40°
-      drawRadarFov(ctx, rp.cx, rp.cy, this.calibration.yaw, this.adapter.info.fovDegrees,
+      drawRadarFov(ctx, rp.cx, rp.cy, this.calibration.yaw, this.calibration.pitch, this.adapter.info.fovDegrees,
           this.adapter.info.minRangeM, this.adapter.info.maxRangeM, m,
           this.adapter.info.vitalRangeM);
 

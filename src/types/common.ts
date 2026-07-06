@@ -15,6 +15,10 @@ export interface Vec2 {
 // ── Calibration ───────────────────────────────────────────────────────────────
 
 export interface CalibrationConfig {
+  /** Room width override (cm). Falls back to card config if undefined. */
+  room_w?: number;
+  /** Room depth override (cm). Falls back to card config if undefined. */
+  room_d?: number;
   /** Radar installation position in room coordinate system (cm). */
   radar_x: number;
   radar_y: number;
@@ -140,7 +144,7 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
 
 export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   room_w: 400,
-  room_d: 350,
+  room_d: 600,
   presence_entity: 'binary_sensor.r60abd1_presence',
   x_entity: 'sensor.r60abd1_x',
   y_entity: 'sensor.r60abd1_y',

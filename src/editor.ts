@@ -68,7 +68,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         </div>
         <div class="field">
           <label>${this._L("editor.room_d")}</label>
-          <input type="number" .value=${String(this._config.room_d ?? 350)} min="50" step="10"
+          <input type="number" .value=${String(this._config.room_d ?? 600)} min="50" step="10"
             @change=${(e: Event) => this._changed("room_d", Number((e.target as HTMLInputElement).value))}>
         </div>
       </div>`;

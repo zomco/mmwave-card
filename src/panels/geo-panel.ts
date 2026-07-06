@@ -104,6 +104,7 @@ export class GeoPanel extends LitElement {
           rp.cx,
           rp.cy,
           this.calibration.yaw,
+          this.calibration.pitch,
           this.adapter.info.fovDegrees,
           this.adapter.info.minRangeM,
           this.adapter.info.maxRangeM,
@@ -118,38 +119,61 @@ export class GeoPanel extends LitElement {
 
   // ── form helpers ───────────────────────────────────────────────────────────
 
-  private _numField(label: string, key: keyof CalibrationConfig, value: number, step = 5, min = -9999) {
+  private _numField(label: string, key: keyof CalibrationConfig, value: number, step = 5, min = -9999, max = 9999) {
+    const handleInput = (e: Event) => {
+      let _v = parseFloat((e.target as HTMLInputElement).value) || 0;
+      if (_v > max) _v = max;
+      if (_v < min) _v = min;
+      this._emit({ [key]: _v });
+    };
     return html` <div class="field">
       <label>${label}</label>
       <input
+        class="slider"
+        type="range"
+        .value=${String(value)}
+        step=${step}
+        min=${min}
+        max=${max}
+        @input=${handleInput}
+      />
+      <input
+        class="num-input"
         type="number"
         .value=${String(value)}
         step=${step}
         min=${min}
-        @change=${(e: Event) => {
-          const _v = parseFloat((e.target as HTMLInputElement).value) || 0;
-          const _p: Partial<CalibrationConfig> = { [key]: _v };
-          this._emit(_p);
-        }}
+        max=${max}
+        @change=${handleInput}
       />
       <span class="unit">cm</span>
     </div>`;
   }
 
   private _degField(label: string, key: keyof CalibrationConfig, value: number, min = -180, max = 180) {
+    const handleInput = (e: Event) => {
+      const _v = parseFloat((e.target as HTMLInputElement).value) || 0;
+      this._emit({ [key]: _v });
+    };
     return html` <div class="field">
       <label>${label}</label>
       <input
+        class="slider"
+        type="range"
+        .value=${String(value)}
+        step="0.5"
+        min=${min}
+        max=${max}
+        @input=${handleInput}
+      />
+      <input
+        class="num-input"
         type="number"
         .value=${String(value)}
         step="0.5"
         min=${min}
         max=${max}
-        @change=${(e: Event) => {
-          const _v = parseFloat((e.target as HTMLInputElement).value) || 0;
-          const _p: Partial<CalibrationConfig> = { [key]: _v };
-          this._emit(_p);
-        }}
+        @change=${handleInput}
       />
       <span class="unit">°</span>
     </div>`;
@@ -162,11 +186,16 @@ export class GeoPanel extends LitElement {
     const pn = c.polygon.length;
     const hint = pn >= 3 ? this._L('geo.poly_hint_ok').replace('{n}', String(pn)) : this._L('geo.poly_hint_none');
 
+    const roomW = c.room_w ?? this.roomW;
+    const roomD = c.room_d ?? this.roomD;
+
     return html`
       <p class="sec-title">${this._L('geo.install_params')}</p>
-      ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x)}
-      ${this._numField(this._L('geo.radar_y'), 'radar_y', c.radar_y)}
-      ${this._numField(this._L('geo.radar_z'), 'radar_z', c.radar_z, 5, 0)}
+      ${this._numField(this._L('editor.room_w') || 'Room W', 'room_w', roomW, 10, 50, 2000)}
+      ${this._numField(this._L('editor.room_d') || 'Room D', 'room_d', roomD, 10, 50, 2000)}
+      ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x, 5, 0, roomW)}
+      ${this._numField(this._L('geo.radar_y'), 'radar_y', c.radar_y, 5, 0, roomD)}
+      ${this._numField(this._L('geo.radar_z'), 'radar_z', c.radar_z, 5, 0, 400)}
       ${this._degField(this._L('geo.yaw_rough'), 'yaw', c.yaw)}
       ${this._degField(this._L('geo.pitch'), 'pitch', c.pitch, -90, 90)}
       ${this._degField(this._L('geo.roll'), 'roll', c.roll, -90, 90)}
@@ -225,6 +254,14 @@ export class GeoPanel extends LitElement {
       font-weight: 500;
       text-align: right;
       color: var(--primary-text-color);
+    }
+    .field input.slider {
+      accent-color: var(--primary-color);
+      margin: 0 8px;
+    }
+    .field input.num-input {
+      width: 45px;
+      flex: none;
     }
     .unit {
       font-size: 11px;

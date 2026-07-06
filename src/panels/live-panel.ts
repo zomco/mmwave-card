@@ -98,6 +98,7 @@ export class LivePanel extends LitElement {
         rp.cx,
         rp.cy,
         this.calibration.yaw,
+        this.calibration.pitch,
         this.adapter.info.fovDegrees,
         this.adapter.info.minRangeM,
         this.adapter.info.maxRangeM,
@@ -118,7 +119,7 @@ export class LivePanel extends LitElement {
           ctx.beginPath();
           ctx.moveTo(pa.cx, pa.cy);
           ctx.lineTo(pb.cx, pb.cy);
-          ctx.strokeStyle = `rgba(100,181,246,${a})`;
+          ctx.strokeStyle = `rgba(255,152,0,${a})`;
           ctx.lineWidth = 2;
           ctx.stroke();
         }
