@@ -163,100 +163,20 @@ export class LivePanel extends LitElement {
   // ── render ─────────────────────────────────────────────────────────────────
 
   protected render() {
-    const pos = this._primaryTarget();
-    return html` <div class="live-hdr">
-        <span class="live-title">${this._L('live.title')}</span>
-        <span class="badge ${this._badgeCls()}">${this._badgeText()}</span>
-      </div>
-      <canvas id="live-cv"></canvas>
-      <div class="coords">
-        <div class="cbox">
-          <div class="cval">${pos ? Math.round(pos.roomX) : '—'}</div>
-          <div class="clbl">${this._L('live.room_x')}</div>
-        </div>
-        <div class="cbox">
-          <div class="cval">${pos ? Math.round(pos.roomY) : '—'}</div>
-          <div class="clbl">${this._L('live.room_y')}</div>
-        </div>
-        ${this.adapter?.info.hasZAxis
-          ? html` <div class="cbox">
-              <div class="cval">${pos ? Math.round(pos.roomZ) : '—'}</div>
-              <div class="clbl">${this._L('live.room_z')}</div>
-            </div>`
-          : nothing}
-        ${this.adapter?.info.maxTargets > 1
-          ? html` <div class="cbox">
-              <div class="cval">${this.targets.filter((t) => t.room?.inBoundary).length}</div>
-              <div class="clbl">${this._L('live.targets')}</div>
-            </div>`
-          : nothing}
-      </div>`;
+    return html`<canvas id="live-cv"></canvas>`;
   }
 
   static styles = css`
     :host {
       display: block;
     }
-    .live-hdr {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-    }
-    .live-title {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-    }
-    .badge {
-      font-size: 10px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      padding: 3px 10px;
-      border-radius: 20px;
-      background: rgba(128, 128, 128, 0.12);
-      color: var(--secondary-text-color);
-      transition: all 0.3s;
-    }
-    .badge.on {
-      background: rgba(3, 169, 244, 0.2);
-      color: var(--primary-color, #64b5f6);
-    }
-    .badge.filtered {
-      background: rgba(244, 67, 54, 0.15);
-      color: #ef9a9a;
-    }
     canvas {
       display: block;
       width: 100%;
       border-radius: 8px;
       border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
-      background: rgba(0, 0, 0, 0.15);
+      background: var(--ha-card-background, rgba(128, 128, 128, 0.05));
       touch-action: none;
-    }
-    .coords {
-      display: flex;
-      gap: 6px;
-      margin-top: 9px;
-    }
-    .cbox {
-      flex: 1;
-      text-align: center;
-      padding: 8px;
-      background: rgba(128, 128, 128, 0.06);
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
-      border-radius: 8px;
-    }
-    .cval {
-      font-size: 17px;
-      font-weight: 600;
-      color: var(--primary-color, #64b5f6);
-      font-variant-numeric: tabular-nums;
-    }
-    .clbl {
-      font-size: 10px;
-      color: var(--secondary-text-color);
-      margin-top: 2px;
     }
   `;
 }

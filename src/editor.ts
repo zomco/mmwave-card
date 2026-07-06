@@ -1,5 +1,5 @@
 import { LitElement, html, css, nothing } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LovelaceCardEditor } from "custom-card-helpers";
 import { getModelList, getAdapter } from "./models";
 import { localize } from "./localize/localize";
@@ -12,6 +12,24 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config!: MMWaveCardConfig;
 
+  @state() private _devices: any[] = [];
+  @state() private _advOpen = false;
+
+  protected updated(changedProps: Map<string, any>) {
+    super.updated(changedProps);
+    if (changedProps.has("hass") && this.hass && this._devices.length === 0) {
+      this._loadDevices();
+    }
+  }
+
+  private async _loadDevices() {
+    try {
+      this._devices = await this.hass.callWS({ type: "config/device_registry/list" });
+    } catch (e) {
+      console.warn("Failed to load devices", e);
+    }
+  }
+
   public setConfig(config: MMWaveCardConfig): void {
     this._config = { ...DEFAULT_CARD_CONFIG, ...config } as MMWaveCardConfig;
   }
@@ -23,6 +41,47 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config } }));
   }
 
+  private async _deviceDropdownChanged(e: Event) {
+    const deviceId = (e.target as HTMLSelectElement).value;
+    this._changed("device_id", deviceId);
+    if (!deviceId) return;
+
+    try {
+      const entities: any[] = await this.hass.callWS({ type: "config/entity_registry/list" });
+      const deviceEntities = entities.filter(ent => ent.device_id === deviceId);
+      
+      const configPatch: Partial<MMWaveCardConfig> = {};
+      
+      for (const ent of deviceEntities) {
+        const id = ent.entity_id;
+        const name = (ent.original_name || id).toLowerCase();
+        
+        if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
+          configPatch.presence_entity = id;
+        } else if (id.startsWith('sensor.') && (name.endsWith(' x') || id.endsWith('_x') || id.endsWith('radar_x')) && !id.includes('room_x') && !name.includes('room x')) {
+          configPatch.x_entity = id;
+        } else if (id.startsWith('sensor.') && (name.endsWith(' y') || id.endsWith('_y') || id.endsWith('radar_y')) && !id.includes('room_y') && !name.includes('room y')) {
+          configPatch.y_entity = id;
+        } else if (id.startsWith('sensor.') && (name.endsWith(' z') || id.endsWith('_z') || id.endsWith('radar_z')) && !id.includes('room_z') && !name.includes('room z')) {
+          configPatch.z_entity = id;
+        } else if (id.startsWith('sensor.') && (id.includes('breath') || id.includes('respiration'))) {
+          configPatch.breath_entity = id;
+        } else if (id.startsWith('sensor.') && id.includes('heart')) {
+          configPatch.heart_rate_entity = id;
+        } else if (id.startsWith('sensor.') && id.includes('sleep')) {
+          configPatch.sleep_state_entity = id;
+        }
+      }
+
+      if (Object.keys(configPatch).length > 0) {
+        this._config = { ...this._config, ...configPatch };
+        this.dispatchEvent(new CustomEvent("config-changed", { detail: { config: this._config } }));
+      }
+    } catch (err) {
+      console.warn("Failed to auto-populate entities from device", err);
+    }
+  }
+
   protected render() {
     if (!this.hass || !this._config) return nothing;
 
@@ -32,6 +91,14 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
     return html`
       <div class="card-config">
+        <!-- Basic settings -->
+        <h3>基础设置 (Basic Settings)</h3>
+        <div class="field">
+          <label>卡片标题 (Title)</label>
+          <input type="text" .value=${this._config.name ?? ""} placeholder="人体存在雷达"
+            @change=${(e: Event) => this._changed("name", (e.target as HTMLInputElement).value)}>
+        </div>
+
         <!-- Model selector -->
         <h3>${this._L("editor.model")}</h3>
         <div class="field">
@@ -44,20 +111,40 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           </select>
         </div>
 
+        <!-- Device selector -->
+        <h3>雷达设备 (Radar Device)</h3>
+        <p style="font-size:12px; color:var(--secondary-text-color); margin-top:-4px;">一键选择设备，自动匹配下方所有实体配置</p>
+        <div class="field">
+          <label>设备</label>
+          <select .value=${this._config.device_id ?? ""} @change=${this._deviceDropdownChanged}>
+            <option value="">-- 选择设备 (Select Device) --</option>
+            ${this._devices.map(d => html`
+              <option value=${d.id} ?selected=${d.id === this._config.device_id}>
+                ${d.name_by_user || d.name || "Unknown Device"}
+              </option>`)}
+          </select>
+        </div>
+
         <!-- Entity fields (model-specific) -->
         ${adapter ? html`
-          <h3>${this._L("editor.entities")}</h3>
-          ${adapter.getEntitySchema().map(f => html`
-            <div class="field">
-              <label>${this._L(f.labelKey)}${f.required ? "" : " *"}</label>
-              <ha-entity-picker
-                .hass=${this.hass}
-                .value=${(this._config[f.key] ?? "") as string}
-                .includeDomains=${f.domain ? [f.domain] : undefined}
-                @value-changed=${(e: CustomEvent) => this._changed(f.key, e.detail.value)}
-                allow-custom-entity
-              ></ha-entity-picker>
-            </div>`)}` : nothing}
+          <details style="margin-top:16px;" ?open=${this._advOpen} @toggle=${(e: Event) => this._advOpen = (e.target as HTMLDetailsElement).open}>
+            <summary style="cursor:pointer; font-size:12px; color:var(--primary-color); outline:none;">
+              高级选项：手动指定实体 (Advanced Entities)
+            </summary>
+            <div style="margin-top:10px;">
+              ${adapter.getEntitySchema().map(f => html`
+                <div class="field">
+                  <label>${this._L(f.labelKey)}${f.required ? "" : " *"}</label>
+                  <input type="text" list="entities-list"
+                    .value=${(this._config[f.key] ?? "") as string}
+                    @change=${(e: Event) => this._changed(f.key, (e.target as HTMLInputElement).value)}>
+                </div>`)}
+            </div>
+          </details>` : nothing}
+
+        <datalist id="entities-list">
+          ${(this.hass ? Object.keys(this.hass.states) : []).map(id => html`<option value=${id}></option>`)}
+        </datalist>
 
         <!-- Room dimensions -->
         <h3>${this._L("editor.room_dimensions")}</h3>

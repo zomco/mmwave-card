@@ -133,6 +133,8 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
    * Must match a key in the model registry (src/models/index.ts).
    */
   radar_model: string;
+  /** HA Device ID for auto-population */
+  device_id?: string;
   /** Room width for canvas scaling (cm). */
   room_w: number;
   /** Room depth for canvas scaling (cm). */
@@ -145,6 +147,7 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
 export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   room_w: 400,
   room_d: 600,
+  device_id: '',
   presence_entity: 'binary_sensor.r60abd1_presence',
   x_entity: 'sensor.r60abd1_x',
   y_entity: 'sensor.r60abd1_y',

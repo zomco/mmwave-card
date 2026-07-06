@@ -80,7 +80,14 @@ export class MMWaveCard extends LitElement {
 
     this._config  = { ...DEFAULT_CARD_CONFIG, ...config } as MMWaveCardConfig;
     this._adapter = adapter;
-    this._cal     = this._loadCal(config.radar_model as string, adapter);
+    
+    // Set initial defaults before loading from device
+    const defaultCal = adapter.getDefaultCalibration();
+    const roomW = this._config.room_w as number;
+    const roomD = this._config.room_d as number;
+    defaultCal.radar_x = Math.round(roomW * 0.382);
+    defaultCal.radar_y = Math.round(roomD * 0.382);
+    this._cal = defaultCal;
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -107,9 +114,11 @@ export class MMWaveCard extends LitElement {
   @state() private _adapter!: RadarModelAdapter;
   @state() private _cal!: CalibrationConfig;
   @state() private _tab = TAB_GEO;
+  @state() private _isCalibrating = false;
 
   private _targets: RadarTarget[] = [];
   private _present = false;
+  private _deviceLoaded = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
 
@@ -125,6 +134,11 @@ export class MMWaveCard extends LitElement {
     this._hass = hass;
     if (!this._adapter || !this._config) return;
 
+    if (!this._deviceLoaded) {
+      this._deviceLoaded = true;
+      this._loadFromDevice();
+    }
+
     const reading = this._adapter.readFromHass(hass, this._config);
     this._present = reading.present;
 
@@ -135,7 +149,7 @@ export class MMWaveCard extends LitElement {
     }));
 
     // Push data into panels imperatively (avoids re-rendering the entire card)
-    if (this._tab === TAB_LIVE && this._livePanel) {
+    if ((this._tab === TAB_LIVE || !this._isCalibrating) && this._livePanel) {
       this._livePanel.present = this._present;
       this._livePanel.targets = this._targets;
       this._livePanel.addTrailPoints(this._targets);
@@ -200,45 +214,56 @@ export class MMWaveCard extends LitElement {
     // This event is here in case we need to add a visual indicator in future.
   }
 
-  // ── Persistence ─────────────────────────────────────────────────────────
+  // ── Device Sync ─────────────────────────────────────────────────────────
 
-  private _storageKey(modelId: string) { return `${STORAGE_KEY}_${modelId}`; }
+  private _loadFromDevice() {
+    if (!this._hass || !this._config) return;
+    
+    const xEntity = (this._config.x_entity as string) || "";
+    if (!xEntity) return;
 
-  private _loadCal(modelId: string, adapter: RadarModelAdapter): CalibrationConfig {
-    const defaultCal = adapter.getDefaultCalibration();
-    const roomW = this._config.room_w as number;
-    const roomD = this._config.room_d as number;
-    defaultCal.radar_x = Math.round(roomW * 0.382);
-    defaultCal.radar_y = Math.round(roomD * 0.382);
+    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
+    let prefix = "";
+    if (match) {
+      prefix = match[1];
+    } else {
+      const parts = xEntity.split(".")[1]?.split("_") || [];
+      prefix = parts.slice(0, parts.length - 1).join("_");
+    }
 
-    let loaded = defaultCal;
-    try {
-      const s = localStorage.getItem(this._storageKey(modelId));
-      if (s) loaded = { ...defaultCal, ...JSON.parse(s) };
-    } catch {
-      // ignore parse error
+    const cal = { ...this._cal };
+
+    // Read numbers
+    const params = ["radar_x", "radar_y", "radar_z", "yaw", "pitch", "roll"];
+    for (const key of params) {
+      const stateObj = this._hass.states[`number.${prefix}_${key}`];
+      if (stateObj && stateObj.state && !isNaN(Number(stateObj.state))) {
+        (cal as any)[key] = Number(stateObj.state);
+      }
+    }
+
+    // Read polygon
+    const polyObj = this._hass.states[`text.${prefix}_polygon_config`];
+    if (polyObj && polyObj.state) {
+      const s = polyObj.state;
+      const pts = s.split(";").filter(x => x.includes(",")).map(pt => {
+        const [x, y] = pt.split(",");
+        return { x: parseFloat(x), y: parseFloat(y) };
+      });
+      if (pts.length > 0) cal.polygon = pts;
+      else cal.polygon = [];
+    } else if (polyObj && polyObj.state === "") {
+      cal.polygon = [];
     }
 
     // Clamp to boundaries
-    const lRoomW = loaded.room_w ?? roomW;
-    const lRoomD = loaded.room_d ?? roomD;
-    if (loaded.radar_x > lRoomW) loaded.radar_x = lRoomW;
-    if (loaded.radar_y > lRoomD) loaded.radar_y = lRoomD;
+    const roomW = (cal.room_w ?? this._config.room_w) as number;
+    const roomD = (cal.room_d ?? this._config.room_d) as number;
+    if (cal.radar_x > roomW) cal.radar_x = roomW;
+    if (cal.radar_y > roomD) cal.radar_y = roomD;
 
-    return loaded;
-  }
-
-  private _save() {
-    const key = this._storageKey(this._config.radar_model as string);
-    localStorage.setItem(key, JSON.stringify(this._cal));
-
-    const btn = this.shadowRoot?.getElementById("btn-save") as HTMLButtonElement | null;
-    if (btn) {
-      const orig = btn.textContent!;
-      btn.textContent   = this._L("actions.saved");
-      btn.style.opacity = "0.65";
-      setTimeout(() => { btn.textContent = orig; btn.style.opacity = ""; }, 2000);
-    }
+    this._cal = cal;
+    this.requestUpdate();
   }
 
   private async _sync() {
@@ -261,7 +286,7 @@ export class MMWaveCard extends LitElement {
     const btn = this.shadowRoot?.getElementById("btn-sync") as HTMLButtonElement | null;
     if (btn) {
       btn.style.opacity = "0.5";
-      btn.textContent = "Syncing...";
+      btn.textContent = "同步中...";
     }
 
     try {
@@ -296,14 +321,14 @@ export class MMWaveCard extends LitElement {
         console.warn(`Failed to sync text.${prefix}_polygon_config`, err);
       }
 
-      if (btn) btn.textContent = "Synced!";
+      if (btn) btn.textContent = "同步成功！";
     } catch (e) {
-      if (btn) btn.textContent = "Error";
+      if (btn) btn.textContent = "同步失败";
       console.error(e);
     } finally {
       if (btn) {
         setTimeout(() => {
-          btn.textContent = this._L("actions.sync") || "Sync Device";
+          btn.textContent = "同步到设备";
           btn.style.opacity = "";
         }, 2000);
       }
@@ -311,9 +336,13 @@ export class MMWaveCard extends LitElement {
   }
 
   private _reset() {
-    if (!confirm(this._L("actions.reset_confirm"))) return;
-    localStorage.removeItem(this._storageKey(this._config.radar_model as string));
-    this._cal = this._adapter.getDefaultCalibration();
+    if (!confirm(this._L("actions.reset_confirm") || "Reset to factory defaults?")) return;
+    const defaultCal = this._adapter.getDefaultCalibration();
+    const roomW = this._config.room_w as number;
+    const roomD = this._config.room_d as number;
+    defaultCal.radar_x = Math.round(roomW * 0.382);
+    defaultCal.radar_y = Math.round(roomD * 0.382);
+    this._cal = defaultCal;
     this._gotoTab(TAB_GEO);
   }
 
@@ -332,8 +361,42 @@ export class MMWaveCard extends LitElement {
     const roomD = (this._cal.room_d ?? this._config.room_d) as number;
     const lang  = this._hass?.language ?? "en";
 
+    // --- Everyday Live View ---
+    if (!this._isCalibrating) {
+      return html`
+        <ha-card>
+          <div class="ha-header">
+            <div class="ha-title">
+              <ha-icon icon="mdi:radar" style="color: ${this._present ? 'var(--primary-color)' : 'var(--secondary-text-color)'}"></ha-icon>
+              <span>${this._config.name || "人体存在雷达"}</span>
+            </div>
+            <ha-icon icon="mdi:cog" style="cursor: pointer; color: var(--secondary-text-color);" @click=${() => { this._isCalibrating = true; this._tab = TAB_GEO; }}></ha-icon>
+          </div>
+          <div id="body" style="padding-top: 0;">
+            <mmwave-live-panel
+              .adapter=${this._adapter}
+              .calibration=${this._cal}
+              .lang=${lang}
+              .roomW=${roomW}
+              .roomD=${roomD}
+              .targets=${this._targets}
+              .present=${this._present}>
+            </mmwave-live-panel>
+          </div>
+        </ha-card>
+      `;
+    }
+
+    // --- Advanced Calibration Mode ---
     return html`
       <ha-card>
+        <div class="ha-header calib">
+          <div class="ha-title">
+            <ha-icon icon="mdi:arrow-left" style="cursor: pointer; color: var(--secondary-text-color);" @click=${() => this._isCalibrating = false}></ha-icon>
+            <span style="font-size: 14px; font-weight: 600;">高级校准模式</span>
+          </div>
+        </div>
+
         <!-- Tab bar -->
         <div id="tabs">
           ${tabs.map((label, i) => html`
@@ -379,10 +442,11 @@ export class MMWaveCard extends LitElement {
 
         <!-- Footer -->
         <div id="foot">
-          <button class="btn-rst"  @click=${this._reset}>${this._L("actions.reset")}</button>
-          <div style="flex:1"></div>
-          <button class="btn-sync" id="btn-sync" @click=${this._sync}>${this._L("actions.sync") || "Sync Device"}</button>
-          <button class="btn-save" id="btn-save" @click=${this._save}>${this._L("actions.save")}</button>
+          <div class="left-btns">
+            <button class="btn-rst" @click=${this._loadFromDevice}>撤销修改</button>
+            <button class="btn-rst" @click=${this._reset}>恢复出厂</button>
+          </div>
+          <button class="btn-sync" id="btn-sync" @click=${this._sync}>同步到设备</button>
         </div>
       </ha-card>
     `;
@@ -393,15 +457,42 @@ export class MMWaveCard extends LitElement {
   static styles = css`
     :host { display: block; }
     ha-card {
-      background: var(--card-background-color);
+      background: var(--ha-card-background, var(--card-background-color, #fff));
       border-radius: var(--ha-card-border-radius, 12px);
+      box-shadow: var(--ha-card-box-shadow, none);
+      border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
       overflow: hidden;
       color: var(--primary-text-color);
       font-family: var(--primary-font-family, system-ui, sans-serif);
+      transition: all 0.3s ease-out;
     }
+    
+    /* Header styles */
+    .ha-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 16px 12px 16px;
+    }
+    .ha-header.calib {
+      padding: 4px 8px 4px 4px;
+      border-bottom: 1px solid var(--divider-color, rgba(128,128,128,.15));
+      background: rgba(128, 128, 128, 0.05);
+    }
+    .ha-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--primary-text-color);
+    }
+    .ha-title ha-icon {
+      --mdc-icon-size: 24px;
+    }
+
     #tabs {
       display: flex;
-      background: rgba(0,0,0,.12);
       border-bottom: 1px solid var(--divider-color, rgba(128,128,128,.15));
     }
     .tab {
@@ -412,6 +503,9 @@ export class MMWaveCard extends LitElement {
       color: var(--secondary-text-color);
       cursor: pointer; position: relative; transition: color .2s;
     }
+    .tab:hover {
+      background: rgba(128, 128, 128, 0.05);
+    }
     .tab.act { color: var(--primary-color); }
     .tab.act::after {
       content: ""; position: absolute;
@@ -419,28 +513,27 @@ export class MMWaveCard extends LitElement {
       background: var(--primary-color);
       border-radius: 2px 2px 0 0;
     }
-    #body { padding: 14px 16px 10px; min-height: 270px; }
+    #body { padding: 16px; min-height: 270px; }
     #foot {
-      padding: 9px 16px 14px;
+      padding: 12px 16px 16px;
       border-top: 1px solid var(--divider-color, rgba(128,128,128,.15));
-      display: flex; gap: 8px; justify-content: flex-end;
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(128, 128, 128, 0.02);
     }
-    .btn-save {
-      background: var(--primary-color); color: #fff;
-      border: none; border-radius: 8px; padding: 8px 20px;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s;
-    }
+    .left-btns { display: flex; gap: 8px; }
     .btn-sync {
-      background: #4caf50; color: #fff;
-      border: none; border-radius: 8px; padding: 8px 20px;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s;
+      background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff);
+      border: none; border-radius: 6px; padding: 8px 16px;
+      font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .15s;
     }
+    .btn-sync:hover { opacity: 0.9; }
     .btn-rst {
-      background: rgba(128,128,128,.1);
-      border: 1px solid var(--divider-color, rgba(128,128,128,.15));
-      border-radius: 8px; padding: 8px 14px;
-      font-size: 13px; color: var(--secondary-text-color); cursor: pointer;
+      background: transparent;
+      border: 1px solid var(--divider-color, rgba(128,128,128,.3));
+      border-radius: 6px; padding: 8px 12px;
+      font-size: 13px; font-weight: 500; color: var(--primary-text-color); cursor: pointer;
     }
+    .btn-rst:hover { background: rgba(128, 128, 128, 0.05); }
   `;
 }
 

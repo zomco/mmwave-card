@@ -188,11 +188,7 @@ export class GeoPanel extends LitElement {
 
     const roomW = c.room_w ?? this.roomW;
     const roomD = c.room_d ?? this.roomD;
-
     return html`
-      <p class="sec-title">${this._L('geo.install_params')}</p>
-      ${this._numField(this._L('editor.room_w') || 'Room W', 'room_w', roomW, 10, 50, 2000)}
-      ${this._numField(this._L('editor.room_d') || 'Room D', 'room_d', roomD, 10, 50, 2000)}
       ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x, 5, 0, roomW)}
       ${this._numField(this._L('geo.radar_y'), 'radar_y', c.radar_y, 5, 0, roomD)}
       ${this._numField(this._L('geo.radar_z'), 'radar_z', c.radar_z, 5, 0, 400)}
@@ -210,7 +206,14 @@ export class GeoPanel extends LitElement {
         </div>
       </div>
       <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
-      <p class="note">${this._L('geo.boundary_note')}</p>
+      
+      ${pn > 0 ? html`
+        <div class="warning-box">
+          <p>⚠️ 多边形边界无法断电保存，设备重启后会恢复为固件初始值。若要永久保存，请将以下代码复制并替换至 <code>r60abd1-device.yaml</code> 中：</p>
+          <pre class="yaml-code">polygon:
+${c.polygon.map(p => `  - { x: ${Math.round(p.x)}, y: ${Math.round(p.y)} }`).join('\n')}</pre>
+        </div>
+      ` : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
     `;
   }
 
@@ -317,6 +320,35 @@ export class GeoPanel extends LitElement {
       background: rgba(0, 0, 0, 0.15);
       touch-action: none;
       cursor: crosshair;
+    }
+    .warning-box {
+      margin-top: 10px;
+      padding: 10px;
+      background: rgba(255, 152, 0, 0.1);
+      border: 1px solid rgba(255, 152, 0, 0.3);
+      border-radius: 8px;
+    }
+    .warning-box p {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: var(--primary-text-color);
+      line-height: 1.5;
+    }
+    .warning-box code {
+      background: rgba(0,0,0,0.1);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+    .yaml-code {
+      margin: 0;
+      padding: 8px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+      font-family: monospace;
+      font-size: 11px;
+      border-radius: 6px;
+      overflow-x: auto;
+      white-space: pre;
     }
   `;
 }
