@@ -44,6 +44,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'breath_entity', labelKey: 'editor.breath_entity', required: false, domain: 'sensor' },
   { key: 'heart_entity', labelKey: 'editor.heart_entity', required: false, domain: 'sensor' },
   { key: 'sleep_entity', labelKey: 'editor.sleep_entity', required: false, domain: 'sensor' },
+  { key: 'polygon_entity', labelKey: 'editor.polygon_entity', required: false, domain: 'text' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────

@@ -62,6 +62,7 @@
     "breath_entity": "呼吸频率实体（可选）",
     "heart_entity": "心率实体（可选）",
     "sleep_entity": "睡眠状态实体（可选）",
+    "polygon_entity": "多边形同步实体（可选）",
     "target1_x": "目标 1 X 实体",
     "target1_y": "目标 1 Y 实体",
     "target2_x": "目标 2 X 实体（可选）",

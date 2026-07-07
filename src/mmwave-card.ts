@@ -28,7 +28,7 @@ import {
   type RadarTarget,
   DEFAULT_CARD_CONFIG,
 } from "./types";
-import { CARD_TAG, EDITOR_TAG, STORAGE_KEY, CARD_VERSION } from "./const";
+import { CARD_TAG, EDITOR_TAG, CARD_VERSION } from "./const";
 
 // Sub-elements (register them)
 import "./panels/geo-panel";
@@ -116,8 +116,8 @@ export class MMWaveCard extends LitElement {
   @state() private _tab = TAB_GEO;
   @state() private _isCalibrating = false;
 
-  private _targets: RadarTarget[] = [];
-  private _present = false;
+  @state() private _targets: RadarTarget[] = [];
+  @state() private _present = false;
   private _deviceLoaded = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
@@ -148,12 +148,8 @@ export class MMWaveCard extends LitElement {
       room: applyTransform(t.rawX, t.rawY, t.rawZ, this._cal),
     }));
 
-    // Push data into panels imperatively (avoids re-rendering the entire card)
-    if ((this._tab === TAB_LIVE || !this._isCalibrating) && this._livePanel) {
-      this._livePanel.present = this._present;
-      this._livePanel.targets = this._targets;
-      this._livePanel.addTrailPoints(this._targets);
-    }
+    // Trigger Lit update naturally
+    this.requestUpdate();
 
     // Yaw panel: if it's waiting for a capture reading, offer it
     if (this._tab === TAB_YAW && this._yawPanel) {
@@ -243,7 +239,8 @@ export class MMWaveCard extends LitElement {
     }
 
     // Read polygon
-    const polyObj = this._hass.states[`text.${prefix}_polygon_config`];
+    const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+    const polyObj = this._hass.states[polyEntity];
     if (polyObj && polyObj.state) {
       const s = polyObj.state;
       const pts = s.split(";").filter(x => x.includes(",")).map(pt => {
@@ -312,13 +309,16 @@ export class MMWaveCard extends LitElement {
       }
 
       const polyStr = this._cal.polygon.map(p => `${p.x},${p.y}`).join(";");
-      try {
-        await this._hass.callService("text", "set_value", {
-          entity_id: `text.${prefix}_polygon_config`,
-          value: polyStr
-        });
-      } catch (err) {
-        console.warn(`Failed to sync text.${prefix}_polygon_config`, err);
+      const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+      if (this._hass.states[polyEntity] !== undefined) {
+        try {
+          await this._hass.callService("text", "set_value", {
+            entity_id: polyEntity,
+            value: polyStr
+          });
+        } catch (err) {
+          console.warn(`Failed to sync ${polyEntity}`, err);
+        }
       }
 
       if (btn) btn.textContent = "同步成功！";
@@ -436,7 +436,8 @@ export class MMWaveCard extends LitElement {
               .roomW=${roomW}
               .roomD=${roomD}
               .targets=${this._targets}
-              .present=${this._present}>
+              .present=${this._present}
+              .showStatus=${true}>
             </mmwave-live-panel>` : nothing}
         </div>
 

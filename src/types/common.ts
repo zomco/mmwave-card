@@ -135,6 +135,8 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
   radar_model: string;
   /** HA Device ID for auto-population */
   device_id?: string;
+  sleep_state_entity?: string;
+  polygon_entity?: string;
   /** Room width for canvas scaling (cm). */
   room_w: number;
   /** Room depth for canvas scaling (cm). */
@@ -152,6 +154,7 @@ export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   x_entity: 'sensor.r60abd1_x',
   y_entity: 'sensor.r60abd1_y',
   z_entity: 'sensor.r60abd1_z',
+  polygon_entity: 'text.r60abd1_polygon_config'
 };
 
 // ── Yaw calibration sub-state ─────────────────────────────────────────────────

@@ -67,9 +67,11 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         } else if (id.startsWith('sensor.') && (id.includes('breath') || id.includes('respiration'))) {
           configPatch.breath_entity = id;
         } else if (id.startsWith('sensor.') && id.includes('heart')) {
-          configPatch.heart_rate_entity = id;
+          configPatch.heart_entity = id;
         } else if (id.startsWith('sensor.') && id.includes('sleep')) {
-          configPatch.sleep_state_entity = id;
+          configPatch.sleep_entity = id;
+        } else if (id.startsWith('text.') && (id.includes('polygon') || name.toLowerCase().includes('polygon') || name.includes('多边形') || name.includes('边界'))) {
+          configPatch.polygon_entity = id;
         }
       }
 

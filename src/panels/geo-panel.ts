@@ -207,13 +207,7 @@ export class GeoPanel extends LitElement {
       </div>
       <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
       
-      ${pn > 0 ? html`
-        <div class="warning-box">
-          <p>⚠️ 多边形边界无法断电保存，设备重启后会恢复为固件初始值。若要永久保存，请将以下代码复制并替换至 <code>r60abd1-device.yaml</code> 中：</p>
-          <pre class="yaml-code">polygon:
-${c.polygon.map(p => `  - { x: ${Math.round(p.x)}, y: ${Math.round(p.y)} }`).join('\n')}</pre>
-        </div>
-      ` : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
+      ${pn > 0 ? html`<p class="note">${this._L('geo.boundary_note')}</p>` : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
     `;
   }
 
@@ -321,34 +315,6 @@ ${c.polygon.map(p => `  - { x: ${Math.round(p.x)}, y: ${Math.round(p.y)} }`).joi
       touch-action: none;
       cursor: crosshair;
     }
-    .warning-box {
-      margin-top: 10px;
-      padding: 10px;
-      background: rgba(255, 152, 0, 0.1);
-      border: 1px solid rgba(255, 152, 0, 0.3);
-      border-radius: 8px;
-    }
-    .warning-box p {
-      margin: 0 0 8px;
-      font-size: 11px;
-      color: var(--primary-text-color);
-      line-height: 1.5;
-    }
-    .warning-box code {
-      background: rgba(0,0,0,0.1);
-      padding: 2px 4px;
-      border-radius: 4px;
-    }
-    .yaml-code {
-      margin: 0;
-      padding: 8px;
-      background: #1e1e1e;
-      color: #d4d4d4;
-      font-family: monospace;
-      font-size: 11px;
-      border-radius: 6px;
-      overflow-x: auto;
-      white-space: pre;
     }
   `;
 }

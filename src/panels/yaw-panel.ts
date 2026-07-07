@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, query, state } from "lit/decorators.js";
-import type { CalibrationConfig, Vec2, YawCalibState } from "../types";
+import type { CalibrationConfig, YawCalibState } from "../types";
 import type { RadarModelAdapter } from "../models";
 import {
   setupCanvas, drawBase, drawPolygon, drawRadarFov, drawDot,
@@ -143,11 +143,6 @@ export class YawPanel extends LitElement {
 
   // ── step description with coordinates ─────────────────────────────────────
 
-  private _fmtMarked(template: string, pt: Vec2): string {
-    return template
-      .replace("{x}", String(Math.round(pt.x)))
-      .replace("{y}", String(Math.round(pt.y)));
-  }
 
   private _refStep(step: 0 | 1) {
     const yw  = this._yw;
