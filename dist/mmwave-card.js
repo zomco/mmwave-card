@@ -378,7 +378,7 @@ function t(t,e,r,i){var a,s=arguments.length,o=s<3?e:null===i?i=Object.getOwnPro
               </div>
               <span>${this._config.name||"人体存在雷达"}</span>
             </div>
-            <ha-icon-button icon="mdi:cog" @click=${()=>this._isCalibrating=!0}></ha-icon-button>
+            <ha-icon icon="mdi:cog" style="cursor: pointer; color: var(--secondary-text-color);" @click=${()=>{this._isCalibrating=!0,this._tab=0}}></ha-icon>
           </div>
           <div id="body" style="padding-top: 0;">
             <mmwave-live-panel
