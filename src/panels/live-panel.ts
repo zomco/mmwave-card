@@ -216,7 +216,11 @@ export class LivePanel extends LitElement {
       backdrop-filter: blur(4px);
       width: fit-content;
     }
-    .badge.on { background: var(--success-color, #4caf50); }
+    .badge.on {
+      background: rgba(11, 130, 92, 0.15);
+      color: var(--mmwave-primary);
+      border: 1px solid rgba(11, 130, 92, 0.3);
+    }
     .badge.filtered { background: var(--warning-color, #ff9800); }
     
     .coords {

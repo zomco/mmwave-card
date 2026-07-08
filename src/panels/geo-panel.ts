@@ -234,7 +234,7 @@ export class GeoPanel extends LitElement {
       transition: border-color 0.15s;
     }
     .field:focus-within {
-      border-color: var(--primary-color);
+      border-color: var(--mmwave-primary);
     }
     .field label {
       font-size: 12px;
@@ -253,7 +253,7 @@ export class GeoPanel extends LitElement {
       color: var(--primary-text-color);
     }
     .field input.slider {
-      accent-color: var(--primary-color);
+      accent-color: var(--mmwave-primary);
       margin: 0 8px;
     }
     .field input.num-input {

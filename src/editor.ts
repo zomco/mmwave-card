@@ -130,7 +130,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <!-- Entity fields (model-specific) -->
         ${adapter ? html`
           <details style="margin-top:16px;" ?open=${this._advOpen} @toggle=${(e: Event) => this._advOpen = (e.target as HTMLDetailsElement).open}>
-            <summary style="cursor:pointer; font-size:12px; color:var(--primary-color); outline:none;">
+            <summary style="cursor:pointer; font-size:12px; color:var(--mmwave-primary); outline:none;">
               高级选项：手动指定实体 (Advanced Entities)
             </summary>
             <div style="margin-top:10px;">

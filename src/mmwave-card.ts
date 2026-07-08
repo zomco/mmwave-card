@@ -22,6 +22,7 @@ import { getAdapter, type RadarModelAdapter } from "./models";
 import { applyTransform } from "./utils/transform";
 import { canvasToRoom, type CanvasMetrics } from "./utils/canvas";
 import { localize } from "./localize/localize";
+import { logoSvg } from './logo';
 import {
   type MMWaveCardConfig,
   type CalibrationConfig,
@@ -367,7 +368,9 @@ export class MMWaveCard extends LitElement {
         <ha-card>
           <div class="ha-header">
             <div class="ha-title">
-              <ha-icon icon="mdi:radar" style="color: ${this._present ? 'var(--primary-color)' : 'var(--secondary-text-color)'}"></ha-icon>
+              <div style="opacity: ${this._present ? 1 : 0.5}; display: flex; align-items: center; justify-content: center;">
+                ${logoSvg}
+              </div>
               <span>${this._config.name || "人体存在雷达"}</span>
             </div>
             <ha-icon icon="mdi:cog" style="cursor: pointer; color: var(--secondary-text-color);" @click=${() => { this._isCalibrating = true; this._tab = TAB_GEO; }}></ha-icon>
@@ -456,7 +459,11 @@ export class MMWaveCard extends LitElement {
   // ── Styles ───────────────────────────────────────────────────────────────
 
   static styles = css`
-    :host { display: block; }
+    :host { 
+      display: block;
+      --mmwave-primary: #0B825C;
+      --mmwave-secondary: #2C3E50;
+    }
     ha-card {
       background: var(--ha-card-background, var(--card-background-color, #fff));
       border-radius: var(--ha-card-border-radius, 12px);
@@ -507,11 +514,11 @@ export class MMWaveCard extends LitElement {
     .tab:hover {
       background: rgba(128, 128, 128, 0.05);
     }
-    .tab.act { color: var(--primary-color); }
+    .tab.act { color: var(--mmwave-primary); }
     .tab.act::after {
       content: ""; position: absolute;
       bottom: 0; left: 15%; right: 15%; height: 2px;
-      background: var(--primary-color);
+      background: var(--mmwave-primary);
       border-radius: 2px 2px 0 0;
     }
     #body { padding: 16px; min-height: 270px; }
@@ -523,7 +530,7 @@ export class MMWaveCard extends LitElement {
     }
     .left-btns { display: flex; gap: 8px; }
     .btn-sync {
-      background: var(--primary-color, #03a9f4); color: var(--text-primary-color, #fff);
+      background: var(--mmwave-primary); color: #fff;
       border: none; border-radius: 6px; padding: 8px 16px;
       font-size: 13px; font-weight: 500; cursor: pointer; transition: opacity .15s;
     }

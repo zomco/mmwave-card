@@ -221,26 +221,26 @@ export class YawPanel extends LitElement {
       display:flex;align-items:center;gap:9px;padding:8px 10px;
       border-radius:8px;border:1px solid var(--divider-color);margin-bottom:5px;transition:all .22s;
     }
-    .ref-step.act  { border-color:var(--primary-color);background:rgba(3,169,244,.07); }
-    .ref-step.done { border-color:var(--success-color,#4caf50);background:rgba(76,175,80,.05); }
-    .ref-num {
-      width:21px;height:21px;border-radius:50%;flex-shrink:0;
+    .ref-step.act  { border-color:var(--mmwave-primary);background:rgba(11, 130, 92,.07); }
+    .ref-step .ref-num {
+      width:20px;height:20px;border-radius:10px;
+      background:rgba(128,128,128,.2);color:var(--secondary-text-color);
       display:flex;align-items:center;justify-content:center;
-      font-size:11px;font-weight:700;
-      background:var(--divider-color);color:var(--secondary-text-color);transition:all .2s;
+      font-size:11px;font-weight:600; flex-shrink:0;
     }
-    .ref-step.act  .ref-num { background:var(--primary-color);color:#fff; }
-    .ref-step.done .ref-num { background:var(--success-color,#4caf50);color:#fff; }
-    .ref-title { font-size:12px;font-weight:500; }
-    .ref-sub   { font-size:11px;color:var(--secondary-text-color);margin-top:1px; }
+    .ref-step.act  .ref-num { background:var(--mmwave-primary);color:#fff; }
+    .ref-step .ref-txt { flex:1;font-size:12px;color:var(--secondary-text-color); }
+    .ref-step.act  .ref-txt { color:var(--primary-text-color);font-weight:500; }
+    .ref-step.done .ref-txt { text-decoration:line-through;opacity:.6; }
+    
     .cap-btn {
       width:100%;margin-top:9px;padding:9px;
-      background:rgba(3,169,244,.12);border:1px solid rgba(3,169,244,.35);
+      background:rgba(11, 130, 92,.12);border:1px solid rgba(11, 130, 92,.35);
       border-radius:8px;font-size:13px;font-weight:500;
-      cursor:pointer;color:var(--primary-color);transition:background .15s;
+      cursor:pointer;color:var(--mmwave-primary);transition:background .15s;
     }
     .cap-btn:disabled { opacity:.4;cursor:not-allowed; }
-    .cap-btn:not(:disabled):hover { background:rgba(3,169,244,.22); }
+    .cap-btn:not(:disabled):hover { background:rgba(11, 130, 92,.22); }
     .result-line {
       font-size:11px;text-align:center;min-height:15px;margin-top:5px;
       color:var(--secondary-text-color);

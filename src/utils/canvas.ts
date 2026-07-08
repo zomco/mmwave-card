@@ -143,7 +143,7 @@ export function drawBase(ctx: CanvasRenderingContext2D, m: CanvasMetrics): void 
 
   // Axis labels
   ctx.font      = "bold 9px system-ui";
-  ctx.fillStyle = "rgba(100,181,246,.6)";
+  ctx.fillStyle = "rgba(11,130,92,.6)";
 
   // X→ at top-right
   ctx.textAlign    = "right";
@@ -178,16 +178,16 @@ export function drawPolygon(
   pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.cx, p.cy) : ctx.lineTo(p.cx, p.cy)));
   if (poly.length >= 3) {
     ctx.closePath();
-    ctx.fillStyle = faded ? "rgba(100,181,246,.04)" : "rgba(100,181,246,.07)";
+    ctx.fillStyle = faded ? "rgba(11,130,92,.04)" : "rgba(11,130,92,.07)";
     ctx.fill();
   }
-  ctx.strokeStyle = faded ? "rgba(100,181,246,.22)" : "rgba(100,181,246,.55)";
+  ctx.strokeStyle = faded ? "rgba(11,130,92,.22)" : "rgba(11,130,92,.55)";
   ctx.lineWidth   = 1.5;
   ctx.stroke();
   if (!faded) {
     pts.forEach(p => {
       ctx.beginPath(); ctx.arc(p.cx, p.cy, 3, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(100,181,246,.8)"; ctx.fill();
+      ctx.fillStyle = "rgba(11,130,92,.8)"; ctx.fill();
     });
   }
 }
@@ -261,21 +261,21 @@ export function drawRadarFov(
 
     // Outer zone (presence / sleep): vitalRange → maxRange
     const gradOuter = ctx.createRadialGradient(cx, cy, vitalR, cx, cy, maxR);
-    gradOuter.addColorStop(0, "rgba(100,181,246,.25)");
-    gradOuter.addColorStop(1, "rgba(100,181,246,.05)");
-    drawAnnulus(vitalR, maxR, gradOuter, "rgba(100,181,246,.45)");
+    gradOuter.addColorStop(0, "rgba(11,130,92,.25)");
+    gradOuter.addColorStop(1, "rgba(11,130,92,.05)");
+    drawAnnulus(vitalR, maxR, gradOuter, "rgba(11,130,92,.45)");
 
     // Inner zone (breath / HR): minRange → vitalRange
     const gradInner = ctx.createRadialGradient(cx, cy, minR, cx, cy, vitalR);
-    gradInner.addColorStop(0, "rgba(100,181,246,.55)");
-    gradInner.addColorStop(1, "rgba(100,181,246,.20)");
-    drawAnnulus(minR, vitalR, gradInner, "rgba(100,181,246,.85)", 1.5);
+    gradInner.addColorStop(0, "rgba(11,130,92,.55)");
+    gradInner.addColorStop(1, "rgba(11,130,92,.20)");
+    drawAnnulus(minR, vitalR, gradInner, "rgba(11,130,92,.85)", 1.5);
   } else {
     // Single zone fallback
     const gradSingle = ctx.createRadialGradient(cx, cy, minR, cx, cy, maxR);
-    gradSingle.addColorStop(0, "rgba(100,181,246,.45)");
-    gradSingle.addColorStop(1, "rgba(100,181,246,.10)");
-    drawAnnulus(minR, maxR, gradSingle, "rgba(100,181,246,.70)");
+    gradSingle.addColorStop(0, "rgba(11,130,92,.45)");
+    gradSingle.addColorStop(1, "rgba(11,130,92,.10)");
+    drawAnnulus(minR, maxR, gradSingle, "rgba(11,130,92,.70)");
   }
 
   // ── Blind zone: dark overlay (center → minR) so it looks invalid ──────────
@@ -315,9 +315,9 @@ export function drawRadarFov(
   };
 
   if (vitalRangeM != null) {
-    drawLabel(Number((vitalRangeM * pf).toFixed(1)), toPx(vitalRangeM * pf), "rgba(100,181,246,1)");
+    drawLabel(Number((vitalRangeM * pf).toFixed(1)), toPx(vitalRangeM * pf), "rgba(11,130,92,1)");
   }
-  drawLabel(Number((maxRangeM * pf).toFixed(1)), maxR, "rgba(160,210,255,.85)");
+  drawLabel(Number((maxRangeM * pf).toFixed(1)), maxR, "rgba(27,159,117,.85)");
   ctx.textBaseline = "alphabetic";
 
   // ── Radar icon (drawn on top) ─────────────────────────────────────────────
@@ -326,7 +326,7 @@ export function drawRadarFov(
   ctx.arc(cx, cy, 9, 0, Math.PI * 2);
   ctx.fillStyle   = "rgba(10,10,24,.92)";
   ctx.fill();
-  ctx.strokeStyle = "rgba(100,181,246,.95)";
+  ctx.strokeStyle = "rgba(11,130,92,.95)";
   ctx.lineWidth   = 1.5;
   ctx.stroke();
 
@@ -334,7 +334,7 @@ export function drawRadarFov(
     ctx.beginPath();
     ctx.moveTo(cx + dx * 0.3, cy + dy * 0.3);
     ctx.lineTo(cx + dx, cy + dy);
-    ctx.strokeStyle = "rgba(100,181,246,.7)";
+    ctx.strokeStyle = "rgba(11,130,92,.7)";
     ctx.lineWidth   = 1.2;
     ctx.stroke();
   }
