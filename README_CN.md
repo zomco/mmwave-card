@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../assets/mmwave_logo.svg" alt="MMWave Logo" width="200"/>
+  <img src="./assets/mmwave_logo.svg" alt="MMWave Logo" width="200"/>
   <h1>MMWave Radar HA Card</h1>
 </div>
 
@@ -12,13 +12,14 @@
 适用于 [Home Assistant](https://www.home-assistant.io/) 的多型号毫米波雷达校准与实时可视化卡片。
 
 ## 这是什么？
+
 这款 Lovelace 卡片为您提供房间的实时俯视图，直观显示毫米波雷达探测到的目标确切位置。它内置了简易工具，可帮助您轻松校准雷达的安装方向并定义房间边界，让智能家居的存在检测变得前所未有的精准和直观。
 
 ## 演示效果
 
-<img src="docs/screenshot-live.png" alt="Live view panel" width="600">
+<img src="./assets/screenshot-live.gif" alt="Live view panel" width="600">
 
-*(Tab ① — 几何与边界 | Tab ② — 偏航校准 | Tab ③ — 实时视图)*
+_(Tab ① — 几何与边界 | Tab ② — 偏航校准 | Tab ③ — 实时视图)_
 
 ## 快速开始（开箱即用）
 
@@ -40,10 +41,11 @@
 
 ## 支持的型号
 
-| 型号 | 频率 | 目标数 | Z 轴 | 呼吸 | 心率 | 睡眠 |
-|---|---|---|---|---|---|---|
-| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1 | ✅ | ✅ | ✅ | ✅ |
-| [Hi-Link LD2450](https://www.hlktech.net/) | 24 GHz | 3 | ❌ | ❌ | ❌ | ❌ |
+| 型号                                         | 频率   | 目标数 | Z 轴 | 呼吸 | 心率 | 睡眠 |
+| -------------------------------------------- | ------ | ------ | ---- | ---- | ---- | ---- |
+| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1      | ✅   | ✅   | ✅   | ✅   |
+| [Hi-Link LD2450](https://www.hlktech.net/)   | 24 GHz | 3      | ❌   | ❌   | ❌   | ❌   |
 
 ## 许可证
+
 MIT © zomco

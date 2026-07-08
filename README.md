@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="../../assets/mmwave_logo.svg" alt="MMWave Logo" width="200"/>
+  <img src="./assets/mmwave_logo.svg" alt="MMWave Logo" width="200"/>
   <h1>MMWave Radar HA Card</h1>
 </div>
 
@@ -7,18 +7,19 @@
 [![GitHub Release](https://img.shields.io/github/release/zomco/mmwave-card.svg)](https://github.com/zomco/mmwave-card/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[中文文档](./README-cn.md)
+[中文文档](./README_CN.md)
 
 Multi-model millimeter-wave radar calibration & live visualization card for [Home Assistant](https://www.home-assistant.io/).
 
 ## What is this?
+
 This Lovelace card provides a real-time, top-down map of your room, visualizing the exact location of targets detected by your mmWave radars. It includes built-in tools to easily calibrate your radar's orientation and define room boundaries, making smart home presence detection more accurate and intuitive than ever.
 
 ## Screenshots
 
-<img src="docs/screenshot-live.png" alt="Live view panel" width="600">
+<img src="./assets/screenshot-live.gif" alt="Live view panel" width="600">
 
-*(Tab ① — Geometry & Boundary | Tab ② — Yaw Calibration | Tab ③ — Live View)*
+_(Tab ① — Geometry & Boundary | Tab ② — Yaw Calibration | Tab ③ — Live View)_
 
 ## Quick Start (Out-of-the-Box)
 
@@ -40,15 +41,15 @@ For advanced users who prefer YAML configuration, need to understand the underly
 
 ## Supported Models
 
-| Model | Freq | Targets | Z axis | Breathing | Heart rate | Sleep |
-|---|---|---|---|---|---|---|
-| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1 | ✅ | ✅ | ✅ | ✅ |
-| [Hi-Link LD2450](https://www.hlktech.net/) | 24 GHz | 3 | ❌ | ❌ | ❌ | ❌ |
+| Model                                        | Freq   | Targets | Z axis | Breathing | Heart rate | Sleep |
+| -------------------------------------------- | ------ | ------- | ------ | --------- | ---------- | ----- |
+| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1       | ✅     | ✅        | ✅         | ✅    |
+| [Hi-Link LD2450](https://www.hlktech.net/)   | 24 GHz | 3       | ❌     | ❌        | ❌         | ❌    |
 
 Adding a new model requires only creating one file — see [Adding a New Model](#adding-a-new-model).
 
 ---
 
-
 ## License
+
 MIT © zomco
