@@ -462,7 +462,7 @@ export class MMWaveCard extends LitElement {
     :host { 
       display: block;
       --mmwave-primary: #0B825C;
-      --mmwave-secondary: #2C3E50;
+      --mmwave-secondary: #4B5563;
     }
     ha-card {
       background: var(--ha-card-background, var(--card-background-color, #fff));
