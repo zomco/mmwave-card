@@ -9,14 +9,8 @@
  * any shared code.
  */
 
-import type { HomeAssistant } from "custom-card-helpers";
-import type {
-  RadarModelInfo,
-  EntitySchemaField,
-  RadarReading,
-  MMWaveCardConfig,
-  CalibrationConfig,
-} from "../types";
+import type { HomeAssistant } from 'custom-card-helpers';
+import type { RadarModelInfo, EntitySchemaField, RadarReading, MMWaveCardConfig, CalibrationConfig } from '../types';
 
 export interface RadarModelAdapter {
   /** Static information about this model. */

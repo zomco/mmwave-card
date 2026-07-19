@@ -154,7 +154,7 @@ export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   x_entity: 'sensor.r60abd1_x',
   y_entity: 'sensor.r60abd1_y',
   z_entity: 'sensor.r60abd1_z',
-  polygon_entity: 'text.r60abd1_polygon_config'
+  polygon_entity: 'text.r60abd1_polygon_config',
 };
 
 // ── Yaw calibration sub-state ─────────────────────────────────────────────────

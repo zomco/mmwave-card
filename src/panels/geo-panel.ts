@@ -206,8 +206,10 @@ export class GeoPanel extends LitElement {
         </div>
       </div>
       <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
-      
-      ${pn > 0 ? html`<p class="note">${this._L('geo.boundary_note')}</p>` : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
+
+      ${pn > 0
+        ? html`<p class="note">${this._L('geo.boundary_note')}</p>`
+        : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
     `;
   }
 

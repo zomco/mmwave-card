@@ -14,7 +14,6 @@ import {
 import { TRAIL_MAX_MS } from '../const';
 import { localize } from '../localize/localize';
 
-
 interface TrailPoint {
   x: number;
   y: number;
@@ -149,7 +148,9 @@ export class LivePanel extends LitElement {
 
   // ── status ─────────────────────────────────────────────────────────────────
 
-  private _L(k: string) { return localize(k, this.lang); }
+  private _L(k: string) {
+    return localize(k, this.lang);
+  }
 
   private _badgeText() {
     if (!this.present) return this._L('live.badge_none');
@@ -171,20 +172,33 @@ export class LivePanel extends LitElement {
   protected render() {
     return html`
       <canvas id="live-cv"></canvas>
-      ${this.showStatus ? html`
-        <div class="status">
-          <div class="badge ${this._badgeCls()}">${this._badgeText()}</div>
-          ${this._primaryTarget() ? html`
-            <div class="coords">
-              <div><span>${this._L('live.room_x')}</span><span>${Math.round(this._primaryTarget()!.roomX)}</span></div>
-              <div><span>${this._L('live.room_y')}</span><span>${Math.round(this._primaryTarget()!.roomY)}</span></div>
-              ${this.adapter.info.hasZAxis ? html`
-                <div><span>${this._L('live.room_z')}</span><span>${Math.round(this._primaryTarget()!.roomZ)}</span></div>
-              ` : ''}
+      ${this.showStatus
+        ? html`
+            <div class="status">
+              <div class="badge ${this._badgeCls()}">${this._badgeText()}</div>
+              ${this._primaryTarget()
+                ? html`
+                    <div class="coords">
+                      <div>
+                        <span>${this._L('live.room_x')}</span><span>${Math.round(this._primaryTarget()!.roomX)}</span>
+                      </div>
+                      <div>
+                        <span>${this._L('live.room_y')}</span><span>${Math.round(this._primaryTarget()!.roomY)}</span>
+                      </div>
+                      ${this.adapter.info.hasZAxis
+                        ? html`
+                            <div>
+                              <span>${this._L('live.room_z')}</span
+                              ><span>${Math.round(this._primaryTarget()!.roomZ)}</span>
+                            </div>
+                          `
+                        : ''}
+                    </div>
+                  `
+                : ''}
             </div>
-          ` : ''}
-        </div>
-      ` : ''}
+          `
+        : ''}
     `;
   }
 
@@ -221,8 +235,10 @@ export class LivePanel extends LitElement {
       color: var(--mmwave-primary);
       border: 1px solid rgba(11, 130, 92, 0.3);
     }
-    .badge.filtered { background: var(--warning-color, #ff9800); }
-    
+    .badge.filtered {
+      background: var(--warning-color, #ff9800);
+    }
+
     .coords {
       background: rgba(0, 0, 0, 0.65);
       backdrop-filter: blur(4px);
@@ -240,8 +256,13 @@ export class LivePanel extends LitElement {
       justify-content: space-between;
       gap: 12px;
     }
-    .coords span:first-child { opacity: 0.7; }
-    .coords span:last-child { font-weight: 600; font-family: monospace; }
+    .coords span:first-child {
+      opacity: 0.7;
+    }
+    .coords span:last-child {
+      font-weight: 600;
+      font-family: monospace;
+    }
     canvas {
       display: block;
       width: 100%;

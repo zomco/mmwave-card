@@ -17,11 +17,13 @@
   "author": "Zach Fung <zomcoo@gmail.com>",
   "license": "MIT",
   "main": "dist/mmwave-card.js",
+  "type": "module",
   "scripts": {
     "start": "rollup -c rollup.config.mjs -w",
     "build": "rollup -c rollup.config.mjs",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix"
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test": "echo \"No tests defined yet\" && exit 0"
   },
   "dependencies": {
     "custom-card-helpers": "^1.9.0",
@@ -36,6 +38,7 @@
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
     "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.5",
     "prettier": "^3.3.0",
