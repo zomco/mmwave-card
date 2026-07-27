@@ -58,8 +58,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         const id = ent.entity_id;
         const name = (ent.original_name || id).toLowerCase();
 
+        const matchTargetX = id.match(/target_(\d+)_x/);
+        const matchTargetY = id.match(/target_(\d+)_y/);
+        const matchTargetSpeed = id.match(/target_(\d+)_speed/);
+
         if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
           configPatch.presence_entity = id;
+        } else if (id.startsWith('sensor.') && (name.includes('distance') || id.includes('distance') || name.includes('距离'))) {
+          configPatch.distance_entity = id;
+        } else if (matchTargetX) {
+          configPatch[`target_${matchTargetX[1]}_x_entity` as keyof MMWaveCardConfig] = id;
+        } else if (matchTargetY) {
+          configPatch[`target_${matchTargetY[1]}_y_entity` as keyof MMWaveCardConfig] = id;
+        } else if (matchTargetSpeed) {
+          configPatch[`target_${matchTargetSpeed[1]}_speed_entity` as keyof MMWaveCardConfig] = id;
         } else if (
           id.startsWith('sensor.') &&
           (name.endsWith(' x') || id.endsWith('_x') || id.endsWith('radar_x')) &&

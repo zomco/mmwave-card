@@ -1,0 +1,21 @@
+# LD2420 Home Assistant Lovelace Card 示例配置文件
+# 详见 docs/ld2420/README_CN.md 与 README.md
+
+type: custom:mmwave-card
+radar_model: ld2420
+
+# ── 实体定义 ──────────────────────────────────────────────────────────────────
+presence_entity: binary_sensor.ld2420_presence
+distance_entity: sensor.ld2420_distance
+
+# ── 房间尺寸说明（cm）────────────────────────────────────────────────────────
+room_w: 400
+room_d: 350
+
+# ── 初始安装与校准（cm / °）────────────────────────────────────────────────
+radar_x: 200
+radar_y: 0
+radar_z: 240
+yaw: 0
+pitch: 0
+roll: 0

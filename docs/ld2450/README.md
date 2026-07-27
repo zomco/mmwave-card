@@ -44,6 +44,7 @@ cards:
     target_3_x_entity: sensor.ld2450_target_3_x
     target_3_y_entity: sensor.ld2450_target_3_y
     target_3_speed_entity: sensor.ld2450_target_3_speed
+    polygon_entity: text.ld2450_polygon_config
     room_w: 400
     room_d: 350
 ```
@@ -62,4 +63,5 @@ You can search and confirm the real entity IDs of your radar device on the **"De
 - **`target_n_x_entity`**: [Required] Radar-measured local X-axis coordinate for target n. Please map for targets 1, 2, and 3.
 - **`target_n_y_entity`**: [Required] Radar-measured local Y-axis coordinate for target n. Please map for targets 1, 2, and 3.
 - **`target_n_speed_entity`**: [Optional] Target n's speed sensor (Unit: cm/s). If provided, it assists in displaying the target's motion state in the UI.
+- **`polygon_entity`**: [Optional] Text entity representing the boundary polygon configuration. Required if you want to draw and save custom boundary polygons from the UI.
 - **`room_w` / `room_d`**: The physical width and depth of the room (Unit: cm), used for scaling during card rendering. This does not affect the calibration data itself. You can modify it according to your actual room size (e.g., `300` or `500`).

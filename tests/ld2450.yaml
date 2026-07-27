@@ -10,5 +10,6 @@ target_2_speed_entity: sensor.ld2450_target_2_speed
 target_3_x_entity: sensor.ld2450_target_3_x
 target_3_y_entity: sensor.ld2450_target_3_y
 target_3_speed_entity: sensor.ld2450_target_3_speed
+polygon_entity: text.ld2450_polygon_config
 room_w: 400
 room_d: 350

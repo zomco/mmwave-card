@@ -44,6 +44,7 @@ cards:
     target_3_x_entity: sensor.ld2450_target_3_x
     target_3_y_entity: sensor.ld2450_target_3_y
     target_3_speed_entity: sensor.ld2450_target_3_speed
+    polygon_entity: text.ld2450_polygon_config
     room_w: 400
     room_d: 350
 ```
@@ -62,4 +63,5 @@ cards:
 - **`target_n_x_entity`**: 【必填】目标 n 的局部 X 轴坐标传感器（单位：mm 或 cm）。需要依次配置目标 1、2、3。
 - **`target_n_y_entity`**: 【必填】目标 n 的局部 Y 轴坐标传感器（单位：mm 或 cm）。需要依次配置目标 1、2、3。
 - **`target_n_speed_entity`**: 【可选】目标 n 的速度传感器（单位：cm/s）。如有提供，将在 UI 中辅助展示目标运动状态。
+- **`polygon_entity`**: 【可选】用于存储和发送多边形边界配置的文本实体。如果希望在 UI 中绘制和保存自定义多边形边界，请配置此项。
 - **`room_w` / `room_d`**: 房间的物理宽度和深度（单位：cm），用于在卡片绘图时缩放比例，不影响校准数据本身。您可以根据实际房间大小自行修改（例如 `300` 或 `500`）。

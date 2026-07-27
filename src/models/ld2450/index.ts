@@ -59,6 +59,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'target_3_x_entity', labelKey: 'editor.target_3_x', required: false, domain: 'sensor' },
   { key: 'target_3_y_entity', labelKey: 'editor.target_3_y', required: false, domain: 'sensor' },
   { key: 'target_3_speed_entity', labelKey: 'editor.target_3_speed', required: false, domain: 'sensor' },
+  { key: 'polygon_entity', labelKey: 'editor.polygon_entity', required: false, domain: 'text' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────

@@ -264,21 +264,70 @@ export function drawRadarFov(
 
     // Outer zone (presence / sleep): vitalRange → maxRange
     const gradOuter = ctx.createRadialGradient(cx, cy, vitalR, cx, cy, maxR);
-    gradOuter.addColorStop(0, 'rgba(11,130,92,.25)');
-    gradOuter.addColorStop(1, 'rgba(11,130,92,.05)');
-    drawAnnulus(vitalR, maxR, gradOuter, 'rgba(11,130,92,.45)');
+    gradOuter.addColorStop(0, 'rgba(11,130,92,.35)');
+    gradOuter.addColorStop(1, 'rgba(11,130,92,.08)');
+    drawAnnulus(vitalR, maxR, gradOuter, 'rgba(11,130,92,.60)');
 
     // Inner zone (breath / HR): minRange → vitalRange
     const gradInner = ctx.createRadialGradient(cx, cy, minR, cx, cy, vitalR);
-    gradInner.addColorStop(0, 'rgba(11,130,92,.55)');
-    gradInner.addColorStop(1, 'rgba(11,130,92,.20)');
-    drawAnnulus(minR, vitalR, gradInner, 'rgba(11,130,92,.85)', 1.5);
+    gradInner.addColorStop(0, 'rgba(11,130,92,.60)');
+    gradInner.addColorStop(1, 'rgba(11,130,92,.25)');
+    drawAnnulus(minR, vitalR, gradInner, 'rgba(11,130,92,.90)', 1.5);
   } else {
-    // Single zone fallback
+    // Single zone circular sector (e.g. LD2450: 120°, 0.2m ~ 6m)
     const gradSingle = ctx.createRadialGradient(cx, cy, minR, cx, cy, maxR);
-    gradSingle.addColorStop(0, 'rgba(11,130,92,.45)');
-    gradSingle.addColorStop(1, 'rgba(11,130,92,.10)');
-    drawAnnulus(minR, maxR, gradSingle, 'rgba(11,130,92,.70)');
+    gradSingle.addColorStop(0, 'rgba(11,130,92,.50)');
+    gradSingle.addColorStop(1, 'rgba(11,130,92,.12)');
+    drawAnnulus(minR, maxR, gradSingle, 'rgba(11,130,92,.75)', 1.5);
+  }
+
+  // ── Sector Grid: Range Rings & Angle Rays (when FOV > 0) ──────────────────
+  if (fovDeg > 0) {
+    // Draw Range Rings (concentric arcs every 0.5m or 1.0m)
+    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
+      if (r_m <= minRangeM) continue;
+      const r_px = toPx(r_m * pf);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = 0.8;
+      ctx.setLineDash([3, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw Angle Rays (-fovDeg/2 to +fovDeg/2)
+    const angStepDeg = fovDeg >= 90 ? 15 : fovDeg >= 40 ? 10 : 15;
+    const halfFovDeg = fovDeg / 2;
+    for (let deg = -halfFovDeg; deg <= halfFovDeg; deg += angStepDeg) {
+      const angRad = base + deg * (Math.PI / 180);
+      const x1 = cx + minR * Math.cos(angRad);
+      const y1 = cy + minR * Math.sin(angRad);
+      const x2 = cx + maxR * Math.cos(angRad);
+      const y2 = cy + maxR * Math.sin(angRad);
+
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = deg === 0 ? 'rgba(11, 200, 140, 0.5)' : 'rgba(255, 255, 255, 0.18)';
+      ctx.lineWidth = deg === 0 ? 1.2 : 0.8;
+      if (deg !== 0) ctx.setLineDash([3, 4]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Angle text labels at ray tips
+      if (deg !== 0) {
+        const lx = cx + (maxR + 14) * Math.cos(angRad);
+        const ly = cy + (maxR + 14) * Math.sin(angRad);
+        ctx.font = 'bold 9px system-ui';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${deg > 0 ? '+' : ''}${deg}°`, lx, ly);
+        ctx.textBaseline = 'alphabetic';
+      }
+    }
   }
 
   // ── Blind zone: dark overlay (center → minR) so it looks invalid ──────────
@@ -317,10 +366,42 @@ export function drawRadarFov(
     ctx.fillText(txt, tx, ty);
   };
 
-  if (vitalRangeM != null) {
-    drawLabel(Number((vitalRangeM * pf).toFixed(1)), toPx(vitalRangeM * pf), 'rgba(11,130,92,1)');
+  if (fovDeg > 0) {
+    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
+      if (r_m <= minRangeM) continue;
+      const r_px = toPx(r_m * pf);
+      const isMax = Math.abs(r_m - maxRangeM) < 0.01;
+      const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
+      const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
+      drawLabel(Number(r_m.toFixed(1)), r_px, col);
+    }
+  } else {
+    // 1-D Ranging Radar Boresight Ray & Distance Scale
+    const x1 = cx + minR * Math.cos(base);
+    const y1 = cy + minR * Math.sin(base);
+    const x2 = cx + maxR * Math.cos(base);
+    const y2 = cy + maxR * Math.sin(base);
+
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = 'rgba(11, 200, 140, 0.65)';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
+      if (r_m <= minRangeM) continue;
+      const r_px = toPx(r_m * pf);
+      const isMax = Math.abs(r_m - maxRangeM) < 0.01;
+      const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
+      const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
+      drawLabel(Number(r_m.toFixed(1)), r_px, col);
+    }
   }
-  drawLabel(Number((maxRangeM * pf).toFixed(1)), maxR, 'rgba(27,159,117,.85)');
   ctx.textBaseline = 'alphabetic';
 
   // ── Radar icon (drawn on top) ─────────────────────────────────────────────
