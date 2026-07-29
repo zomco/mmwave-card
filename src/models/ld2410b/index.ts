@@ -33,7 +33,7 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2410b',
   displayName: 'Hi-Link LD2410B (24 GHz)',
-  fovDegrees: 0, // 1-D radar, effectively a narrow beam
+  fovDegrees: 120, // ±60° horizontal coverage
   maxRangeM: 8.0, // 800 cm maximum
   minRangeM: 0.0,
   updateRateHz: 10,
@@ -42,6 +42,7 @@ const INFO: RadarModelInfo = {
   hasBreathing: false,
   hasHeartRate: false,
   hasSleep: false,
+  is1DRanging: true,
 };
 
 // ── Entity schema ─────────────────────────────────────────────────────────────

@@ -111,6 +111,11 @@ export interface RadarModelInfo {
   hasHeartRate: boolean;
   /** Whether the model outputs sleep monitoring data. */
   hasSleep: boolean;
+  /**
+   * When true, this model only reports 1-D ranging (distance) without horizontal angle/X coordinates.
+   * Targets are rendered as concentric circular arcs across the FOV sector instead of point dots.
+   */
+  is1DRanging?: boolean;
 }
 
 // ── Entity schema (for the visual editor) ────────────────────────────────────

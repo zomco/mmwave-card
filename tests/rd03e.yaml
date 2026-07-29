@@ -1,7 +1,22 @@
+# RD03E Home Assistant Lovelace Card 示例配置文件
+# 详见 docs/rd03e/README_CN.md 与 README.md
+
 type: custom:mmwave-card
 radar_model: rd03e
+
+# ── 实体定义 ──────────────────────────────────────────────────────────────────
 presence_entity: binary_sensor.rd03e_presence
 distance_entity: sensor.rd03e_distance
 motion_state_entity: sensor.rd03e_motion_state
+
+# ── 房间尺寸说明（cm）────────────────────────────────────────────────────────
 room_w: 400
 room_d: 350
+
+# ── 初始安装与校准（cm / °）────────────────────────────────────────────────
+radar_x: 200
+radar_y: 0
+radar_z: 240
+yaw: 0
+pitch: 0
+roll: 0

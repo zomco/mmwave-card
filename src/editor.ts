@@ -66,6 +66,9 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           configPatch.presence_entity = id;
         } else if (id.startsWith('sensor.') && (name.includes('distance') || id.includes('distance') || name.includes('距离'))) {
           configPatch.distance_entity = id;
+        } else if (id.startsWith('sensor.') && (name.includes('motion_state') || id.includes('motion_state') || name.includes('运动状态') || name.includes('target_state') || id.includes('target_state') || name.includes('目标状态'))) {
+          configPatch.motion_state_entity = id;
+          configPatch.target_state_entity = id;
         } else if (matchTargetX) {
           configPatch[`target_${matchTargetX[1]}_x_entity` as keyof MMWaveCardConfig] = id;
         } else if (matchTargetY) {

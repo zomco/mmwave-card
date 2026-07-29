@@ -50,8 +50,8 @@ cards:
     y_entity: sensor.ld6002_room_y
     # If using Mode B, remove the x/y_entity lines above and use the following distance_entity:
     # distance_entity: sensor.ld6002_distance
-    respiration_entity: sensor.ld6002_respiration_rate
-    heart_rate_entity: sensor.ld6002_heart_rate
+    breath_entity: sensor.ld6002_respiration_rate
+    heart_entity: sensor.ld6002_heart_rate
     room_w: 400
     room_d: 350
 ```
@@ -67,5 +67,5 @@ All `entity_id`s in the configuration (such as `binary_sensor.ld6002_presence`) 
 - **`presence_entity`**: [Required] Binary sensor indicating target presence.
 - **`x_entity` / `y_entity`**: [Either this OR distance] X and Y coordinate entities, typically mapped to ESPHome's `room_x` and `room_y`.
 - **`distance_entity`**: [Either this OR x/y] Straight-line detection distance entity. Used as a fallback if x/y entities are not provided.
-- **`respiration_entity` / `heart_rate_entity`**: [Optional] Entities for respiration and heart rate.
+- **`breath_entity` / `heart_entity`**: [Optional] Entities for respiration and heart rate.
 - **`room_w` / `room_d`**: Physical width and depth of the room (Unit: cm), used for scaling during card rendering.

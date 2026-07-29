@@ -1,0 +1,6 @@
+type: custom:mmwave-card
+radar_model: ld2450a
+presence_entity: binary_sensor.ld2450a_presence
+distance_entity: sensor.ld2450a_distance
+room_w: 400
+room_d: 350

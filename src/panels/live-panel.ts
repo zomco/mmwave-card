@@ -8,6 +8,7 @@ import {
   drawPolygon,
   drawRadarFov,
   drawTarget,
+  drawTargetArc,
   roomToCanvas,
   type CanvasMetrics,
 } from '../utils/canvas';
@@ -131,15 +132,29 @@ export class LivePanel extends LitElement {
       // Targets
       for (const t of this.targets) {
         if (!t.room) continue;
-        const cp = roomToCanvas(t.room.roomX, t.room.roomY, m);
-        drawTarget(ctx, cp.cx, cp.cy, t.room.inBoundary);
-        if (this.adapter.info.maxTargets > 1) {
-          ctx.fillStyle = 'rgba(255,255,255,.7)';
-          ctx.font = '9px system-ui';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(String(t.index + 1), cp.cx, cp.cy - 14);
-          ctx.textBaseline = 'alphabetic';
+        if (this.adapter.info.is1DRanging) {
+          drawTargetArc(
+            ctx,
+            rp.cx,
+            rp.cy,
+            this.calibration.yaw,
+            this.calibration.pitch,
+            this.adapter.info.fovDegrees,
+            Math.hypot(t.rawX, t.rawY) / 100,
+            m,
+            t.room.inBoundary,
+          );
+        } else {
+          const cp = roomToCanvas(t.room.roomX, t.room.roomY, m);
+          drawTarget(ctx, cp.cx, cp.cy, t.room.inBoundary);
+          if (this.adapter.info.maxTargets > 1) {
+            ctx.fillStyle = 'rgba(255,255,255,.7)';
+            ctx.font = '9px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(t.index + 1), cp.cx, cp.cy - 14);
+            ctx.textBaseline = 'alphabetic';
+          }
         }
       }
     }

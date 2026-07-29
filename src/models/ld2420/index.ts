@@ -34,15 +34,16 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2420',
   displayName: 'Hi-Link LD2420 (24 GHz)',
-  fovDegrees: 0, // 1-D radar, effectively a narrow beam
+  fovDegrees: 120, // Manual specifies ±60° detection coverage
   maxRangeM: 8.0, // 800 cm maximum
-  minRangeM: 0.3, // 30 cm minimum configured by default
+  minRangeM: 0.2, // 20 cm minimum (manual specifies 0.2m close-range sensing, no blind zone)
   updateRateHz: 10,
   maxTargets: 1,
   hasZAxis: false,
   hasBreathing: false,
   hasHeartRate: false,
   hasSleep: false,
+  is1DRanging: true,
 };
 
 // ── Entity schema ─────────────────────────────────────────────────────────────

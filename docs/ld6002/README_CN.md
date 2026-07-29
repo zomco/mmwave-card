@@ -50,8 +50,8 @@ cards:
     y_entity: sensor.ld6002_room_y
     # 如果您使用模式 B，请移除上面的 x/y_entity，换成如下的 distance_entity:
     # distance_entity: sensor.ld6002_distance
-    respiration_entity: sensor.ld6002_respiration_rate
-    heart_rate_entity: sensor.ld6002_heart_rate
+    breath_entity: sensor.ld6002_respiration_rate
+    heart_entity: sensor.ld6002_heart_rate
     room_w: 400
     room_d: 350
 ```
@@ -67,5 +67,5 @@ cards:
 - **`presence_entity`**: 【必填】表示雷达是否检测到目标的二进制传感器。
 - **`x_entity` / `y_entity`**: 【二选一】X和Y坐标实体，建议映射 ESPHome 的 `room_x` 和 `room_y`。
 - **`distance_entity`**: 【二选一】直线探测距离实体。如果提供，它将在没有配置 x/y 实体时作为后备方案。
-- **`respiration_entity` / `heart_rate_entity`**: 【可选】呼吸频率和心率实体。
+- **`breath_entity` / `heart_entity`**: 【可选】呼吸频率和心率实体。
 - **`room_w` / `room_d`**: 房间的物理宽度和深度（单位：cm），用于在卡片绘图时缩放比例。

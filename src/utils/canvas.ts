@@ -460,6 +460,81 @@ export function drawTarget(ctx: CanvasRenderingContext2D, cx: number, cy: number
   }
 }
 
+// ── 1-D Target arc (for ranging-only models) ──────────────────────────────────
+
+export function drawTargetArc(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  yawDeg: number,
+  pitchDeg: number,
+  fovDeg: number,
+  rangeM: number,
+  m: CanvasMetrics,
+  inBoundary: boolean,
+): void {
+  const scale = Math.sqrt((m.W / m.roomW) * (m.H / m.roomD));
+  const toPx = (rM: number) => Math.max(rM * 100 * scale, 1);
+  const pf = Math.max(0.05, Math.cos(pitchDeg * (Math.PI / 180)));
+  const r_px = toPx(rangeM * pf);
+
+  const halfFov = (fovDeg / 2) * (Math.PI / 180);
+  const base = Math.PI / 2 + yawDeg * (Math.PI / 180);
+
+  if (inBoundary) {
+    // Glowing background arc across FOV
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    ctx.strokeStyle = 'rgba(255,152,0,.35)';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Crisp foreground arc
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    ctx.strokeStyle = 'var(--accent-color,#ff9800)';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+
+    // Center target dot on boresight line
+    const tx = cx + r_px * Math.cos(base);
+    const ty = cy + r_px * Math.sin(base);
+    ctx.beginPath();
+    ctx.arc(tx, ty, 7, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,152,0,.3)';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'var(--accent-color,#ff9800)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,.8)';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+  } else {
+    // Out-of-boundary / filtered arc
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    ctx.strokeStyle = 'rgba(244,67,54,.65)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Center dot
+    const tx = cx + r_px * Math.cos(base);
+    const ty = cy + r_px * Math.sin(base);
+    ctx.beginPath();
+    ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(244,67,54,.8)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+  ctx.lineCap = 'butt';
+}
+
 // ── Reference-point dot ───────────────────────────────────────────────────────
 
 export function drawDot(

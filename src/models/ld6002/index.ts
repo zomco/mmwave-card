@@ -37,7 +37,8 @@ const INFO: RadarModelInfo = {
   displayName: 'Hi-Link LD6002 (60 GHz)',
   fovDegrees: 120, // Nominal horizontal FOV
   maxRangeM: 6.0, // 600 cm maximum
-  minRangeM: 0.0,
+  minRangeM: 0.4,
+  vitalRangeM: 1.5,
   updateRateHz: 1, // Update is slightly slower, around 1 Hz
   maxTargets: 1,
   hasZAxis: false,
@@ -53,8 +54,8 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'x_entity', labelKey: 'editor.x_entity', required: false, domain: 'sensor' },
   { key: 'y_entity', labelKey: 'editor.y_entity', required: false, domain: 'sensor' },
   { key: 'distance_entity', labelKey: 'editor.distance_entity', required: false, domain: 'sensor' },
-  { key: 'respiration_entity', labelKey: 'editor.respiration_entity', required: false, domain: 'sensor' },
-  { key: 'heart_rate_entity', labelKey: 'editor.heart_rate_entity', required: false, domain: 'sensor' },
+  { key: 'breath_entity', labelKey: 'editor.breath_entity', required: false, domain: 'sensor' },
+  { key: 'heart_entity', labelKey: 'editor.heart_entity', required: false, domain: 'sensor' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────

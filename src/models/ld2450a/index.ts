@@ -1,19 +1,13 @@
 /**
- * Ai-Thinker RD03E 24 GHz ranging radar adapter
+ * Hi-Link LD2450A 24 GHz presence and gesture recognition radar adapter
  *
- * Protocol reference: Ai-Thinker RD03E
+ * Protocol reference: Hi-Link LD2450A
  *
  * Key characteristics:
- *   - 1-D ranging radar (outputs distance only)
+ *   - 1-D ranging radar with gesture recognition
  *   - Coordinate unit: cm
  *   - Position update rate: ~10 Hz (continuous)
- *   - Maximum Range: ~6m
- *
- * Implementation status:
- *   readFromHass() maps the measured distance to the Y-axis (forward) of
- *   the radar's local coordinate system. This allows the HA Card's native
- *   calibration (yaw, pitch, roll) to project the target correctly into
- *   2D room space.
+ *   - Maximum Range: ~2m (presence), ~0.3m (gesture)
  */
 
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -31,11 +25,11 @@ import { DEFAULT_CALIBRATION } from '../../types';
 // ── Model info ────────────────────────────────────────────────────────────────
 
 const INFO: RadarModelInfo = {
-  id: 'rd03e',
-  displayName: 'Ai-Thinker RD03E (24 GHz)',
-  fovDegrees: 40, // ±20° horizontal azimuth coverage (total 40° FOV)
-  maxRangeM: 6.0, // 600 cm
-  minRangeM: 0.3, // 30 cm minimum configured by default
+  id: 'ld2450a',
+  displayName: 'Hi-Link LD2450A (24 GHz Gesture)',
+  fovDegrees: 120, // ±60° horizontal coverage
+  maxRangeM: 2.0,  // 200 cm presence max range
+  minRangeM: 0.2,  // 20 cm min range
   updateRateHz: 10,
   maxTargets: 1,
   hasZAxis: false,
@@ -50,12 +44,11 @@ const INFO: RadarModelInfo = {
 const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
   { key: 'distance_entity', labelKey: 'editor.distance_entity', required: true, domain: 'sensor' },
-  { key: 'motion_state_entity', labelKey: 'editor.motion_state_entity', required: false, domain: 'sensor' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────
 
-export const rd03eAdapter: RadarModelAdapter = {
+export const ld2450aAdapter: RadarModelAdapter = {
   info: INFO,
 
   getEntitySchema: () => ENTITY_SCHEMA,
@@ -106,7 +99,7 @@ export const rd03eAdapter: RadarModelAdapter = {
   getDefaultCalibration(): CalibrationConfig {
     return {
       ...DEFAULT_CALIBRATION,
-      radar_z: 240, // Typical top-down or wall-mount height (cm)
+      radar_z: 150, // Typical desktop or gesture-height mounting (cm)
       pitch: 0,
       roll: 0,
     };
