@@ -32,8 +32,8 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2451',
   displayName: 'Hi-Link LD2451 (24 GHz)',
-  fovDegrees: 120,
-  maxRangeM: 6,
+  fovDegrees: 30,
+  maxRangeM: 100,
   minRangeM: 0.2,
   updateRateHz: 10,
   maxTargets: 3,

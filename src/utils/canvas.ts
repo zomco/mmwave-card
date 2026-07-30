@@ -284,7 +284,12 @@ export function drawRadarFov(
   // ── Sector Grid: Range Rings & Angle Rays (when FOV > 0) ──────────────────
   if (fovDeg > 0) {
     // Draw Range Rings (concentric arcs every 0.5m or 1.0m)
-    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    let stepM = 1.0;
+    if (maxRangeM <= 3) stepM = 0.5;
+    else if (maxRangeM <= 12) stepM = 1.0;
+    else if (maxRangeM <= 25) stepM = 5.0;
+    else if (maxRangeM <= 50) stepM = 10.0;
+    else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
       const r_px = toPx(r_m * pf);
@@ -367,7 +372,12 @@ export function drawRadarFov(
   };
 
   if (fovDeg > 0) {
-    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    let stepM = 1.0;
+    if (maxRangeM <= 3) stepM = 0.5;
+    else if (maxRangeM <= 12) stepM = 1.0;
+    else if (maxRangeM <= 25) stepM = 5.0;
+    else if (maxRangeM <= 50) stepM = 10.0;
+    else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
       const r_px = toPx(r_m * pf);
@@ -392,7 +402,12 @@ export function drawRadarFov(
     ctx.stroke();
     ctx.setLineDash([]);
 
-    const stepM = maxRangeM <= 3 ? 0.5 : 1.0;
+    let stepM = 1.0;
+    if (maxRangeM <= 3) stepM = 0.5;
+    else if (maxRangeM <= 12) stepM = 1.0;
+    else if (maxRangeM <= 25) stepM = 5.0;
+    else if (maxRangeM <= 50) stepM = 10.0;
+    else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
       const r_px = toPx(r_m * pf);
