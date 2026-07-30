@@ -21,6 +21,7 @@ export class GeoPanel extends LitElement {
   @property({ attribute: false }) lang = 'en';
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 350;
+  @property({ type: Number }) maxRangeM?: number;
 
   @query('#poly-cv') private _cv?: HTMLCanvasElement;
   private _rafId = 0;
@@ -107,7 +108,7 @@ export class GeoPanel extends LitElement {
           this.calibration.pitch,
           this.adapter.info.fovDegrees,
           this.adapter.info.minRangeM,
-          this.adapter.info.maxRangeM,
+          this.maxRangeM ?? this.adapter.info.maxRangeM,
           m,
           this.adapter.info.vitalRangeM,
         );

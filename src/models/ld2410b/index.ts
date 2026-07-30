@@ -34,7 +34,7 @@ const INFO: RadarModelInfo = {
   id: 'ld2410b',
   displayName: 'Hi-Link LD2410B (24 GHz)',
   fovDegrees: 120, // ±60° horizontal coverage
-  maxRangeM: 8.0, // 800 cm maximum
+  maxRangeM: 6.0, // 600 cm maximum (8 gates * 0.75m)
   minRangeM: 0.0,
   updateRateHz: 10,
   maxTargets: 1,
@@ -51,6 +51,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
   { key: 'distance_entity', labelKey: 'editor.distance_entity', required: true, domain: 'sensor' },
   { key: 'target_state_entity', labelKey: 'editor.target_state_entity', required: false, domain: 'sensor' },
+  { key: 'max_distance_entity', labelKey: 'editor.max_distance_entity', required: false, domain: 'sensor' },
 ];
 
 // ── Adapter implementation ────────────────────────────────────────────────────
@@ -76,18 +77,27 @@ export const ld2410bAdapter: RadarModelAdapter = {
       return eid ? hass.states[eid] : undefined;
     };
 
+    let maxRangeM: number | undefined;
+    const maxDistState = get('max_distance_entity');
+    if (maxDistState && maxDistState.state && maxDistState.state !== 'unavailable') {
+      const maxDistCm = parseFloat(maxDistState.state);
+      if (!isNaN(maxDistCm) && maxDistCm > 0) {
+        maxRangeM = maxDistCm / 100.0;
+      }
+    }
+
     const pres = get('presence_entity');
     if (!pres || pres.state === 'unavailable') {
-      return { present: false, targets: [] };
+      return { present: false, targets: [], maxRangeM };
     }
     const present = pres.state === 'on';
-    if (!present) return { present: false, targets: [] };
+    if (!present) return { present: false, targets: [], maxRangeM };
 
     const distState = get('distance_entity');
-    if (!distState) return { present: true, targets: [] };
+    if (!distState) return { present: true, targets: [], maxRangeM };
 
     const distance = parseFloat(distState.state) || 0;
-    if (distance <= 0) return { present: true, targets: [] };
+    if (distance <= 0) return { present: true, targets: [], maxRangeM };
 
     const targets: RadarTarget[] = [];
 
@@ -100,7 +110,7 @@ export const ld2410bAdapter: RadarModelAdapter = {
       rawZ: 0,
     });
 
-    return { present: true, targets };
+    return { present: true, targets, maxRangeM };
   },
 
   getDefaultCalibration(): CalibrationConfig {

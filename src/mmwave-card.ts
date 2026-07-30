@@ -115,6 +115,7 @@ export class MMWaveCard extends LitElement {
 
   @state() private _targets: RadarTarget[] = [];
   @state() private _present = false;
+  @state() private _maxRangeM?: number;
   private _deviceLoaded = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
@@ -138,6 +139,7 @@ export class MMWaveCard extends LitElement {
 
     const reading = this._adapter.readFromHass(hass, this._config);
     this._present = reading.present;
+    this._maxRangeM = reading.maxRangeM;
 
     // Apply transform to every target
     this._targets = reading.targets.map((t) => ({
@@ -392,6 +394,7 @@ export class MMWaveCard extends LitElement {
               .roomD=${roomD}
               .targets=${this._targets}
               .present=${this._present}
+              .maxRangeM=${this._maxRangeM}
             >
             </mmwave-live-panel>
           </div>
@@ -437,6 +440,7 @@ export class MMWaveCard extends LitElement {
                 .lang=${lang}
                 .roomW=${roomW}
                 .roomD=${roomD}
+                .maxRangeM=${this._maxRangeM}
               >
               </mmwave-geo-panel>`
             : nothing}
@@ -447,6 +451,7 @@ export class MMWaveCard extends LitElement {
                 .lang=${lang}
                 .roomW=${roomW}
                 .roomD=${roomD}
+                .maxRangeM=${this._maxRangeM}
               >
               </mmwave-yaw-panel>`
             : nothing}
@@ -459,6 +464,7 @@ export class MMWaveCard extends LitElement {
                 .roomD=${roomD}
                 .targets=${this._targets}
                 .present=${this._present}
+                .maxRangeM=${this._maxRangeM}
                 .showStatus=${true}
               >
               </mmwave-live-panel>`

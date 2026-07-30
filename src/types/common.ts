@@ -74,6 +74,7 @@ export interface RadarTarget {
 export interface RadarReading {
   present: boolean;
   targets: RadarTarget[];
+  maxRangeM?: number;
 }
 
 // ── Model capabilities ────────────────────────────────────────────────────────

@@ -31,6 +31,7 @@ export class LivePanel extends LitElement {
   @property({ attribute: false }) targets: RadarTarget[] = [];
   @property({ type: Boolean }) present = false;
   @property({ type: Boolean }) showStatus = false;
+  @property({ type: Number }) maxRangeM?: number;
 
   private _trail: TrailPoint[] = [];
   @query('#live-cv') private _cv?: HTMLCanvasElement;
@@ -105,7 +106,7 @@ export class LivePanel extends LitElement {
         this.calibration.pitch,
         this.adapter.info.fovDegrees,
         this.adapter.info.minRangeM,
-        this.adapter.info.maxRangeM,
+        this.maxRangeM ?? this.adapter.info.maxRangeM,
         m,
         this.adapter.info.vitalRangeM,
       );

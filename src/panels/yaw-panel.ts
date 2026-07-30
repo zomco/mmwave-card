@@ -23,6 +23,7 @@ export class YawPanel extends LitElement {
   @property({ attribute: false }) lang = 'en';
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 350;
+  @property({ type: Number }) maxRangeM?: number;
 
   @state() private _yw: YawCalibState = { sub: 0, capturing: false };
 
@@ -141,7 +142,7 @@ export class YawPanel extends LitElement {
         this.calibration.pitch,
         this.adapter.info.fovDegrees,
         this.adapter.info.minRangeM,
-        this.adapter.info.maxRangeM,
+        this.maxRangeM ?? this.adapter.info.maxRangeM,
         m,
         this.adapter.info.vitalRangeM,
       );
