@@ -116,7 +116,9 @@ export class MMWaveCard extends LitElement {
   @state() private _targets: RadarTarget[] = [];
   @state() private _present = false;
   @state() private _maxRangeM?: number;
+  @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
   private _deviceLoaded = false;
+  private _syncResetTimer?: number;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
 
@@ -161,6 +163,26 @@ export class MMWaveCard extends LitElement {
 
   private _L(k: string) {
     return localize(k, this._hass?.language);
+  }
+
+  private _ui(zh: string, en: string) {
+    return (this._hass?.language ?? 'en').toLowerCase().startsWith('zh') ? zh : en;
+  }
+
+  private _insideTargetCount() {
+    return this._targets.filter((target) => target.room?.inBoundary).length;
+  }
+
+  private _syncLabel() {
+    if (this._syncState === 'syncing') return this._ui('正在同步…', 'Syncing…');
+    if (this._syncState === 'success') return this._ui('已同步', 'Synced');
+    if (this._syncState === 'error') return this._ui('同步失败', 'Sync failed');
+    return this._ui('同步到设备', 'Sync to device');
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._syncResetTimer != null) clearTimeout(this._syncResetTimer);
   }
 
   // ── Tab management ───────────────────────────────────────────────────────
@@ -231,11 +253,18 @@ export class MMWaveCard extends LitElement {
     const cal = { ...this._cal };
 
     // Read numbers
-    const params = ['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'];
+    const params: Array<'radar_x' | 'radar_y' | 'radar_z' | 'yaw' | 'pitch' | 'roll'> = [
+      'radar_x',
+      'radar_y',
+      'radar_z',
+      'yaw',
+      'pitch',
+      'roll',
+    ];
     for (const key of params) {
       const stateObj = this._hass.states[`number.${prefix}_${key}`];
       if (stateObj && stateObj.state && !isNaN(Number(stateObj.state))) {
-        (cal as any)[key] = Number(stateObj.state);
+        cal[key] = Number(stateObj.state);
       }
     }
 
@@ -284,11 +313,7 @@ export class MMWaveCard extends LitElement {
       prefix = parts.slice(0, parts.length - 1).join('_');
     }
 
-    const btn = this.shadowRoot?.getElementById('btn-sync') as HTMLButtonElement | null;
-    if (btn) {
-      btn.style.opacity = '0.5';
-      btn.textContent = '同步中...';
-    }
+    this._syncState = 'syncing';
 
     try {
       const params: Record<string, number> = {
@@ -325,17 +350,13 @@ export class MMWaveCard extends LitElement {
         }
       }
 
-      if (btn) btn.textContent = '同步成功！';
+      this._syncState = 'success';
     } catch (e) {
-      if (btn) btn.textContent = '同步失败';
+      this._syncState = 'error';
       console.error(e);
     } finally {
-      if (btn) {
-        setTimeout(() => {
-          btn.textContent = '同步到设备';
-          btn.style.opacity = '';
-        }, 2000);
-      }
+      if (this._syncResetTimer != null) clearTimeout(this._syncResetTimer);
+      this._syncResetTimer = window.setTimeout(() => (this._syncState = 'idle'), 2200);
     }
   }
 
@@ -355,37 +376,64 @@ export class MMWaveCard extends LitElement {
   protected render() {
     if (!this._config || !this._adapter) return nothing;
 
-    const tabs = [this._L('tabs.geo'), this._L('tabs.yaw'), this._L('tabs.live')];
-
     const roomW = (this._cal.room_w ?? this._config.room_w) as number;
     const roomD = (this._cal.room_d ?? this._config.room_d) as number;
     const lang = this._hass?.language ?? 'en';
+    const insideTargets = this._insideTargetCount();
+    const steps = [
+      {
+        icon: 'mdi:cube-scan',
+        title: this._ui('安装定位', 'Installation'),
+        description: this._ui('在 3D 房间中放置雷达', 'Place the radar in the 3D room'),
+      },
+      {
+        icon: 'mdi:compass-outline',
+        title: this._ui('方向校准', 'Direction'),
+        description: this._ui('通过两个参考点校准偏航', 'Calibrate yaw with two reference points'),
+      },
+      {
+        icon: 'mdi:radar',
+        title: this._ui('实时验证', 'Live test'),
+        description: this._ui('检查目标、边界和运动轨迹', 'Verify targets, boundary and trails'),
+      },
+    ];
 
     // --- Everyday Live View ---
     if (!this._isCalibrating) {
       return html`
-        <ha-card>
-          <div class="ha-header">
-            <div class="ha-title">
-              <div
-                style="opacity: ${this._present
-                  ? 1
-                  : 0.5}; display: flex; align-items: center; justify-content: center;"
-              >
-                ${logoSvg}
+        <ha-card class="live-card">
+          <header class="live-header">
+            <div class="identity">
+              <div class="logo-tile ${this._present ? 'online' : ''}">${logoSvg}</div>
+              <div class="identity-copy">
+                <div class="card-title">${this._config.name || this._ui('人体存在雷达', 'Presence radar')}</div>
+                <div class="card-subtitle">${this._adapter.info.displayName}</div>
               </div>
-              <span>${this._config.name || '人体存在雷达'}</span>
             </div>
-            <ha-icon
-              icon="mdi:cog"
-              style="cursor: pointer; color: var(--secondary-text-color);"
-              @click=${() => {
-                this._isCalibrating = true;
-                this._tab = TAB_GEO;
-              }}
-            ></ha-icon>
-          </div>
-          <div id="body" style="padding-top: 0;">
+            <div class="header-actions">
+              <span class="presence-chip ${insideTargets > 0 ? 'active' : this._present ? 'filtered' : ''}">
+                <i></i>
+                ${insideTargets > 0
+                  ? this._ui(`${insideTargets} 个目标`, `${insideTargets} target${insideTargets === 1 ? '' : 's'}`)
+                  : this._present
+                    ? this._ui('边界外', 'Outside')
+                    : this._ui('无人', 'Clear')}
+              </span>
+              <button
+                class="icon-button"
+                type="button"
+                title=${this._ui('打开校准', 'Open calibration')}
+                aria-label=${this._ui('打开校准', 'Open calibration')}
+                @click=${() => {
+                  this._isCalibrating = true;
+                  this._tab = TAB_GEO;
+                }}
+              >
+                <ha-icon icon="mdi:tune-variant"></ha-icon>
+              </button>
+            </div>
+          </header>
+          <div class="live-body">
             <mmwave-live-panel
               .adapter=${this._adapter}
               .calibration=${this._cal}
@@ -405,30 +453,45 @@ export class MMWaveCard extends LitElement {
     // --- Advanced Calibration Mode ---
     return html`
       <ha-card>
-        <div class="ha-header calib">
-          <div class="ha-title">
-            <ha-icon
-              icon="mdi:arrow-left"
-              style="cursor: pointer; color: var(--secondary-text-color);"
-              @click=${() => (this._isCalibrating = false)}
-            ></ha-icon>
-            <span style="font-size: 14px; font-weight: 600;">高级校准模式</span>
+        <header class="workflow-header">
+          <button
+            class="icon-button"
+            type="button"
+            title=${this._ui('返回雷达视图', 'Back to radar view')}
+            aria-label=${this._ui('返回雷达视图', 'Back to radar view')}
+            @click=${() => (this._isCalibrating = false)}
+          >
+            <ha-icon icon="mdi:arrow-left"></ha-icon>
+          </button>
+          <div class="workflow-title">
+            <strong>${this._ui('雷达空间校准', 'Radar spatial calibration')}</strong>
+            <span>${this._adapter.info.displayName}</span>
           </div>
-        </div>
+          <span class="step-count">${this._tab + 1} / ${steps.length}</span>
+        </header>
 
-        <!-- Tab bar -->
-        <div id="tabs">
-          ${tabs.map(
-            (label, i) =>
-              html` <button class="tab ${this._tab === i ? 'act' : ''}" @click=${() => this._gotoTab(i)}>
-                ${label}
-              </button>`,
+        <nav class="workflow-steps" aria-label=${this._ui('校准步骤', 'Calibration steps')}>
+          ${steps.map(
+            (step, index) => html`
+              <button
+                type="button"
+                class="workflow-step ${this._tab === index ? 'current' : ''} ${this._tab > index ? 'complete' : ''}"
+                aria-current=${this._tab === index ? 'step' : nothing}
+                @click=${() => this._gotoTab(index)}
+              >
+                <span class="step-icon">
+                  ${this._tab > index
+                    ? html`<ha-icon icon="mdi:check"></ha-icon>`
+                    : html`<ha-icon icon=${step.icon}></ha-icon>`}
+                </span>
+                <span class="step-copy"><strong>${step.title}</strong><small>${step.description}</small></span>
+              </button>
+            `,
           )}
-        </div>
+        </nav>
 
-        <!-- Body -->
         <div
-          id="body"
+          class="workflow-body"
           @calibration-changed=${this._onCalibrationChanged}
           @polygon-point-added=${this._onPolygonPointAdded}
           @capture-requested=${this._onCaptureRequested}
@@ -471,14 +534,42 @@ export class MMWaveCard extends LitElement {
             : nothing}
         </div>
 
-        <!-- Footer -->
-        <div id="foot">
-          <div class="left-btns">
-            <button class="btn-rst" @click=${this._loadFromDevice}>撤销修改</button>
-            <button class="btn-rst" @click=${this._reset}>恢复出厂</button>
+        <footer class="workflow-footer">
+          <div class="footer-tools">
+            <button class="text-button" type="button" @click=${this._loadFromDevice}>
+              <ha-icon icon="mdi:backup-restore"></ha-icon><span>${this._ui('撤销修改', 'Revert')}</span>
+            </button>
+            <button class="text-button danger" type="button" @click=${this._reset}>
+              <ha-icon icon="mdi:restore-alert"></ha-icon><span>${this._ui('恢复默认', 'Reset')}</span>
+            </button>
           </div>
-          <button class="btn-sync" id="btn-sync" @click=${this._sync}>同步到设备</button>
-        </div>
+          <div class="footer-actions">
+            ${this._tab > TAB_GEO
+              ? html`<button class="secondary-button" type="button" @click=${() => this._gotoTab(this._tab - 1)}>
+                  <ha-icon icon="mdi:chevron-left"></ha-icon>${this._ui('上一步', 'Back')}
+                </button>`
+              : nothing}
+            ${this._tab < TAB_LIVE
+              ? html`<button class="primary-button" type="button" @click=${() => this._gotoTab(this._tab + 1)}>
+                  ${this._ui('下一步', 'Continue')}<ha-icon icon="mdi:chevron-right"></ha-icon>
+                </button>`
+              : html`<button
+                  class="primary-button sync ${this._syncState}"
+                  type="button"
+                  ?disabled=${this._syncState === 'syncing'}
+                  @click=${this._sync}
+                >
+                  <ha-icon
+                    icon=${this._syncState === 'success'
+                      ? 'mdi:check-circle'
+                      : this._syncState === 'error'
+                        ? 'mdi:alert-circle'
+                        : 'mdi:cloud-upload-outline'}
+                  ></ha-icon>
+                  ${this._syncLabel()}
+                </button>`}
+          </div>
+        </footer>
       </ha-card>
     `;
   }
@@ -489,12 +580,15 @@ export class MMWaveCard extends LitElement {
     :host {
       display: block;
       --mmwave-primary: #0b825c;
+      --mmwave-primary-soft: rgba(11, 130, 92, 0.1);
+      --mmwave-surface: color-mix(in srgb, var(--card-background-color, #fff) 94%, var(--mmwave-primary));
+      --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
       --mmwave-secondary: #4b5563;
     }
     ha-card {
       background: var(--ha-card-background, var(--card-background-color, #fff));
-      border-radius: var(--ha-card-border-radius, 12px);
-      box-shadow: var(--ha-card-box-shadow, none);
+      border-radius: var(--ha-card-border-radius, 16px);
+      box-shadow: var(--ha-card-box-shadow, 0 8px 28px rgba(0, 0, 0, 0.08));
       border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
       overflow: hidden;
       color: var(--primary-text-color);
@@ -603,6 +697,313 @@ export class MMWaveCard extends LitElement {
     }
     .btn-rst:hover {
       background: rgba(128, 128, 128, 0.05);
+    }
+
+    .live-header,
+    .workflow-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+    }
+    .identity,
+    .header-actions,
+    .footer-tools,
+    .footer-actions {
+      display: flex;
+      align-items: center;
+    }
+    .identity {
+      min-width: 0;
+      gap: 11px;
+    }
+    .logo-tile {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 12px;
+      background: var(--mmwave-surface);
+      opacity: 0.62;
+      transition: 0.25s ease;
+    }
+    .logo-tile.online {
+      border-color: rgba(11, 130, 92, 0.3);
+      box-shadow: 0 0 0 4px rgba(11, 130, 92, 0.08);
+      opacity: 1;
+    }
+    .identity-copy,
+    .workflow-title {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-title,
+    .workflow-title strong {
+      overflow: hidden;
+      color: var(--primary-text-color);
+      font-size: 15px;
+      font-weight: 650;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .card-subtitle,
+    .workflow-title span {
+      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .header-actions {
+      flex: none;
+      gap: 8px;
+    }
+    .presence-chip,
+    .step-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      background: rgba(128, 128, 128, 0.05);
+      font-size: 10px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+    .presence-chip i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #9ca3af;
+    }
+    .presence-chip.active {
+      border-color: rgba(11, 130, 92, 0.24);
+      color: var(--mmwave-primary);
+      background: var(--mmwave-primary-soft);
+    }
+    .presence-chip.active i {
+      background: var(--mmwave-primary);
+      box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.13);
+    }
+    .presence-chip.filtered i {
+      background: var(--warning-color, #ff9800);
+    }
+    .icon-button {
+      width: 36px;
+      height: 36px;
+      display: inline-grid;
+      place-items: center;
+      flex: none;
+      padding: 0;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 11px;
+      color: var(--secondary-text-color);
+      background: rgba(128, 128, 128, 0.04);
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+    .icon-button:hover {
+      border-color: rgba(11, 130, 92, 0.35);
+      color: var(--mmwave-primary);
+      background: var(--mmwave-primary-soft);
+    }
+    .icon-button ha-icon {
+      --mdc-icon-size: 20px;
+    }
+    .live-body {
+      padding: 0 12px 12px;
+    }
+    .workflow-header {
+      justify-content: flex-start;
+      border-bottom: 1px solid var(--mmwave-line);
+      background: linear-gradient(135deg, rgba(11, 130, 92, 0.065), transparent 65%);
+    }
+    .workflow-title {
+      flex: 1;
+    }
+    .workflow-steps {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--mmwave-line);
+    }
+    .workflow-step {
+      display: flex;
+      min-width: 0;
+      align-items: center;
+      gap: 8px;
+      padding: 9px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      color: var(--secondary-text-color);
+      background: transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+    .workflow-step:hover {
+      background: rgba(128, 128, 128, 0.06);
+    }
+    .workflow-step.current {
+      border-color: rgba(11, 130, 92, 0.22);
+      color: var(--mmwave-primary);
+      background: var(--mmwave-primary-soft);
+    }
+    .workflow-step.complete {
+      color: var(--mmwave-primary);
+    }
+    .step-icon {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border-radius: 9px;
+      background: rgba(128, 128, 128, 0.1);
+    }
+    .workflow-step.current .step-icon,
+    .workflow-step.complete .step-icon {
+      color: #fff;
+      background: var(--mmwave-primary);
+    }
+    .step-icon ha-icon {
+      --mdc-icon-size: 17px;
+    }
+    .step-copy {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .step-copy strong {
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .step-copy small {
+      overflow: hidden;
+      font-size: 9px;
+      font-weight: 400;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .workflow-body {
+      min-height: 320px;
+      padding: 16px;
+    }
+    .workflow-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 16px 16px;
+      border-top: 1px solid var(--mmwave-line);
+      background: rgba(128, 128, 128, 0.025);
+    }
+    .footer-tools,
+    .footer-actions {
+      gap: 7px;
+    }
+    .text-button,
+    .secondary-button,
+    .primary-button {
+      display: inline-flex;
+      min-height: 36px;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      padding: 7px 11px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+    .text-button {
+      padding-inline: 7px;
+      border: 1px solid transparent;
+      color: var(--secondary-text-color);
+      background: transparent;
+    }
+    .text-button:hover,
+    .secondary-button:hover {
+      background: rgba(128, 128, 128, 0.08);
+    }
+    .text-button.danger:hover {
+      color: var(--error-color, #ef5350);
+      background: rgba(239, 83, 80, 0.08);
+    }
+    .secondary-button {
+      border: 1px solid var(--mmwave-line);
+      color: var(--primary-text-color);
+      background: var(--card-background-color, #fff);
+    }
+    .primary-button {
+      border: 1px solid var(--mmwave-primary);
+      color: #fff;
+      background: var(--mmwave-primary);
+      box-shadow: 0 5px 14px rgba(11, 130, 92, 0.2);
+    }
+    .primary-button:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+    }
+    .primary-button:disabled {
+      cursor: wait;
+      opacity: 0.65;
+      transform: none;
+    }
+    .primary-button.success {
+      border-color: var(--success-color, #43a047);
+      background: var(--success-color, #43a047);
+    }
+    .primary-button.error {
+      border-color: var(--error-color, #e53935);
+      background: var(--error-color, #e53935);
+    }
+    .text-button ha-icon,
+    .secondary-button ha-icon,
+    .primary-button ha-icon {
+      --mdc-icon-size: 17px;
+    }
+    @media (max-width: 520px) {
+      .workflow-steps {
+        gap: 4px;
+        padding-inline: 10px;
+      }
+      .workflow-step {
+        flex-direction: column;
+        gap: 4px;
+        text-align: center;
+      }
+      .step-copy small {
+        display: none;
+      }
+      .workflow-body {
+        padding: 12px;
+      }
+      .workflow-footer {
+        align-items: stretch;
+        padding: 10px 12px 12px;
+      }
+      .footer-tools span {
+        display: none;
+      }
+      .footer-actions {
+        margin-left: auto;
+      }
+      .presence-chip {
+        display: none;
+      }
     }
   `;
 }

@@ -13,6 +13,7 @@ import {
   type CanvasMetrics,
 } from '../utils/canvas';
 import { localize } from '../localize/localize';
+import './installation-3d';
 
 @customElement('mmwave-geo-panel')
 export class GeoPanel extends LitElement {
@@ -28,6 +29,10 @@ export class GeoPanel extends LitElement {
 
   private _L(k: string) {
     return localize(k, this.lang);
+  }
+
+  private _ui(zh: string, en: string) {
+    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
   }
 
   connectedCallback() {
@@ -190,27 +195,79 @@ export class GeoPanel extends LitElement {
     const roomW = c.room_w ?? this.roomW;
     const roomD = c.room_d ?? this.roomD;
     return html`
-      ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x, 5, 0, roomW)}
-      ${this._numField(this._L('geo.radar_y'), 'radar_y', c.radar_y, 5, 0, roomD)}
-      ${this._numField(this._L('geo.radar_z'), 'radar_z', c.radar_z, 5, 0, 400)}
-      ${this._degField(this._L('geo.yaw_rough'), 'yaw', c.yaw)}
-      ${this._degField(this._L('geo.pitch'), 'pitch', c.pitch, -90, 90)}
-      ${this._degField(this._L('geo.roll'), 'roll', c.roll, -90, 90)}
-      <p class="note">${this._L('geo.geo_note')}</p>
-
-      <p class="sec-title" style="margin-top:14px">${this._L('geo.boundary')}</p>
-      <div class="poly-bar">
-        <span class="poly-hint ${pn >= 3 ? 'ok' : ''}">${hint}</span>
-        <div class="poly-btns">
-          <button class="pbtn" @click=${this._undo}>${this._L('geo.poly_undo')}</button>
-          <button class="pbtn" @click=${this._clear}>${this._L('geo.poly_clear')}</button>
-        </div>
+      <div class="panel-heading">
+        <span class="eyebrow">${this._ui('步骤 1 · 安装定位', 'Step 1 · Installation')}</span>
+        <h2>${this._ui('在房间中放置雷达', 'Place the radar in the room')}</h2>
+        <p>
+          ${this._ui(
+            '拖拽 3D 模型上的彩色控制柄，直观调整安装位置、高度和朝向。',
+            'Drag the colored handles to set position, height and orientation.',
+          )}
+        </p>
       </div>
-      <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
 
-      ${pn > 0
-        ? html`<p class="note">${this._L('geo.boundary_note')}</p>`
-        : html`<p class="note">${this._L('geo.boundary_note')}</p>`}
+      <mmwave-installation-3d
+        .adapter=${this.adapter}
+        .calibration=${c}
+        .lang=${this.lang}
+        .roomW=${roomW}
+        .roomD=${roomD}
+        .maxRangeM=${this.maxRangeM}
+      ></mmwave-installation-3d>
+
+      <details class="precision">
+        <summary>
+          <span>${this._ui('精确数值调整', 'Precise numeric adjustment')}</span>
+          <small>${this._ui('可选', 'Optional')}</small>
+        </summary>
+        <div class="precision-fields">
+          ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x, 5, 0, roomW)}
+          ${this._numField(this._L('geo.radar_y'), 'radar_y', c.radar_y, 5, 0, roomD)}
+          ${this._numField(this._L('geo.radar_z'), 'radar_z', c.radar_z, 5, 0, 400)}
+          ${this._degField(this._L('geo.yaw_rough'), 'yaw', c.yaw)}
+          ${this._degField(this._L('geo.pitch'), 'pitch', c.pitch, -90, 90)}
+          ${this._degField(this._L('geo.roll'), 'roll', c.roll, -90, 90)}
+          <p class="note">${this._L('geo.geo_note')}</p>
+        </div>
+      </details>
+
+      <section class="boundary-card">
+        <div class="section-heading">
+          <div>
+            <span class="eyebrow">${this._ui('可选设置', 'Optional')}</span>
+            <h3>${this._L('geo.boundary')}</h3>
+            <p>
+              ${this._ui(
+                '在俯视图中点击，依次勾画实际有效检测区域。',
+                'Click the top-down map to outline the active detection area.',
+              )}
+            </p>
+          </div>
+          <span class="boundary-badge ${pn >= 3 ? 'active' : ''}"
+            >${pn >= 3 ? `${pn} ${this._ui('个点', 'points')}` : this._ui('未启用', 'Off')}</span
+          >
+        </div>
+        <div class="poly-bar">
+          <span class="poly-hint ${pn >= 3 ? 'ok' : ''}">${hint}</span>
+          <div class="poly-btns">
+            <button class="pbtn" type="button" ?disabled=${pn === 0} @click=${this._undo}>
+              ${this._ui('撤销一点', 'Undo point')}
+            </button>
+            <button class="pbtn danger" type="button" ?disabled=${pn === 0} @click=${this._clear}>
+              ${this._L('geo.poly_clear')}
+            </button>
+          </div>
+        </div>
+        <div class="map-shell">
+          <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
+          ${pn === 0
+            ? html`<span class="map-empty"
+                >${this._ui('点击地图添加第一个边界点', 'Click the map to add the first point')}</span
+              >`
+            : ''}
+        </div>
+        <p class="note">${this._L('geo.boundary_note')}</p>
+      </section>
     `;
   }
 
@@ -218,12 +275,62 @@ export class GeoPanel extends LitElement {
     :host {
       display: block;
     }
+    .panel-heading {
+      margin-bottom: 12px;
+    }
+    .eyebrow {
+      color: var(--mmwave-primary);
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .panel-heading h2,
+    .section-heading h3 {
+      margin: 4px 0;
+      color: var(--primary-text-color);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .panel-heading p,
+    .section-heading p {
+      margin: 0;
+      color: var(--secondary-text-color);
+      font-size: 11px;
+      line-height: 1.5;
+    }
     .sec-title {
       font-size: 10px;
       letter-spacing: 0.07em;
       text-transform: uppercase;
       color: var(--secondary-text-color);
       margin: 0 0 8px;
+    }
+    .precision {
+      margin: 5px 0 16px;
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      border-radius: 11px;
+      background: rgba(128, 128, 128, 0.035);
+    }
+    .precision summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      color: var(--secondary-text-color);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+    }
+    .precision summary small {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(128, 128, 128, 0.1);
+      font-size: 8px;
+    }
+    .precision-fields {
+      padding: 0 6px 6px;
     }
     .field {
       display: flex;
@@ -280,6 +387,36 @@ export class GeoPanel extends LitElement {
       border-left: 2px solid var(--divider-color);
       border-radius: 0 5px 5px 0;
     }
+    .boundary-card {
+      padding: 12px;
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.16));
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--card-background-color, #fff) 96%, var(--mmwave-primary));
+    }
+    .section-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-heading h3 {
+      font-size: 13px;
+    }
+    .boundary-badge {
+      flex: none;
+      padding: 4px 8px;
+      border: 1px solid var(--divider-color);
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .boundary-badge.active {
+      border-color: rgba(11, 130, 92, 0.25);
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.09);
+    }
     .poly-bar {
       display: flex;
       align-items: center;
@@ -306,18 +443,41 @@ export class GeoPanel extends LitElement {
       color: var(--secondary-text-color);
       cursor: pointer;
     }
+    .pbtn:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+    .pbtn.danger:not(:disabled):hover {
+      color: var(--error-color, #e53935);
+      background: rgba(229, 57, 53, 0.08);
+    }
     .pbtn:hover {
       background: rgba(128, 128, 128, 0.2);
+    }
+    .map-shell {
+      position: relative;
+    }
+    .map-empty {
+      position: absolute;
+      left: 50%;
+      bottom: 14px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
+      font-size: 9px;
+      pointer-events: none;
+      transform: translateX(-50%);
+      white-space: nowrap;
     }
     canvas {
       display: block;
       width: 100%;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
       background: rgba(0, 0, 0, 0.15);
       touch-action: none;
       cursor: crosshair;
-    }
     }
   `;
 }

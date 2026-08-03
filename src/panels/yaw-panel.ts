@@ -34,6 +34,10 @@ export class YawPanel extends LitElement {
     return localize(k, this.lang);
   }
 
+  private _ui(zh: string, en: string) {
+    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this._loop();
@@ -92,6 +96,10 @@ export class YawPanel extends LitElement {
   private _onCapture() {
     this._yw = { ...this._yw, capturing: true };
     this.dispatchEvent(new CustomEvent('capture-requested', { bubbles: true, composed: true }));
+  }
+
+  private _restart() {
+    this._yw = { sub: 0, capturing: false };
   }
 
   private _capture(rawX: number, rawY: number) {
@@ -208,7 +216,7 @@ export class YawPanel extends LitElement {
 
     return html` <div class="ref-step ${cls}">
       <div class="ref-num">${rel >= 1 ? '✓' : isA ? 'A' : 'B'}</div>
-      <div>
+      <div class="ref-copy">
         <div class="ref-title">${this._L(isA ? 'yaw.ref_a_title' : 'yaw.ref_b_title')}</div>
         <div class="ref-sub">${sub}</div>
       </div>
@@ -228,18 +236,75 @@ export class YawPanel extends LitElement {
       : this._L('yaw.result_idle');
 
     return html`
-      ${this._refStep(0)} ${this._refStep(1)}
-      <canvas id="yaw-cv" @click=${this._onCanvasClick}></canvas>
-      <button class="cap-btn" ?disabled=${!canCap || yw.capturing} @click=${this._onCapture}>
-        ${yw.capturing ? this._L('yaw.capture_wait') : this._L('yaw.capture_btn')}
+      <div class="panel-heading">
+        <span class="eyebrow">${this._ui('步骤 2 · 方向校准', 'Step 2 · Direction')}</span>
+        <h2>${this._ui('用两个位置自动计算偏航', 'Calculate yaw from two positions')}</h2>
+        <p>
+          ${this._ui(
+            '依次选择两个相距较远且方便站立的位置，雷达会自动完成方向校准。',
+            'Choose two well-separated places you can stand, then capture one reading at each.',
+          )}
+        </p>
+      </div>
+
+      <div class="ref-grid">${this._refStep(0)} ${this._refStep(1)}</div>
+      <div class="map-shell">
+        <canvas id="yaw-cv" @click=${this._onCanvasClick}></canvas>
+        <span class="map-tip">
+          ${yw.sub === 0 || yw.sub === 1
+            ? this._ui('点击地图选择站立位置', 'Click the map to choose where to stand')
+            : yw.capturing
+              ? this._ui('保持站立，正在等待雷达数据…', 'Stand still while waiting for radar data…')
+              : this._ui('请走到已标记的位置', 'Walk to the marked position')}
+        </span>
+      </div>
+      <button class="cap-btn" type="button" ?disabled=${!canCap || yw.capturing} @click=${this._onCapture}>
+        <span class="cap-icon">${yw.capturing ? '···' : '◎'}</span>
+        ${yw.capturing
+          ? this._L('yaw.capture_wait')
+          : canCap
+            ? this._ui('我已站好，捕获雷达位置', 'I am ready — capture position')
+            : this._ui('请先在地图上选择位置', 'Choose a position on the map first')}
       </button>
-      <div class="result-line ${ok ? 'ok' : ''}">${resText}</div>
+      <div class="result-card ${ok ? 'ok' : ''}">
+        <span class="result-icon">${ok ? '✓' : 'i'}</span>
+        <span>${resText}</span>
+        ${yw.sub > 0
+          ? html`<button type="button" @click=${this._restart}>${this._ui('重新校准', 'Start over')}</button>`
+          : ''}
+      </div>
     `;
   }
 
   static styles = css`
     :host {
       display: block;
+    }
+    .panel-heading {
+      margin-bottom: 12px;
+    }
+    .eyebrow {
+      color: var(--mmwave-primary);
+      font-size: 9px;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .panel-heading h2 {
+      margin: 4px 0;
+      color: var(--primary-text-color);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .panel-heading p {
+      margin: 0;
+      color: var(--secondary-text-color);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .map-shell {
+      position: relative;
+      margin: 9px 0;
     }
     canvas {
       display: block;
@@ -249,16 +314,40 @@ export class YawPanel extends LitElement {
       background: rgba(0, 0, 0, 0.15);
       touch-action: none;
       cursor: crosshair;
-      margin: 8px 0;
+      margin: 0;
+    }
+    .map-tip {
+      position: absolute;
+      bottom: 9px;
+      left: 50%;
+      max-width: calc(100% - 28px);
+      padding: 5px 9px;
+      overflow: hidden;
+      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.16));
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
+      font-size: 9px;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      backdrop-filter: blur(6px);
+    }
+    .ref-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
     .ref-step {
       display: flex;
       align-items: center;
       gap: 9px;
-      padding: 8px 10px;
-      border-radius: 8px;
+      min-width: 0;
+      padding: 10px;
+      border-radius: 11px;
       border: 1px solid var(--divider-color);
-      margin-bottom: 5px;
+      margin-bottom: 0;
       transition: all 0.22s;
     }
     .ref-step.act {
@@ -277,6 +366,28 @@ export class YawPanel extends LitElement {
       font-size: 11px;
       font-weight: 600;
       flex-shrink: 0;
+    }
+    .ref-copy {
+      min-width: 0;
+    }
+    .ref-title {
+      margin-bottom: 2px;
+      color: var(--primary-text-color);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .ref-sub {
+      display: -webkit-box;
+      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: 9px;
+      line-height: 1.35;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    .ref-step.done {
+      border-color: rgba(11, 130, 92, 0.18);
+      background: rgba(11, 130, 92, 0.045);
     }
     .ref-step.act .ref-num {
       background: var(--mmwave-primary);
@@ -297,24 +408,77 @@ export class YawPanel extends LitElement {
     }
 
     .cap-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
       width: 100%;
       margin-top: 9px;
-      padding: 9px;
-      background: rgba(11, 130, 92, 0.12);
-      border: 1px solid rgba(11, 130, 92, 0.35);
-      border-radius: 8px;
+      min-height: 42px;
+      padding: 10px;
+      background: var(--mmwave-primary);
+      border: 1px solid var(--mmwave-primary);
+      border-radius: 11px;
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 650;
       cursor: pointer;
-      color: var(--mmwave-primary);
+      color: #fff;
       transition: background 0.15s;
+      box-shadow: 0 5px 14px rgba(11, 130, 92, 0.18);
     }
     .cap-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
     .cap-btn:not(:disabled):hover {
-      background: rgba(11, 130, 92, 0.22);
+      filter: brightness(1.06);
+    }
+    .cap-icon {
+      font-size: 17px;
+    }
+    .result-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color);
+      border-radius: 10px;
+      color: var(--secondary-text-color);
+      background: rgba(128, 128, 128, 0.04);
+      font-size: 10px;
+    }
+    .result-card.ok {
+      border-color: rgba(11, 130, 92, 0.22);
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.07);
+    }
+    .result-icon {
+      width: 19px;
+      height: 19px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border-radius: 50%;
+      color: #fff;
+      background: #9ca3af;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .result-card.ok .result-icon {
+      background: var(--mmwave-primary);
+    }
+    .result-card > span:nth-child(2) {
+      flex: 1;
+    }
+    .result-card button {
+      padding: 3px 7px;
+      border: 0;
+      border-radius: 7px;
+      color: inherit;
+      background: rgba(128, 128, 128, 0.09);
+      font-size: 9px;
+      cursor: pointer;
     }
     .result-line {
       font-size: 11px;
@@ -325,6 +489,11 @@ export class YawPanel extends LitElement {
     }
     .result-line.ok {
       color: var(--success-color, #4caf50);
+    }
+    @media (max-width: 440px) {
+      .ref-grid {
+        grid-template-columns: 1fr;
+      }
     }
   `;
 }

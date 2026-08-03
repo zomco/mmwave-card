@@ -7,15 +7,29 @@ import type { MMWaveCardConfig } from './types';
 import { DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
 
+interface DeviceRegistryEntry {
+  id: string;
+  name?: string;
+  name_by_user?: string;
+}
+
+interface EntityRegistryEntry {
+  device_id?: string;
+  entity_id: string;
+  original_name?: string;
+}
+
 @customElement(EDITOR_TAG)
 export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ attribute: false }) private _config!: MMWaveCardConfig;
 
-  @state() private _devices: any[] = [];
+  @state() private _devices: DeviceRegistryEntry[] = [];
   @state() private _advOpen = false;
+  @state() private _deviceStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
+  @state() private _matchedEntities = 0;
 
-  protected updated(changedProps: Map<string, any>) {
+  protected updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass && this._devices.length === 0) {
       this._loadDevices();
@@ -24,7 +38,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private async _loadDevices() {
     try {
-      this._devices = await this.hass.callWS({ type: 'config/device_registry/list' });
+      this._devices = await this.hass.callWS<DeviceRegistryEntry[]>({ type: 'config/device_registry/list' });
     } catch (e) {
       console.warn('Failed to load devices', e);
     }
@@ -38,6 +52,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     return localize(k, this.hass?.language);
   }
 
+  private _ui(zh: string, en: string) {
+    return (this.hass?.language ?? 'en').toLowerCase().startsWith('zh') ? zh : en;
+  }
+
   private _changed(key: string, value: unknown) {
     this._config = { ...this._config, [key]: value };
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
@@ -46,10 +64,16 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   private async _deviceDropdownChanged(e: Event) {
     const deviceId = (e.target as HTMLSelectElement).value;
     this._changed('device_id', deviceId);
-    if (!deviceId) return;
+    if (!deviceId) {
+      this._deviceStatus = 'idle';
+      this._matchedEntities = 0;
+      return;
+    }
+
+    this._deviceStatus = 'loading';
 
     try {
-      const entities: any[] = await this.hass.callWS({ type: 'config/entity_registry/list' });
+      const entities = await this.hass.callWS<EntityRegistryEntry[]>({ type: 'config/entity_registry/list' });
       const deviceEntities = entities.filter((ent) => ent.device_id === deviceId);
 
       const configPatch: Partial<MMWaveCardConfig> = {};
@@ -64,9 +88,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
         if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
           configPatch.presence_entity = id;
-        } else if (id.startsWith('sensor.') && (name.includes('distance') || id.includes('distance') || name.includes('距离'))) {
+        } else if (
+          id.startsWith('sensor.') &&
+          (name.includes('distance') || id.includes('distance') || name.includes('距离'))
+        ) {
           configPatch.distance_entity = id;
-        } else if (id.startsWith('sensor.') && (name.includes('motion_state') || id.includes('motion_state') || name.includes('运动状态') || name.includes('target_state') || id.includes('target_state') || name.includes('目标状态'))) {
+        } else if (
+          id.startsWith('sensor.') &&
+          (name.includes('motion_state') ||
+            id.includes('motion_state') ||
+            name.includes('运动状态') ||
+            name.includes('target_state') ||
+            id.includes('target_state') ||
+            name.includes('目标状态'))
+        ) {
           configPatch.motion_state_entity = id;
           configPatch.target_state_entity = id;
         } else if (matchTargetX) {
@@ -117,7 +152,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         this._config = { ...this._config, ...configPatch };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
       }
+      this._matchedEntities = Object.keys(configPatch).length;
+      this._deviceStatus = this._matchedEntities > 0 ? 'success' : 'error';
     } catch (err) {
+      this._deviceStatus = 'error';
       console.warn('Failed to auto-populate entities from device', err);
     }
   }
@@ -130,20 +168,32 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     const models = getModelList();
 
     return html` <div class="card-config">
+      <div class="editor-hero">
+        <span class="hero-icon">◎</span>
+        <div>
+          <strong>${this._ui('毫米波雷达卡片', 'MMWave radar card')}</strong>
+          <p>
+            ${this._ui(
+              '选择雷达设备后自动完成实体匹配，只需确认房间尺寸即可开始。',
+              'Choose a radar device to match entities automatically, then confirm the room size.',
+            )}
+          </p>
+        </div>
+      </div>
+
       <!-- Basic settings -->
-      <h3>基础设置 (Basic Settings)</h3>
+      <h3><span>1</span>${this._ui('基本信息', 'Basics')}</h3>
       <div class="field">
-        <label>卡片标题 (Title)</label>
+        <label>${this._ui('卡片标题', 'Card title')}</label>
         <input
           type="text"
           .value=${this._config.name ?? ''}
-          placeholder="人体存在雷达"
+          placeholder=${this._ui('人体存在雷达', 'Presence radar')}
           @change=${(e: Event) => this._changed('name', (e.target as HTMLInputElement).value)}
         />
       </div>
 
       <!-- Model selector -->
-      <h3>${this._L('editor.model')}</h3>
       <div class="field">
         <label>${this._L('editor.model')}</label>
         <select
@@ -156,12 +206,15 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       </div>
 
       <!-- Device selector -->
-      <h3>雷达设备 (Radar Device)</h3>
-      <p style="font-size:12px; color:var(--secondary-text-color); margin-top:-4px;">
-        一键选择设备，自动匹配下方所有实体配置
+      <h3><span>2</span>${this._ui('连接雷达设备', 'Connect radar device')}</h3>
+      <p class="section-help">
+        ${this._ui(
+          '从 Home Assistant 设备列表中选择雷达，卡片会自动识别所需实体。',
+          'Select the radar from Home Assistant and the card will identify the required entities.',
+        )}
       </p>
       <div class="field">
-        <label>设备</label>
+        <label>${this._ui('雷达设备', 'Radar device')}</label>
         <select .value=${this._config.device_id ?? ''} @change=${this._deviceDropdownChanged}>
           <option value="">-- 选择设备 (Select Device) --</option>
           ${this._devices.map(
@@ -172,18 +225,66 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           )}
         </select>
       </div>
+      ${this._deviceStatus !== 'idle'
+        ? html`<div class="match-status ${this._deviceStatus}">
+            <span>${this._deviceStatus === 'loading' ? '···' : this._deviceStatus === 'success' ? '✓' : '!'}</span>
+            ${this._deviceStatus === 'loading'
+              ? this._ui('正在识别设备实体…', 'Detecting device entities…')
+              : this._deviceStatus === 'success'
+                ? this._ui(
+                    `已自动匹配 ${this._matchedEntities} 个配置项`,
+                    `Matched ${this._matchedEntities} configuration fields`,
+                  )
+                : this._ui(
+                    '自动识别失败，请展开高级选项手动配置。',
+                    'Automatic detection failed. Configure entities manually below.',
+                  )}
+          </div>`
+        : ''}
+
+      <!-- Room dimensions -->
+      <h3><span>3</span>${this._L('editor.room_dimensions')}</h3>
+      <p class="section-help">
+        ${this._ui(
+          '填写房间实际尺寸，后续 3D 安装定位和轨迹显示会使用此比例。',
+          'Enter the room dimensions used by the 3D placement and target map.',
+        )}
+      </p>
+      <div class="room-grid">
+        <div class="field compact">
+          <label>${this._L('editor.room_w')}</label>
+          <input
+            type="number"
+            .value=${String(this._config.room_w ?? 400)}
+            min="50"
+            step="10"
+            @change=${(e: Event) => this._changed('room_w', Number((e.target as HTMLInputElement).value))}
+          />
+        </div>
+        <div class="field compact">
+          <label>${this._L('editor.room_d')}</label>
+          <input
+            type="number"
+            .value=${String(this._config.room_d ?? 600)}
+            min="50"
+            step="10"
+            @change=${(e: Event) => this._changed('room_d', Number((e.target as HTMLInputElement).value))}
+          />
+        </div>
+      </div>
 
       <!-- Entity fields (model-specific) -->
       ${adapter
         ? html` <details
-            style="margin-top:16px;"
+            class="advanced"
             ?open=${this._advOpen}
             @toggle=${(e: Event) => (this._advOpen = (e.target as HTMLDetailsElement).open)}
           >
-            <summary style="cursor:pointer; font-size:12px; color:var(--mmwave-primary); outline:none;">
-              高级选项：手动指定实体 (Advanced Entities)
+            <summary>
+              <span>${this._ui('高级选项：手动指定实体', 'Advanced: assign entities manually')}</span>
+              <small>${this._ui('故障排查', 'Troubleshooting')}</small>
             </summary>
-            <div style="margin-top:10px;">
+            <div class="advanced-fields">
               ${adapter.getEntitySchema().map(
                 (f) =>
                   html` <div class="field">
@@ -203,54 +304,91 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       <datalist id="entities-list">
         ${(this.hass ? Object.keys(this.hass.states) : []).map((id) => html`<option value=${id}></option>`)}
       </datalist>
-
-      <!-- Room dimensions -->
-      <h3>${this._L('editor.room_dimensions')}</h3>
-      <div class="field">
-        <label>${this._L('editor.room_w')}</label>
-        <input
-          type="number"
-          .value=${String(this._config.room_w ?? 400)}
-          min="50"
-          step="10"
-          @change=${(e: Event) => this._changed('room_w', Number((e.target as HTMLInputElement).value))}
-        />
-      </div>
-      <div class="field">
-        <label>${this._L('editor.room_d')}</label>
-        <input
-          type="number"
-          .value=${String(this._config.room_d ?? 600)}
-          min="50"
-          step="10"
-          @change=${(e: Event) => this._changed('room_d', Number((e.target as HTMLInputElement).value))}
-        />
-      </div>
     </div>`;
   }
 
   static styles = css`
+    :host {
+      --mmwave-primary: #0b825c;
+      --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
+      display: block;
+    }
     .card-config {
-      padding: 4px 0;
+      padding: 4px 2px 12px;
+    }
+    .editor-hero {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid rgba(11, 130, 92, 0.2);
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(11, 130, 92, 0.1), rgba(3, 169, 244, 0.04));
+    }
+    .hero-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border-radius: 10px;
+      color: #fff;
+      background: var(--mmwave-primary);
+      font-size: 18px;
+    }
+    .editor-hero strong {
+      color: var(--primary-text-color);
+      font-size: 13px;
+    }
+    .editor-hero p,
+    .section-help {
+      margin: 3px 0 0;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+      line-height: 1.5;
     }
     h3 {
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: var(--secondary-text-color);
-      margin: 16px 0 8px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 18px 0 8px;
+      color: var(--primary-text-color);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    h3 span {
+      width: 20px;
+      height: 20px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      color: #fff;
+      background: var(--mmwave-primary);
+      font-size: 10px;
+    }
+    .section-help {
+      margin: -3px 0 9px 27px;
     }
     .field {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 7px;
+      margin-bottom: 8px;
+      padding: 9px 10px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 10px;
+      background: rgba(128, 128, 128, 0.035);
+      transition: 0.18s ease;
+    }
+    .field:focus-within {
+      border-color: rgba(11, 130, 92, 0.45);
+      box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.07);
     }
     .field label {
-      font-size: 13px;
-      min-width: 150px;
+      min-width: 130px;
       color: var(--primary-text-color);
+      font-size: 11px;
+      font-weight: 600;
     }
     .field ha-entity-picker,
     .field select,
@@ -259,12 +397,106 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
     .field select,
     .field input {
-      padding: 6px 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 6px;
-      background: var(--card-background-color);
+      min-width: 0;
+      padding: 7px 8px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 8px;
+      background: var(--card-background-color, #fff);
       color: var(--primary-text-color);
-      font-size: 13px;
+      font-size: 11px;
+      outline: none;
+    }
+    .match-status {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 3px 0 10px;
+      padding: 8px 10px;
+      border-radius: 9px;
+      color: var(--secondary-text-color);
+      background: rgba(128, 128, 128, 0.06);
+      font-size: 10px;
+    }
+    .match-status > span {
+      width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      flex: none;
+      border-radius: 50%;
+      color: #fff;
+      background: #9ca3af;
+      font-weight: 750;
+    }
+    .match-status.success {
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.08);
+    }
+    .match-status.success > span {
+      background: var(--mmwave-primary);
+    }
+    .match-status.error {
+      color: var(--error-color, #e53935);
+      background: rgba(229, 57, 53, 0.07);
+    }
+    .match-status.error > span {
+      background: var(--error-color, #e53935);
+    }
+    .room-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .room-grid .field {
+      margin: 0;
+    }
+    .field.compact {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .field.compact label {
+      min-width: 0;
+    }
+    .advanced {
+      margin-top: 16px;
+      overflow: hidden;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 11px;
+      background: rgba(128, 128, 128, 0.025);
+    }
+    .advanced summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .advanced summary small {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(128, 128, 128, 0.09);
+      font-size: 8px;
+    }
+    .advanced-fields {
+      padding: 0 7px 7px;
+    }
+    @media (max-width: 500px) {
+      .field:not(.compact) {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field label {
+        min-width: 0;
+      }
+      .room-grid {
+        grid-template-columns: 1fr;
+      }
     }
   `;
 }

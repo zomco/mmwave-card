@@ -446,32 +446,44 @@ export function drawRadarFov(
 
 // ── Target dot ────────────────────────────────────────────────────────────────
 
-export function drawTarget(ctx: CanvasRenderingContext2D, cx: number, cy: number, inBoundary: boolean): void {
+export function drawTarget(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  inBoundary: boolean,
+  color = '#ff9800',
+): void {
   if (inBoundary) {
+    ctx.save();
     ctx.beginPath();
     ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,152,0,.25)';
+    ctx.fillStyle = color;
+    ctx.globalAlpha = 0.25;
     ctx.fill();
+    ctx.restore();
     ctx.beginPath();
     ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-    ctx.fillStyle = 'var(--accent-color,#ff9800)';
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.strokeStyle = 'rgba(255,255,255,.6)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
   } else {
+    ctx.save();
     ctx.setLineDash([2, 2]);
     ctx.beginPath();
     ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(244,67,54,.5)';
+    ctx.strokeStyle = color;
+    ctx.globalAlpha = 0.5;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     ctx.setLineDash([]);
     ctx.beginPath();
     ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(244,67,54,.7)';
+    ctx.globalAlpha = 0.8;
     ctx.lineWidth = 1.5;
     ctx.stroke();
+    ctx.restore();
   }
 }
 
