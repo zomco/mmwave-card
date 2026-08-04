@@ -1,7 +1,7 @@
 /**
- * HLK-LD2410C 24 GHz presence radar adapter
+ * HLK-LD2410 24 GHz presence radar adapter
  *
- * Protocol reference: Hi-Link LD2410C
+ * Protocol reference: Hi-Link LD2410
  *
  * Key characteristics:
  *   - 1-D ranging radar (outputs distance only)
@@ -31,8 +31,8 @@ import { DEFAULT_CALIBRATION } from '../../types';
 // ── Model info ────────────────────────────────────────────────────────────────
 
 const INFO: RadarModelInfo = {
-  id: 'ld2410c',
-  displayName: 'Hi-Link LD2410C (24 GHz)',
+  id: 'ld2410',
+  displayName: 'Hi-Link LD2410 (24 GHz)',
   fovDegrees: 120, // ±60° horizontal coverage
   maxRangeM: 8.0, // 8.0 cm maximum
   minRangeM: 0.0,
@@ -56,7 +56,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
 
 // ── Adapter implementation ────────────────────────────────────────────────────
 
-export const ld2410cAdapter: RadarModelAdapter = {
+export const ld2410Adapter: RadarModelAdapter = {
   info: INFO,
 
   getEntitySchema: () => ENTITY_SCHEMA,
