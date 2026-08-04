@@ -34,6 +34,7 @@ const INFO: RadarModelInfo = {
   id: 'rd03e',
   displayName: 'Ai-Thinker RD03E (24 GHz)',
   fovDegrees: 40, // ±20° horizontal azimuth coverage (total 40° FOV)
+  verticalFovDegrees: 90, // Manual: elevation ±45°
   maxRangeM: 6.0, // 600 cm
   minRangeM: 0.3, // 30 cm minimum configured by default
   updateRateHz: 10,

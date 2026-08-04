@@ -32,7 +32,8 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2453',
   displayName: 'Hi-Link LD2453 (24 GHz)',
-  fovDegrees: 80,
+  fovDegrees: 80, // Manual: azimuth ±40°
+  verticalFovDegrees: 60, // Manual: elevation ±30°
   maxRangeM: 6,
   minRangeM: 0.2,
   updateRateHz: 10,

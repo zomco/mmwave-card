@@ -1,15 +1,3 @@
-/**
- * Hi-Link LD2450A 24 GHz presence and gesture recognition radar adapter
- *
- * Protocol reference: Hi-Link LD2450A
- *
- * Key characteristics:
- *   - 1-D ranging radar with gesture recognition
- *   - Coordinate unit: cm
- *   - Position update rate: ~10 Hz (continuous)
- *   - Maximum Range: ~2m (presence), ~0.3m (gesture)
- */
-
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { RadarModelAdapter } from '../base';
 import type {
@@ -25,13 +13,13 @@ import { DEFAULT_CALIBRATION } from '../../types';
 // ── Model info ────────────────────────────────────────────────────────────────
 
 const INFO: RadarModelInfo = {
-  id: 'ld2450a',
-  displayName: 'Hi-Link LD2450A (24 GHz Gesture)',
-  fovDegrees: 120, // ±60° horizontal coverage
-  verticalFovDegrees: 70, // Manual: 70° elevation coverage
-  maxRangeM: 2.0, // 200 cm presence max range
-  minRangeM: 0.2, // 20 cm min range
-  updateRateHz: 10,
+  id: 'ld2411s',
+  displayName: 'Hi-Link LD2411S (24 GHz 1-D)',
+  fovDegrees: 45,
+  verticalFovDegrees: 20,
+  maxRangeM: 6.0,
+  minRangeM: 0.3,
+  updateRateHz: 20,
   maxTargets: 1,
   hasZAxis: false,
   hasBreathing: false,
@@ -49,7 +37,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
 
 // ── Adapter implementation ────────────────────────────────────────────────────
 
-export const ld2450aAdapter: RadarModelAdapter = {
+export const ld2411sAdapter: RadarModelAdapter = {
   info: INFO,
 
   getEntitySchema: () => ENTITY_SCHEMA,
@@ -77,22 +65,15 @@ export const ld2450aAdapter: RadarModelAdapter = {
     const present = pres.state === 'on';
     if (!present) return { present: false, targets: [] };
 
-    const distState = get('distance_entity');
-    if (!distState) return { present: true, targets: [] };
-
-    const distance = parseFloat(distState.state) || 0;
-    if (distance <= 0) return { present: true, targets: [] };
-
     const targets: RadarTarget[] = [];
 
-    // Map the 1-D distance onto the Y-axis (forward) so the card's native
-    // yaw/pitch/roll calibration transforms it into 2D room space.
-    targets.push({
-      index: 0,
-      rawX: 0,
-      rawY: distance,
-      rawZ: 0,
-    });
+    const distState = get('distance_entity');
+    if (distState && distState.state !== 'unavailable') {
+      const rawDist = parseFloat(distState.state) || 0;
+      if (rawDist > 0) {
+        targets.push({ index: 0, rawX: 0, rawY: rawDist, rawZ: 0 });
+      }
+    }
 
     return { present: true, targets };
   },
@@ -100,7 +81,7 @@ export const ld2450aAdapter: RadarModelAdapter = {
   getDefaultCalibration(): CalibrationConfig {
     return {
       ...DEFAULT_CALIBRATION,
-      radar_z: 150, // Typical desktop or gesture-height mounting (cm)
+      radar_z: 100,
       pitch: 0,
       roll: 0,
     };

@@ -1,0 +1,7 @@
+type: custom:mmwave-card
+radar_model: ld2411s
+name: LD2411S 1-D Radar
+room_w: 400
+room_d: 600
+presence_entity: binary_sensor.ld2411s_test_presence
+distance_entity: sensor.ld2411s_test_distance

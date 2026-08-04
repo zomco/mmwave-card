@@ -35,6 +35,7 @@ const INFO: RadarModelInfo = {
   id: 'ld2420',
   displayName: 'Hi-Link LD2420 (24 GHz)',
   fovDegrees: 120, // Manual specifies ±60° detection coverage
+  verticalFovDegrees: 120, // Manual specifies ±60° in elevation
   maxRangeM: 8.0, // 800 cm maximum
   minRangeM: 0.2, // 20 cm minimum (manual specifies 0.2m close-range sensing, no blind zone)
   updateRateHz: 10,

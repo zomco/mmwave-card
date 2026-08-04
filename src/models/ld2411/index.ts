@@ -33,7 +33,8 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2411',
   displayName: 'Hi-Link LD2411 (24 GHz)',
-  fovDegrees: 120, // ±60° horizontal coverage
+  fovDegrees: 40, // Manual: 4-patch horizontal beam about ±20°
+  verticalFovDegrees: 80, // Manual: vertical beam about ±40°
   maxRangeM: 6.0, // 600 cm
   minRangeM: 0.3, // 30 cm minimum configured by default
   updateRateHz: 10,

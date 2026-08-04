@@ -86,6 +86,12 @@ export interface RadarModelInfo {
   displayName: string;
   /** Horizontal field-of-view (degrees). */
   fovDegrees: number;
+  /**
+   * Vertical field-of-view (degrees). Omit when the manual does not publish
+   * a separate vertical beam angle; the 3-D preview will use a conservative
+   * visual estimate and label it as such.
+   */
+  verticalFovDegrees?: number;
   /** Maximum detection range (m). */
   maxRangeM: number;
   /**

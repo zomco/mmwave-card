@@ -33,7 +33,8 @@ import { DEFAULT_CALIBRATION } from '../../types';
 const INFO: RadarModelInfo = {
   id: 'ld2450',
   displayName: 'Hi-Link LD2450 (24 GHz)',
-  fovDegrees: 120,
+  fovDegrees: 120, // Manual: azimuth ±60°
+  verticalFovDegrees: 70, // Manual: elevation ±35°
   maxRangeM: 6,
   minRangeM: 0.2, // LD2450 typical blind zone ~20 cm
   updateRateHz: 10,

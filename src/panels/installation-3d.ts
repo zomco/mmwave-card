@@ -72,6 +72,14 @@ export class Installation3D extends LitElement {
     return this._isZh ? zh : en;
   }
 
+  private get _verticalFovDegrees() {
+    return this.adapter?.info.verticalFovDegrees ?? Math.min(this.adapter?.info.fovDegrees ?? 60, 60);
+  }
+
+  private get _isVerticalFovEstimated() {
+    return this.adapter?.info.verticalFovDegrees == null;
+  }
+
   protected firstUpdated() {
     if (this._cv) {
       this._resizeObserver = new ResizeObserver(() => this._scheduleDraw());
@@ -252,21 +260,26 @@ export class Installation3D extends LitElement {
     const yaw = radians(c.yaw);
     const pitch = radians(c.pitch);
     const roll = radians(c.roll);
+    const forward: Point3 = {
+      x: Math.sin(yaw) * Math.cos(pitch),
+      y: Math.cos(yaw) * Math.cos(pitch),
+      z: -Math.sin(pitch),
+    };
     const rightBase: Point3 = { x: Math.cos(yaw), y: -Math.sin(yaw), z: 0 };
-    const upBase: Point3 = {
+    const downBase: Point3 = {
       x: -Math.sin(yaw) * Math.sin(pitch),
       y: -Math.cos(yaw) * Math.sin(pitch),
       z: -Math.cos(pitch),
     };
     const right: Point3 = {
-      x: rightBase.x * Math.cos(roll) + upBase.x * Math.sin(roll),
-      y: rightBase.y * Math.cos(roll) + upBase.y * Math.sin(roll),
-      z: rightBase.z * Math.cos(roll) + upBase.z * Math.sin(roll),
+      x: rightBase.x * Math.cos(roll) + downBase.x * Math.sin(roll),
+      y: rightBase.y * Math.cos(roll) + downBase.y * Math.sin(roll),
+      z: rightBase.z * Math.cos(roll) + downBase.z * Math.sin(roll),
     };
-    const up: Point3 = {
-      x: upBase.x * Math.cos(roll) - rightBase.x * Math.sin(roll),
-      y: upBase.y * Math.cos(roll) - rightBase.y * Math.sin(roll),
-      z: upBase.z * Math.cos(roll) - rightBase.z * Math.sin(roll),
+    const down: Point3 = {
+      x: downBase.x * Math.cos(roll) - rightBase.x * Math.sin(roll),
+      y: downBase.y * Math.cos(roll) - rightBase.y * Math.sin(roll),
+      z: downBase.z * Math.cos(roll) - rightBase.z * Math.sin(roll),
     };
 
     // Radar height and floor shadow.
@@ -286,40 +299,105 @@ export class Installation3D extends LitElement {
     ctx.fill();
     ctx.restore();
 
-    // Projected 3D FOV cone.
-    const fovLength = Math.min(
-      (this.maxRangeM ?? this.adapter?.info.maxRangeM ?? 3) * 100,
-      Math.max(scene.roomW, scene.roomD) * 0.58,
-    );
-    const halfFov = radians((this.adapter?.info.fovDegrees ?? 60) / 2);
-    const coneEnd = (angle: number) => {
-      const directionYaw = yaw + angle;
+    // Model-specific 3-D scan volume. The middle slice is a curved sector,
+    // matching the sector used by the room-boundary preview below.
+    const nominalRangeM = this.maxRangeM ?? this.adapter?.info.maxRangeM ?? 3;
+    const fovLength = Math.min(nominalRangeM * 100, Math.max(scene.roomW, scene.roomD) * 0.58);
+    const halfHorizontalFov = radians((this.adapter?.info.fovDegrees ?? 60) / 2);
+    const halfVerticalFov = radians(this._verticalFovDegrees / 2);
+    const segments = 18;
+    const scanPoint = (azimuth: number, elevation: number, length = fovLength) => {
+      const cosElevation = Math.cos(elevation);
+      const direction: Point3 = {
+        x:
+          forward.x * Math.cos(azimuth) * cosElevation +
+          right.x * Math.sin(azimuth) * cosElevation +
+          down.x * Math.sin(elevation),
+        y:
+          forward.y * Math.cos(azimuth) * cosElevation +
+          right.y * Math.sin(azimuth) * cosElevation +
+          down.y * Math.sin(elevation),
+        z:
+          forward.z * Math.cos(azimuth) * cosElevation +
+          right.z * Math.sin(azimuth) * cosElevation +
+          down.z * Math.sin(elevation),
+      };
       return this._project(
         {
-          x: c.radar_x + Math.sin(directionYaw) * Math.cos(pitch) * fovLength,
-          y: c.radar_y + Math.cos(directionYaw) * Math.cos(pitch) * fovLength,
-          z: clamp(c.radar_z - Math.sin(pitch) * fovLength, 0, scene.zMax),
+          x: c.radar_x + direction.x * length,
+          y: c.radar_y + direction.y * length,
+          z: clamp(c.radar_z + direction.z * length, 0, scene.zMax),
         },
         scene,
       );
     };
-    const coneLeft = coneEnd(-halfFov);
-    const coneCenter = coneEnd(0);
-    const coneRight = coneEnd(halfFov);
-    this._polygon(ctx, [radar, coneLeft, coneCenter, coneRight]);
-    ctx.fillStyle = 'rgba(11,130,92,.14)';
+    const horizontalArc = (elevation: number) =>
+      Array.from({ length: segments + 1 }, (_, index) =>
+        scanPoint(-halfHorizontalFov + (index / segments) * halfHorizontalFov * 2, elevation),
+      );
+    const verticalArc = (azimuth: number) =>
+      Array.from({ length: 9 }, (_, index) => scanPoint(azimuth, -halfVerticalFov + (index / 8) * halfVerticalFov * 2));
+    const upperArc = horizontalArc(-halfVerticalFov);
+    const middleArc = horizontalArc(0);
+    const lowerArc = horizontalArc(halfVerticalFov);
+    const leftArc = verticalArc(-halfHorizontalFov);
+    const rightArc = verticalArc(halfHorizontalFov);
+
+    ctx.save();
+    this._polygon(ctx, [radar, ...upperArc]);
+    ctx.fillStyle = 'rgba(3,169,244,.055)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(11,130,92,.6)';
-    ctx.lineWidth = 1.2;
+    this._polygon(ctx, [radar, ...lowerArc]);
+    ctx.fillStyle = 'rgba(11,130,92,.055)';
+    ctx.fill();
+    this._polygon(ctx, [radar, ...leftArc]);
+    ctx.fillStyle = 'rgba(3,169,244,.04)';
+    ctx.fill();
+    this._polygon(ctx, [radar, ...rightArc]);
+    ctx.fill();
+
+    // Far envelope hints at volume without obscuring the room grid.
+    ctx.strokeStyle = 'rgba(3,169,244,.25)';
+    ctx.lineWidth = 0.8;
+    for (let index = 0; index <= segments; index += 3) {
+      this._line(ctx, upperArc[index], lowerArc[index]);
+    }
+    for (const arc of [upperArc, lowerArc, leftArc, rightArc]) {
+      ctx.beginPath();
+      arc.forEach((point, index) => (index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y)));
+      ctx.stroke();
+    }
+
+    // Primary horizontal slice: a true fan with a curved outer edge.
+    this._polygon(ctx, [radar, ...middleArc]);
+    ctx.fillStyle = 'rgba(11,130,92,.16)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(11,130,92,.72)';
+    ctx.lineWidth = 1.25;
     ctx.stroke();
 
+    const minRangeM = this.adapter?.info.minRangeM ?? 0;
+    if (minRangeM > 0 && nominalRangeM > 0) {
+      const blindArcLength = fovLength * Math.min(minRangeM / nominalRangeM, 0.8);
+      const blindArc = Array.from({ length: segments + 1 }, (_, index) =>
+        scanPoint(-halfHorizontalFov + (index / segments) * halfHorizontalFov * 2, 0, blindArcLength),
+      );
+      ctx.beginPath();
+      blindArc.forEach((point, index) => (index === 0 ? ctx.moveTo(point.x, point.y) : ctx.lineTo(point.x, point.y)));
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = 'rgba(11,130,92,.48)';
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+
     // Radar body reflects yaw, pitch and roll.
-    const devicePoint = (rightScale: number, upScale: number) =>
+    const devicePoint = (rightScale: number, downScale: number) =>
       this._project(
         {
-          x: c.radar_x + right.x * rightScale + up.x * upScale,
-          y: c.radar_y + right.y * rightScale + up.y * upScale,
-          z: c.radar_z + right.z * rightScale + up.z * upScale,
+          x: c.radar_x + right.x * rightScale + down.x * downScale,
+          y: c.radar_y + right.y * rightScale + down.y * downScale,
+          z: c.radar_z + right.z * rightScale + down.z * downScale,
         },
         scene,
       );
@@ -484,6 +562,19 @@ export class Installation3D extends LitElement {
             >${Math.round(c.yaw * 10) / 10}° / ${Math.round(c.pitch * 10) / 10}° /
             ${Math.round(c.roll * 10) / 10}°</span
           >
+          <span
+            class="coverage"
+            title=${this._isVerticalFovEstimated
+              ? this._label(
+                  '说明书未标注垂直视场角，当前为保守示意值',
+                  'Vertical FOV is not specified; showing a conservative estimate',
+                )
+              : this._label('型号说明书标称扫描范围', 'Nominal scan volume from the model manual')}
+          >
+            ${this._label('扫描空间', 'Scan volume')} · H ${this.adapter?.info.fovDegrees ?? 60}° · V
+            ${this._isVerticalFovEstimated ? '≈' : ''}${this._verticalFovDegrees}° ·
+            ${this.maxRangeM ?? this.adapter?.info.maxRangeM ?? 3} m
+          </span>
         </div>
       </div>
       <div class="hint">
@@ -493,6 +584,7 @@ export class Installation3D extends LitElement {
         )}
       </div>
       <div class="legend">
+        <span class="beam-key"><i></i>${this._label('型号扫描范围', 'Model scan range')}</span>
         ${this._legend('position', this._label('位置 X/Y', 'Position X/Y'))}
         ${this._legend('height', this._label('高度', 'Height'))} ${this._legend('yaw', this._label('偏航', 'Yaw'))}
         ${this._legend('pitch', this._label('俯仰', 'Pitch'))} ${this._legend('roll', this._label('横滚', 'Roll'))}
@@ -542,6 +634,10 @@ export class Installation3D extends LitElement {
       font: 600 10px/1.2 system-ui;
       backdrop-filter: blur(5px);
     }
+    .values .coverage {
+      border-color: color-mix(in srgb, var(--primary-color, #0b825c) 35%, transparent);
+      color: var(--primary-color, #0b825c);
+    }
     .hint {
       margin: 7px 2px 5px;
       color: var(--secondary-text-color);
@@ -567,6 +663,12 @@ export class Installation3D extends LitElement {
       height: 7px;
       border-radius: 50%;
       box-shadow: 0 0 5px currentColor;
+    }
+    .legend .beam-key i {
+      width: 13px;
+      border-radius: 2px 7px 7px 2px;
+      background: linear-gradient(90deg, rgba(11, 130, 92, 0.28), rgba(3, 169, 244, 0.7));
+      box-shadow: none;
     }
   `;
 }

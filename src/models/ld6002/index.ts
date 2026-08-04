@@ -36,6 +36,7 @@ const INFO: RadarModelInfo = {
   id: 'ld6002',
   displayName: 'Hi-Link LD6002 (60 GHz)',
   fovDegrees: 120, // Nominal horizontal FOV
+  verticalFovDegrees: 120, // Manual: -3 dB vertical beam -60° to +60°
   maxRangeM: 6.0, // 600 cm maximum
   minRangeM: 0.4,
   vitalRangeM: 1.5,
