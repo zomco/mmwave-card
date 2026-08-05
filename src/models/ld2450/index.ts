@@ -51,6 +51,7 @@ const INFO: RadarModelInfo = {
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
+  { key: 'frame_entity', labelKey: 'editor.target_frame', required: false, domain: 'sensor' },
   { key: 'target_1_x_entity', labelKey: 'editor.target_1_x', required: true, domain: 'sensor' },
   { key: 'target_1_y_entity', labelKey: 'editor.target_1_y', required: true, domain: 'sensor' },
   { key: 'target_1_speed_entity', labelKey: 'editor.target_1_speed', required: false, domain: 'sensor' },
@@ -63,6 +64,14 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'polygon_entity', labelKey: 'editor.polygon_entity', required: false, domain: 'text' },
 ];
 
+function centimetres(state: { state: string; attributes: Record<string, unknown> }): number {
+  const value = parseFloat(state.state) || 0;
+  const unit = String(state.attributes.unit_of_measurement ?? '').toLowerCase();
+  if (unit === 'cm') return value;
+  if (unit === 'm') return value * 100;
+  return value / 10;
+}
+
 // ── Adapter implementation ────────────────────────────────────────────────────
 
 export const ld2450Adapter: RadarModelAdapter = {
@@ -71,12 +80,9 @@ export const ld2450Adapter: RadarModelAdapter = {
   getEntitySchema: () => ENTITY_SCHEMA,
 
   validateConfig(config: MMWaveCardConfig): string[] {
-    const errors: string[] = [];
-    for (const field of ENTITY_SCHEMA) {
-      if (field.required && !config[field.key]) {
-        errors.push(`Missing required entity: ${field.key}`);
-      }
-    }
+    const errors: string[] = config.presence_entity ? [] : ['Missing required entity: presence_entity'];
+    if (!config.frame_entity && (!config.target_1_x_entity || !config.target_1_y_entity))
+      errors.push('Missing frame_entity or target_1 X/Y entities');
     return errors;
   },
 
@@ -101,9 +107,10 @@ export const ld2450Adapter: RadarModelAdapter = {
       const ys = get(`target_${i}_y_entity`);
       if (!xs || !ys) continue;
 
-      // LD2450 unit is mm; convert to cm
-      const rawX = (parseFloat(xs.state) || 0) / 10;
-      const rawY = (parseFloat(ys.state) || 0) / 10;
+      // This workspace's component publishes cm; common third-party variants
+      // publish mm. Respect the HA unit attribute and default to legacy mm.
+      const rawX = centimetres(xs);
+      const rawY = centimetres(ys);
       if (rawX === 0 && rawY === 0) continue;
 
       const speedState = get(`target_${i}_speed_entity`);

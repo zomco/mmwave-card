@@ -77,6 +77,108 @@ export interface RadarReading {
   maxRangeM?: number;
 }
 
+// ── Multi-radar fusion ─────────────────────────────────────────────────────
+
+/** One independently calibrated radar placed on the shared floor plan. */
+export interface RadarSourceConfig {
+  id: string;
+  radar_model: string;
+  device_id?: string;
+  calibration?: Partial<CalibrationConfig>;
+  /** Relative trust used when overlapping observations are combined. */
+  measurement_weight?: number;
+  /** Override the adapter/backend model coordinate conversion. */
+  coordinate_scale?: number;
+  /** Optional versioned atomic frame entity; preferred over split X/Y entities. */
+  frame_entity?: string;
+  /** Atomic frame coordinate-to-centimetre conversion; v1 defaults to cm (1). */
+  frame_coordinate_scale?: number;
+  /** Atomic frame sources older than this are reported offline. */
+  frame_stale_after_s?: number;
+  /** Model-specific HA entity mappings. */
+  [key: string]: unknown;
+}
+
+export interface FusionZoneConfig {
+  id: string;
+  name?: string;
+  polygon: Vec2[];
+  dwell_s?: number;
+}
+
+export interface FusionCameraConfig {
+  entity_id: string;
+  zones?: string[];
+  event_types?: Array<'enter' | 'exit' | 'dwell'>;
+  lookback?: number;
+  duration?: number;
+  /** Minimum interval between clips for the same camera, zone and event type. */
+  cooldown_s?: number;
+  /** ha_live uses camera.record; Hikvision providers read an already-recorded interval. */
+  recording_source?: 'ha_live' | 'hikvision_sd' | 'hikvision_nvr';
+  track_id?: number;
+  archive_host?: string;
+  http_port?: number;
+  rtsp_port?: number;
+  archive_settle_s?: number;
+  archive_retry_interval_s?: number;
+  archive_retries?: number;
+}
+
+export interface FusionSettings {
+  rate_hz?: number;
+  association_gate_cm?: number;
+  merge_gate_cm?: number;
+  track_ttl_s?: number;
+  confirm_hits?: number;
+}
+
+export interface FusionTarget {
+  track_id: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  confidence: number;
+  sources: string[];
+  started_at: number;
+  last_seen: number;
+}
+
+export interface FusionUpdate {
+  fusion_id: string;
+  timestamp: number;
+  tracks: FusionTarget[];
+  events: FusionEvent[];
+  radars: Array<{ id: string; available: boolean; last_updated?: number; age_s?: number; stale?: boolean }>;
+}
+
+export interface FusionEvent {
+  event_id: string;
+  fusion_id: string;
+  track_id: string;
+  event_type: 'enter' | 'exit' | 'dwell';
+  zone_id: string;
+  timestamp: number;
+  x: number;
+  y: number;
+  clip_path?: string;
+  camera_entity_id?: string;
+  clip_status?: 'requested' | 'waiting' | 'extracting' | 'ready' | 'failed';
+  clip_provider?: 'ha_live' | 'hikvision_sd' | 'hikvision_nvr';
+  clip_file_size?: number;
+}
+
+export interface FusionHistoryPoint {
+  ts: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  confidence: number;
+  sources: string;
+}
+
 // ── Model capabilities ────────────────────────────────────────────────────────
 
 export interface RadarModelInfo {
@@ -144,7 +246,7 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
    * Radar model identifier.
    * Must match a key in the model registry (src/models/index.ts).
    */
-  radar_model: string;
+  radar_model?: string;
   /** HA Device ID for auto-population */
   device_id?: string;
   sleep_state_entity?: string;
@@ -153,6 +255,14 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
   room_w: number;
   /** Room depth for canvas scaling (cm). */
   room_d: number;
+  /** Stable backend system id. Presence of radars[] enables fusion mode. */
+  fusion_id?: string;
+  radars?: RadarSourceConfig[];
+  zones?: FusionZoneConfig[];
+  cameras?: FusionCameraConfig[];
+  fusion?: FusionSettings;
+  /** Let an administrator opening the card persist this layout to the backend. */
+  sync_backend?: boolean;
   /** Any entity IDs needed by the selected model. */
   [key: string]: unknown;
   tap_action?: ActionConfig;

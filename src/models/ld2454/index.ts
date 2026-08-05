@@ -1,18 +1,19 @@
 /**
- * HLK-LD2453 24 GHz multi-target tracking radar adapter
+ * HLK-LD2454  24 GHz presence radar adapter  (skeleton)
  *
- * Protocol reference: Hi-Link LD2453
+ * Protocol reference: Hi-Link LD2454 datasheet
  *
  * Key characteristics:
  *   - Up to 3 simultaneous targets
  *   - 2-D coordinates (x, y) — no Z axis
- *   - Coordinate unit: cm
- *   - Position update rate: ~10 Hz
+ *   - Coordinate unit: mm  →  converted to cm here
+ *   - Position update rate: ~20 Hz
  *   - Horizontal FOV: ±60° (120° total)
  *
  * Implementation status:
  *   readFromHass() reads the entity convention used by the ESPHome
- *   LD2453 component (target_N_x / target_N_y).
+ *   community LD2454 component (target_N_x / target_N_y).
+ *   Extend getEntitySchema() if your component uses different names.
  */
 
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -30,12 +31,12 @@ import { DEFAULT_CALIBRATION } from '../../types';
 // ── Model info ────────────────────────────────────────────────────────────────
 
 const INFO: RadarModelInfo = {
-  id: 'ld2453',
-  displayName: 'Hi-Link LD2453 (24 GHz)',
-  fovDegrees: 80, // Manual: azimuth ±40°
-  verticalFovDegrees: 60, // Manual: elevation ±30°
+  id: 'ld2454',
+  displayName: 'Hi-Link LD2454 (24 GHz)',
+  fovDegrees: 120, // Manual: azimuth ±60°
+  verticalFovDegrees: 70, // Manual: elevation ±35°
   maxRangeM: 6,
-  minRangeM: 0.2,
+  minRangeM: 0.2, // LD2454 typical blind zone ~20 cm
   updateRateHz: 10,
   maxTargets: 3,
   hasZAxis: false,
@@ -45,6 +46,8 @@ const INFO: RadarModelInfo = {
 };
 
 // ── Entity schema ─────────────────────────────────────────────────────────────
+// Convention: target_1_x / target_1_y  …  target_3_x / target_3_y
+// plus a presence binary sensor from the ESPHome component.
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
@@ -58,11 +61,20 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'target_3_x_entity', labelKey: 'editor.target_3_x', required: false, domain: 'sensor' },
   { key: 'target_3_y_entity', labelKey: 'editor.target_3_y', required: false, domain: 'sensor' },
   { key: 'target_3_speed_entity', labelKey: 'editor.target_3_speed', required: false, domain: 'sensor' },
+  { key: 'polygon_entity', labelKey: 'editor.polygon_entity', required: false, domain: 'text' },
 ];
+
+function centimetres(state: { state: string; attributes: Record<string, unknown> }): number {
+  const value = parseFloat(state.state) || 0;
+  const unit = String(state.attributes.unit_of_measurement ?? '').toLowerCase();
+  if (unit === 'cm') return value;
+  if (unit === 'm') return value * 100;
+  return value / 10;
+}
 
 // ── Adapter implementation ────────────────────────────────────────────────────
 
-export const ld2453Adapter: RadarModelAdapter = {
+export const ld2454Adapter: RadarModelAdapter = {
   info: INFO,
 
   getEntitySchema: () => ENTITY_SCHEMA,
@@ -89,14 +101,16 @@ export const ld2453Adapter: RadarModelAdapter = {
 
     const targets: RadarTarget[] = [];
 
+    // LD2454 reports (0,0) for "slot empty"; filter those out.
     for (let i = 1; i <= INFO.maxTargets; i++) {
       const xs = get(`target_${i}_x_entity`);
       const ys = get(`target_${i}_y_entity`);
       if (!xs || !ys) continue;
 
-      // LD2453 unit is cm natively from ESPHome
-      const rawX = parseFloat(xs.state) || 0;
-      const rawY = parseFloat(ys.state) || 0;
+      // This workspace's component publishes cm; common third-party variants
+      // publish mm. Respect the HA unit attribute and default to legacy mm.
+      const rawX = centimetres(xs);
+      const rawY = centimetres(ys);
       if (rawX === 0 && rawY === 0) continue;
 
       const speedState = get(`target_${i}_speed_entity`);
@@ -111,7 +125,7 @@ export const ld2453Adapter: RadarModelAdapter = {
   getDefaultCalibration(): CalibrationConfig {
     return {
       ...DEFAULT_CALIBRATION,
-      radar_z: 240,
+      radar_z: 250, // LD2454 is often wall-mounted higher (cm)
       pitch: 0,
       roll: 0,
     };

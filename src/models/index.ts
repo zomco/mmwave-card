@@ -10,6 +10,7 @@
 import type { RadarModelAdapter } from './base';
 import { r60abd1Adapter } from './r60abd1';
 import { ld2450Adapter } from './ld2450';
+import { ld2452Adapter } from './ld2452';
 import { rd03eAdapter } from './rd03e';
 import { ld2411Adapter } from './ld2411';
 import { ld2451Adapter } from './ld2451';
@@ -21,6 +22,8 @@ import { ld2420Adapter } from './ld2420';
 import { ld2450aAdapter } from './ld2450a';
 import { ld2410Adapter } from './ld2410';
 import { ld2411sAdapter } from './ld2411s';
+import { ld2454Adapter } from './ld2454';
+import { ld2412Adapter } from './ld2412';
 
 /**
  * Central registry: model ID → adapter.
@@ -30,6 +33,7 @@ import { ld2411sAdapter } from './ld2411s';
 export const RADAR_MODELS: Record<string, RadarModelAdapter> = {
   r60abd1: r60abd1Adapter,
   ld2450: ld2450Adapter,
+  ld2452: ld2452Adapter,
   rd03e: rd03eAdapter,
   ld2411: ld2411Adapter,
   ld2451: ld2451Adapter,
@@ -41,6 +45,8 @@ export const RADAR_MODELS: Record<string, RadarModelAdapter> = {
   ld2450a: ld2450aAdapter,
   ld2410: ld2410Adapter,
   ld2411s: ld2411sAdapter,
+  ld2454: ld2454Adapter,
+  ld2412: ld2412Adapter,
 };
 
 export function getAdapter(modelId: string): RadarModelAdapter | undefined {

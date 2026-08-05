@@ -20,18 +20,32 @@ import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 
 import { getAdapter, type RadarModelAdapter } from './models';
 import { applyTransform } from './utils/transform';
+import { LocalFusionTracker, type FusionObservation } from './fusion/tracker';
+import { parseAtomicTargetFrame } from './fusion/frame';
 import { canvasToRoom, type CanvasMetrics } from './utils/canvas';
 import { localize } from './localize/localize';
 import { logoSvg } from './logo';
-import { type MMWaveCardConfig, type CalibrationConfig, type RadarTarget, DEFAULT_CARD_CONFIG } from './types';
+import {
+  type MMWaveCardConfig,
+  type CalibrationConfig,
+  type RadarTarget,
+  type FusionTarget,
+  type FusionUpdate,
+  type FusionEvent,
+  type FusionHistoryPoint,
+  type RadarSourceConfig,
+  DEFAULT_CARD_CONFIG,
+} from './types';
 import { CARD_TAG, EDITOR_TAG, CARD_VERSION } from './const';
 
 // Sub-elements (register them)
 import './panels/geo-panel';
 import './panels/yaw-panel';
 import './panels/live-panel';
+import './panels/fusion-panel';
 import type { YawPanel } from './panels/yaw-panel';
 import type { LivePanel } from './panels/live-panel';
+import type { FusionRadarVisual } from './panels/fusion-panel';
 
 // ── Card registration ────────────────────────────────────────────────────────
 
@@ -58,6 +72,32 @@ const TAB_GEO = 0;
 const TAB_YAW = 1;
 const TAB_LIVE = 2;
 
+function configuredEntityIds(value: unknown, result = new Set<string>()): Set<string> {
+  if (typeof value === 'string' && /^[a-z_]+\.[a-z0-9_]+$/.test(value)) result.add(value);
+  else if (Array.isArray(value)) value.forEach((item) => configuredEntityIds(item, result));
+  else if (value && typeof value === 'object')
+    Object.values(value).forEach((item) => configuredEntityIds(item, result));
+  return result;
+}
+
+function entitySignature(hass: HomeAssistant, source: RadarSourceConfig): string {
+  const frameState = source.frame_entity ? hass.states[source.frame_entity] : undefined;
+  const ids =
+    frameState && parseAtomicTargetFrame(frameState.state) ? [source.frame_entity!] : [...configuredEntityIds(source)];
+  return ids
+    .sort()
+    .map((entityId) => `${entityId}:${hass.states[entityId]?.last_updated ?? 'missing'}`)
+    .join('|');
+}
+
+function sourceAvailable(hass: HomeAssistant, source: RadarSourceConfig): boolean {
+  const entityIds = [...configuredEntityIds(source)];
+  return entityIds.some((entityId) => {
+    const state = hass.states[entityId];
+    return state && state.state !== 'unavailable' && state.state !== 'unknown';
+  });
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 @customElement(CARD_TAG)
@@ -65,6 +105,48 @@ export class MMWaveCard extends LitElement {
   // ── Lovelace public API ───────────────────────────────────────────────────
 
   public setConfig(config: MMWaveCardConfig): void {
+    this._disconnectFusionBackend();
+    if (config.radars?.length) {
+      this._config = { ...DEFAULT_CARD_CONFIG, ...config } as MMWaveCardConfig;
+      const roomW = this._config.room_w as number;
+      const roomD = this._config.room_d as number;
+      this._fusionRadars = config.radars.map((source, index) => {
+        const adapter = getAdapter(source.radar_model);
+        if (!adapter) throw new Error(`Unknown radar_model for radars[${index}]: "${source.radar_model}"`);
+        if (adapter.info.is1DRanging) {
+          throw new Error(`Radar "${source.id}" uses a ranging-only model and cannot participate in 2-D fusion.`);
+        }
+        const sourceConfig = { ...source, type: this._config.type, room_w: roomW, room_d: roomD } as MMWaveCardConfig;
+        const errors = adapter.validateConfig(sourceConfig);
+        if (errors.length) console.warn(`Radar "${source.id}" is not fully configured: ${errors.join('; ')}`);
+        const defaults = adapter.getDefaultCalibration();
+        const calibration: CalibrationConfig = {
+          ...defaults,
+          radar_x: Math.round((roomW * (index + 1)) / (config.radars!.length + 1)),
+          radar_y: Math.round(roomD * 0.2),
+          ...source.calibration,
+          polygon: source.calibration?.polygon ?? [],
+        };
+        return { config: source, adapter, calibration, available: false };
+      });
+      this._adapter = this._fusionRadars[0].adapter;
+      this._cal = this._fusionRadars[0].calibration;
+      this._localFusion = new LocalFusionTracker({
+        ...config.fusion,
+        track_ttl_s:
+          config.fusion?.track_ttl_s ?? (config.radars.some((radar) => radar.radar_model === 'r60abd1') ? 3 : 1.2),
+      });
+      this._fusionTargets = [];
+      this._fusionEvents = [];
+      this._fusionHistoryTrack = [];
+      this._selectedFusionEvent = undefined;
+      this._fusionVideoUrl = '';
+      this._localObservationBuffer = [];
+      this._sourceSignatures.clear();
+      this._fusionBackendState = 'connecting';
+      return;
+    }
+
     if (!config.radar_model) throw new Error('radar_model is required');
 
     const adapter = getAdapter(config.radar_model as string);
@@ -117,8 +199,20 @@ export class MMWaveCard extends LitElement {
   @state() private _present = false;
   @state() private _maxRangeM?: number;
   @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
+  @state() private _fusionTargets: FusionTarget[] = [];
+  @state() private _fusionRadars: FusionRadarVisual[] = [];
+  @state() private _fusionBackendState: 'connecting' | 'online' | 'fallback' | 'error' = 'connecting';
+  @state() private _fusionEvents: FusionEvent[] = [];
+  @state() private _fusionHistoryTrack: FusionHistoryPoint[] = [];
+  @state() private _selectedFusionEvent?: FusionEvent;
+  @state() private _fusionVideoUrl = '';
   private _deviceLoaded = false;
   private _syncResetTimer?: number;
+  private _localFusion = new LocalFusionTracker();
+  private _localObservationBuffer: FusionObservation[] = [];
+  private _sourceSignatures = new Map<string, string>();
+  private _fusionUnsubscribe?: () => void;
+  private _fusionConnecting = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
 
@@ -133,6 +227,12 @@ export class MMWaveCard extends LitElement {
   public set hass(hass: HomeAssistant) {
     this._hass = hass;
     if (!this._adapter || !this._config) return;
+
+    if (this._config.radars?.length) {
+      this._updateFusionMode(hass);
+      void this._connectFusionBackend();
+      return;
+    }
 
     if (!this._deviceLoaded) {
       this._deviceLoaded = true;
@@ -183,6 +283,175 @@ export class MMWaveCard extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     if (this._syncResetTimer != null) clearTimeout(this._syncResetTimer);
+    this._disconnectFusionBackend();
+  }
+
+  private _updateFusionMode(hass: HomeAssistant) {
+    const now = Date.now();
+    const observations: FusionObservation[] = [];
+    this._fusionRadars = this._fusionRadars.map((runtime) => {
+      const sourceConfig = {
+        ...runtime.config,
+        type: this._config.type,
+        room_w: this._config.room_w,
+        room_d: this._config.room_d,
+      } as MMWaveCardConfig;
+      const atomicState = runtime.config.frame_entity ? hass.states[runtime.config.frame_entity] : undefined;
+      const atomicFrame = atomicState ? parseAtomicTargetFrame(atomicState.state) : undefined;
+      const reading = atomicFrame
+        ? {
+            present: atomicFrame.targets.length > 0,
+            targets: atomicFrame.targets.map((target, index) => {
+              const scale = Number(runtime.config.frame_coordinate_scale ?? 1);
+              return {
+                index,
+                rawX: target.x * scale,
+                rawY: target.y * scale,
+                rawZ: target.z * scale,
+                speed: target.speed == null ? undefined : target.speed * scale,
+              };
+            }),
+          }
+        : runtime.adapter.readFromHass(hass, sourceConfig);
+      const signature = entitySignature(hass, runtime.config);
+      const changed = signature !== this._sourceSignatures.get(runtime.config.id);
+      this._sourceSignatures.set(runtime.config.id, signature);
+      if (changed) {
+        for (const target of reading.targets) {
+          const room = applyTransform(target.rawX, target.rawY, target.rawZ, runtime.calibration);
+          observations.push({
+            radarId: runtime.config.id,
+            slot: target.index,
+            timestamp: now,
+            x: room.roomX,
+            y: room.roomY,
+            weight: Math.max(Number(runtime.config.measurement_weight ?? 1), 0.01),
+          });
+        }
+      }
+      return {
+        ...runtime,
+        available: sourceAvailable(hass, runtime.config),
+      };
+    });
+
+    if (observations.length) this._localObservationBuffer.push(...observations);
+    this._localObservationBuffer = this._localObservationBuffer.filter(
+      (observation) => now - observation.timestamp <= 250,
+    );
+    const localTargets = this._localFusion.step(this._localObservationBuffer, now);
+    if (this._fusionBackendState !== 'online') {
+      this._fusionTargets = localTargets;
+      if (this._fusionBackendState === 'connecting' && localTargets.length) this._fusionBackendState = 'fallback';
+    }
+    this.requestUpdate();
+  }
+
+  private async _connectFusionBackend() {
+    if (this._fusionConnecting || this._fusionUnsubscribe || !this._config.radars?.length || !this._hass) return;
+    this._fusionConnecting = true;
+    const fusionId = this._config.fusion_id || 'home';
+    try {
+      if (this._config.sync_backend !== false) {
+        try {
+          await this._hass.callWS({
+            type: 'mmwave_fusion/configure',
+            config: {
+              fusion_id: fusionId,
+              room_w: this._config.room_w,
+              room_d: this._config.room_d,
+              radars: this._config.radars,
+              zones: this._config.zones ?? [],
+              cameras: this._config.cameras ?? [],
+              fusion: this._config.fusion ?? {},
+            },
+          });
+        } catch (error) {
+          // Non-admin viewers cannot configure the backend, but may still
+          // subscribe to a configuration previously saved by an administrator.
+          console.info('MMWave Fusion backend configuration was not updated', error);
+        }
+      }
+      this._fusionUnsubscribe = await this._hass.connection.subscribeMessage<FusionUpdate>(
+        (update) => {
+          if (update.fusion_id !== fusionId) return;
+          this._fusionTargets = update.tracks;
+          if (update.events.length) this._fusionEvents = [...update.events, ...this._fusionEvents].slice(0, 100);
+          const health = new Map(update.radars.map((radar) => [radar.id, radar.available]));
+          this._fusionRadars = this._fusionRadars.map((radar) => ({
+            ...radar,
+            available: health.get(radar.config.id) ?? radar.available,
+          }));
+          this._fusionBackendState = 'online';
+          this.requestUpdate();
+        },
+        { type: 'mmwave_fusion/subscribe', fusion_id: fusionId },
+      );
+      await this._loadFusionEvents();
+    } catch (error) {
+      console.warn('MMWave Fusion backend unavailable; using browser fallback', error);
+      this._fusionBackendState = 'fallback';
+    } finally {
+      this._fusionConnecting = false;
+    }
+  }
+
+  private _disconnectFusionBackend() {
+    this._fusionUnsubscribe?.();
+    this._fusionUnsubscribe = undefined;
+    this._fusionConnecting = false;
+  }
+
+  private async _loadFusionEvents() {
+    if (!this._hass || !this._config.radars?.length) return;
+    try {
+      const rows = await this._hass.callWS<Array<Record<string, unknown>>>({
+        type: 'mmwave_fusion/query_events',
+        fusion_id: this._config.fusion_id || 'home',
+        limit: 100,
+      });
+      this._fusionEvents = rows.map((row) => ({
+        event_id: String(row.event_id),
+        fusion_id: String(row.fusion_id),
+        track_id: String(row.track_id),
+        event_type: row.event_type as FusionEvent['event_type'],
+        zone_id: String(row.zone_id),
+        timestamp: Number(row.ts),
+        x: Number(row.x),
+        y: Number(row.y),
+        clip_path: row.clip_path ? String(row.clip_path) : undefined,
+        camera_entity_id: row.camera_entity_id ? String(row.camera_entity_id) : undefined,
+        clip_status: row.clip_status ? (String(row.clip_status) as FusionEvent['clip_status']) : undefined,
+        clip_provider: row.clip_provider ? (String(row.clip_provider) as FusionEvent['clip_provider']) : undefined,
+        clip_file_size: row.clip_file_size ? Number(row.clip_file_size) : undefined,
+      }));
+    } catch (error) {
+      console.info('MMWave Fusion history is not available', error);
+    }
+  }
+
+  private async _selectFusionEvent(event: CustomEvent<FusionEvent>) {
+    this._selectedFusionEvent = event.detail;
+    this._fusionVideoUrl = '';
+    try {
+      await this._loadFusionEvents();
+      const selected = this._fusionEvents.find((item) => item.event_id === event.detail.event_id) ?? event.detail;
+      this._selectedFusionEvent = selected;
+      this._fusionHistoryTrack = await this._hass.callWS<FusionHistoryPoint[]>({
+        type: 'mmwave_fusion/query_track',
+        track_id: selected.track_id,
+        limit: 10000,
+      });
+      if (selected.clip_path) {
+        const media = await this._hass.callWS<{ url: string }>({
+          type: 'media_source/resolve_media',
+          media_content_id: `media-source://media_source/local/${selected.clip_path}`,
+        });
+        this._fusionVideoUrl = media.url;
+      }
+    } catch (error) {
+      console.warn('Failed to load fused trajectory event', error);
+    }
   }
 
   // ── Tab management ───────────────────────────────────────────────────────
@@ -375,6 +644,8 @@ export class MMWaveCard extends LitElement {
 
   protected render() {
     if (!this._config || !this._adapter) return nothing;
+
+    if (this._config.radars?.length) return this._renderFusionMode();
 
     const roomW = (this._cal.room_w ?? this._config.room_w) as number;
     const roomD = (this._cal.room_d ?? this._config.room_d) as number;
@@ -570,6 +841,74 @@ export class MMWaveCard extends LitElement {
                 </button>`}
           </div>
         </footer>
+      </ha-card>
+    `;
+  }
+
+  private _renderFusionMode() {
+    const lang = this._hass?.language ?? 'en';
+    const online = this._fusionRadars.filter((radar) => radar.available).length;
+    return html`
+      <ha-card class="live-card fusion-card">
+        <header class="live-header">
+          <div class="identity">
+            <div class="logo-tile ${this._fusionTargets.length ? 'online' : ''}">${logoSvg}</div>
+            <div class="identity-copy">
+              <div class="card-title">${this._config.name || this._ui('多雷达融合', 'Multi-radar fusion')}</div>
+              <div class="card-subtitle">
+                ${this._ui(
+                  `${online}/${this._fusionRadars.length} 台雷达 · ${this._config.fusion_id || 'home'}`,
+                  `${online}/${this._fusionRadars.length} radars · ${this._config.fusion_id || 'home'}`,
+                )}
+              </div>
+            </div>
+          </div>
+          <span class="presence-chip ${this._fusionTargets.length ? 'active' : ''}">
+            <i></i>
+            ${this._fusionTargets.length
+              ? this._ui(`${this._fusionTargets.length} 个目标`, `${this._fusionTargets.length} targets`)
+              : this._ui('无人', 'Clear')}
+          </span>
+        </header>
+        <div class="live-body">
+          <mmwave-fusion-panel
+            .roomW=${this._config.room_w}
+            .roomD=${this._config.room_d}
+            .radars=${this._fusionRadars}
+            .targets=${this._fusionTargets}
+            .zones=${this._config.zones ?? []}
+            .events=${this._fusionEvents}
+            .historyTrack=${this._fusionHistoryTrack}
+            .selectedEventId=${this._selectedFusionEvent?.event_id ?? ''}
+            .lang=${lang}
+            .backendState=${this._fusionBackendState}
+            @fusion-event-selected=${this._selectFusionEvent}
+          ></mmwave-fusion-panel>
+          ${this._selectedFusionEvent
+            ? html`
+                <section class="fusion-playback">
+                  <header>
+                    <strong
+                      >${this._selectedFusionEvent.event_type.toUpperCase()} ·
+                      ${this._selectedFusionEvent.zone_id}</strong
+                    >
+                    <span>${new Date(this._selectedFusionEvent.timestamp * 1000).toLocaleString()}</span>
+                  </header>
+                  ${this._fusionVideoUrl
+                    ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
+                    : html`<p>
+                        ${this._ui(
+                          '该事件没有可播放片段，或录像仍在生成。',
+                          'No playable clip is available yet, or recording is still in progress.',
+                        )}
+                        ${this._selectedFusionEvent.clip_status
+                          ? html` (${this._selectedFusionEvent.clip_status})`
+                          : nothing}
+                      </p>`}
+                </section>
+              `
+            : nothing}
+        </div>
       </ha-card>
     `;
   }
@@ -820,6 +1159,34 @@ export class MMWaveCard extends LitElement {
     }
     .live-body {
       padding: 0 12px 12px;
+    }
+    .fusion-playback {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid var(--divider-color);
+      border-radius: 11px;
+      background: rgba(128, 128, 128, 0.035);
+    }
+    .fusion-playback header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--primary-text-color);
+      font-size: 10px;
+    }
+    .fusion-playback header span,
+    .fusion-playback p {
+      color: var(--secondary-text-color);
+      font-size: 9px;
+    }
+    .fusion-playback video {
+      display: block;
+      width: 100%;
+      max-height: 360px;
+      border-radius: 8px;
+      background: #000;
     }
     .workflow-header {
       justify-content: flex-start;

@@ -41,6 +41,10 @@
     "badge_none": "无人",
     "badge_present": "有人",
     "badge_filtered": "边界外",
+    "model": "雷达型号",
+    "ld2450": "HLK-LD2450 (二维 120° 8米)",
+    "ld2454": "HLK-LD2454 (二维 120° 8米)",
+    "rd03e": "RD03E (一维 8米)",
     "room_x": "房间 X (cm)",
     "room_y": "房间 Y (cm)",
     "room_z": "离地高度 (cm)",
@@ -66,6 +70,7 @@
     "heart_entity": "心率实体（可选）",
     "sleep_entity": "睡眠状态实体（可选）",
     "polygon_entity": "多边形同步实体（可选）",
+    "target_frame": "原子目标帧实体（可选）",
     "target_1_x": "目标 1 X 实体",
     "target_1_y": "目标 1 Y 实体",
     "target_1_speed": "目标 1 速度实体（可选）",
@@ -78,5 +83,6 @@
     "room_dimensions": "房间尺寸",
     "room_w": "房间宽度 (cm)",
     "room_d": "房间深度 (cm)"
-  }
+  },
+  "model.ld2452": "HLK-LD2452 (2D 120° 6m)"
 }

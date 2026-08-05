@@ -48,6 +48,7 @@ const INFO: RadarModelInfo = {
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
+  { key: 'frame_entity', labelKey: 'editor.target_frame', required: false, domain: 'sensor' },
   { key: 'target_1_x_entity', labelKey: 'editor.target_1_x', required: true, domain: 'sensor' },
   { key: 'target_1_y_entity', labelKey: 'editor.target_1_y', required: true, domain: 'sensor' },
   { key: 'target_1_speed_entity', labelKey: 'editor.target_1_speed', required: false, domain: 'sensor' },
@@ -67,12 +68,9 @@ export const ld2451Adapter: RadarModelAdapter = {
   getEntitySchema: () => ENTITY_SCHEMA,
 
   validateConfig(config: MMWaveCardConfig): string[] {
-    const errors: string[] = [];
-    for (const field of ENTITY_SCHEMA) {
-      if (field.required && !config[field.key]) {
-        errors.push(`Missing required entity: ${field.key}`);
-      }
-    }
+    const errors: string[] = config.presence_entity ? [] : ['Missing required entity: presence_entity'];
+    if (!config.frame_entity && (!config.target_1_x_entity || !config.target_1_y_entity))
+      errors.push('Missing frame_entity or target_1 X/Y entities');
     return errors;
   },
 

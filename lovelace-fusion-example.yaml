@@ -1,0 +1,86 @@
+type: custom:mmwave-card
+name: Living room fusion
+fusion_id: living_room
+sync_backend: true
+room_w: 800
+room_d: 600
+
+# Only models that expose X/Y coordinates can participate in spatial fusion.
+radars:
+  - id: north_wall
+    radar_model: ld2450
+    device_id: replace_with_ha_device_id
+    presence_entity: binary_sensor.north_wall_presence
+    # Preferred atomic input. Split X/Y entities below remain as fallback.
+    frame_entity: sensor.north_wall_target_frame
+    target_1_x_entity: sensor.north_wall_target_1_x
+    target_1_y_entity: sensor.north_wall_target_1_y
+    target_1_speed_entity: sensor.north_wall_target_1_speed
+    target_2_x_entity: sensor.north_wall_target_2_x
+    target_2_y_entity: sensor.north_wall_target_2_y
+    target_2_speed_entity: sensor.north_wall_target_2_speed
+    target_3_x_entity: sensor.north_wall_target_3_x
+    target_3_y_entity: sensor.north_wall_target_3_y
+    target_3_speed_entity: sensor.north_wall_target_3_speed
+    calibration:
+      radar_x: 400
+      radar_y: 20
+      radar_z: 220
+      yaw: 0
+      pitch: 0
+      roll: 0
+
+  - id: east_wall
+    radar_model: ld2450
+    device_id: replace_with_second_ha_device_id
+    presence_entity: binary_sensor.east_wall_presence
+    frame_entity: sensor.east_wall_target_frame
+    target_1_x_entity: sensor.east_wall_target_1_x
+    target_1_y_entity: sensor.east_wall_target_1_y
+    target_1_speed_entity: sensor.east_wall_target_1_speed
+    target_2_x_entity: sensor.east_wall_target_2_x
+    target_2_y_entity: sensor.east_wall_target_2_y
+    target_2_speed_entity: sensor.east_wall_target_2_speed
+    target_3_x_entity: sensor.east_wall_target_3_x
+    target_3_y_entity: sensor.east_wall_target_3_y
+    target_3_speed_entity: sensor.east_wall_target_3_speed
+    calibration:
+      radar_x: 780
+      radar_y: 300
+      radar_z: 220
+      yaw: 90
+      pitch: 0
+      roll: 0
+
+zones:
+  - id: sofa
+    name: Sofa
+    dwell_s: 10
+    polygon:
+      - { x: 80, y: 300 }
+      - { x: 360, y: 300 }
+      - { x: 360, y: 560 }
+      - { x: 80, y: 560 }
+
+cameras:
+  - entity_id: camera.living_room
+    zones: [sofa]
+    event_types: [enter, dwell]
+    lookback: 5
+    duration: 20
+    cooldown_s: 300
+    # Read the already-recorded event interval instead of keeping HA streaming.
+    recording_source: hikvision_sd
+    track_id: 101
+    archive_settle_s: 15
+    archive_retry_interval_s: 30
+    archive_retries: 24
+    # For a Hikvision NVR use recording_source: hikvision_nvr and set:
+    # archive_host: 192.168.1.20
+
+fusion:
+  rate_hz: 10
+  merge_gate_cm: 70
+  association_gate_cm: 90
+  track_ttl_s: 1.2
+  confirm_hits: 2

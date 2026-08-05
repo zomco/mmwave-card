@@ -41,6 +41,10 @@
     "badge_none": "No presence",
     "badge_present": "Present",
     "badge_filtered": "Outside boundary",
+    "model": "Model",
+    "ld2450": "HLK-LD2450 (2-D 120° 8m)",
+    "ld2454": "HLK-LD2454 (2-D 120° 8m)",
+    "rd03e": "RD03E (1-D 8m)",
     "room_x": "Room X (cm)",
     "room_y": "Room Y (cm)",
     "room_z": "Height (cm)",
@@ -66,6 +70,7 @@
     "heart_entity": "Heart Rate Entity (Optional)",
     "sleep_entity": "Sleep State Entity (Optional)",
     "polygon_entity": "Polygon Sync Entity (Optional)",
+    "target_frame": "Atomic Target Frame (Optional)",
     "target_1_x": "Target 1 X Entity",
     "target_1_y": "Target 1 Y Entity",
     "target_1_speed": "Target 1 Speed Entity (Optional)",
@@ -78,5 +83,6 @@
     "room_dimensions": "Room Dimensions",
     "room_w": "Room width (cm)",
     "room_d": "Room depth (cm)"
-  }
+  },
+  "model.ld2452": "HLK-LD2452 (2D 120° 6m)"
 }

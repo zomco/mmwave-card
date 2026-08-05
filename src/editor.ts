@@ -3,9 +3,10 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { getModelList, getAdapter } from './models';
 import { localize } from './localize/localize';
-import type { MMWaveCardConfig } from './types';
+import type { CalibrationConfig, MMWaveCardConfig, RadarSourceConfig } from './types';
 import { DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
+import './panels/zone-editor';
 
 interface DeviceRegistryEntry {
   id: string;
@@ -28,6 +29,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @state() private _advOpen = false;
   @state() private _deviceStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @state() private _matchedEntities = 0;
+  @state() private _fusionJsonError = '';
 
   protected updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
@@ -59,6 +61,115 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   private _changed(key: string, value: unknown) {
     this._config = { ...this._config, [key]: value };
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+  }
+
+  private _setMode(mode: 'single' | 'fusion') {
+    if (mode === 'fusion') {
+      const first: RadarSourceConfig = {
+        id: 'radar_1',
+        radar_model: 'ld2450|ld2452',
+        device_id: '',
+        calibration: { radar_x: 100, radar_y: 100, radar_z: 220, yaw: 0, pitch: 0, roll: 0, polygon: [] },
+      };
+      this._config = {
+        ...this._config,
+        fusion_id: this._config.fusion_id || 'home',
+        sync_backend: true,
+        radars: this._config.radars?.length ? this._config.radars : [first],
+      };
+    } else {
+      this._config = { ...this._config, radars: undefined };
+    }
+    this._emitConfig();
+  }
+
+  private _emitConfig() {
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+  }
+
+  private _updateFusionRadar(index: number, patch: Partial<RadarSourceConfig>) {
+    const radars = [...(this._config.radars ?? [])];
+    radars[index] = { ...radars[index], ...patch };
+    this._config = { ...this._config, radars };
+    this._emitConfig();
+  }
+
+  private _updateRadarCalibration(index: number, key: keyof CalibrationConfig, value: number) {
+    const radar = this._config.radars?.[index];
+    if (!radar) return;
+    this._updateFusionRadar(index, { calibration: { ...radar.calibration, [key]: value } });
+  }
+
+  private _addFusionRadar() {
+    const radars = [...(this._config.radars ?? [])];
+    const index = radars.length + 1;
+    radars.push({
+      id: `radar_${index}`,
+      radar_model: 'ld2450|ld2452',
+      device_id: '',
+      calibration: {
+        radar_x: Math.round((Number(this._config.room_w) * index) / (index + 1)),
+        radar_y: Math.round(Number(this._config.room_d) * 0.2),
+        radar_z: 220,
+        yaw: 0,
+        pitch: 0,
+        roll: 0,
+        polygon: [],
+      },
+    });
+    this._config = { ...this._config, radars };
+    this._emitConfig();
+  }
+
+  private _removeFusionRadar(index: number) {
+    const radars = (this._config.radars ?? []).filter((_, itemIndex) => itemIndex !== index);
+    this._config = { ...this._config, radars };
+    this._emitConfig();
+  }
+
+  private async _fusionDeviceChanged(index: number, event: Event) {
+    const deviceId = (event.target as HTMLSelectElement).value;
+    this._updateFusionRadar(index, { device_id: deviceId });
+    if (!deviceId) return;
+    try {
+      const entities = await this.hass.callWS<EntityRegistryEntry[]>({ type: 'config/entity_registry/list' });
+      const patch: Partial<RadarSourceConfig> = {};
+      for (const entity of entities.filter((item) => item.device_id === deviceId)) {
+        const id = entity.entity_id;
+        const name = (entity.original_name || id).toLowerCase();
+        const x = id.match(/target_(\d+)_x/);
+        const y = id.match(/target_(\d+)_y/);
+        const speed = id.match(/target_(\d+)_speed/);
+        if (id.startsWith('binary_sensor.') && (id.includes('presence') || name.includes('presence')))
+          patch.presence_entity = id;
+        else if (id.startsWith('sensor.') && (id.includes('target_frame') || name.includes('target frame')))
+          patch.frame_entity = id;
+        else if (x) patch[`target_${x[1]}_x_entity`] = id;
+        else if (y) patch[`target_${y[1]}_y_entity`] = id;
+        else if (speed) patch[`target_${speed[1]}_speed_entity`] = id;
+        else if (id.startsWith('sensor.') && (id.endsWith('_x') || name.endsWith(' x'))) patch.x_entity = id;
+        else if (id.startsWith('sensor.') && (id.endsWith('_y') || name.endsWith(' y'))) patch.y_entity = id;
+        else if (id.startsWith('sensor.') && (id.endsWith('_z') || name.endsWith(' z'))) patch.z_entity = id;
+      }
+      this._updateFusionRadar(index, patch);
+    } catch (error) {
+      console.warn('Failed to match fusion radar entities', error);
+    }
+  }
+
+  private _updateFusionJson(key: 'zones' | 'cameras', event: Event) {
+    try {
+      const value = JSON.parse((event.target as HTMLTextAreaElement).value) as unknown;
+      if (!Array.isArray(value)) throw new Error('Value must be a JSON array');
+      this._fusionJsonError = '';
+      this._changed(key, value);
+    } catch (error) {
+      this._fusionJsonError = error instanceof Error ? error.message : String(error);
+    }
+  }
+
+  private _fusionZonesChanged(event: CustomEvent<MMWaveCardConfig['zones']>) {
+    this._changed('zones', event.detail ?? []);
   }
 
   private async _deviceDropdownChanged(e: Event) {
@@ -160,12 +271,244 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
   }
 
+  private _modeSelector(mode: 'single' | 'fusion') {
+    return html`
+      <div class="mode-switch" role="group" aria-label=${this._ui('运行模式', 'Operating mode')}>
+        <button type="button" class=${mode === 'single' ? 'active' : ''} @click=${() => this._setMode('single')}>
+          ${this._ui('单雷达', 'Single radar')}
+        </button>
+        <button type="button" class=${mode === 'fusion' ? 'active' : ''} @click=${() => this._setMode('fusion')}>
+          ${this._ui('多雷达融合', 'Multi-radar fusion')}
+        </button>
+      </div>
+    `;
+  }
+
+  private _renderFusionEditor() {
+    const spatialModels = getModelList().filter((model) => !getAdapter(model.id)?.info.is1DRanging);
+    return html`
+      <div class="card-config">
+        <div class="editor-hero">
+          <span class="hero-icon">◎</span>
+          <div>
+            <strong>${this._ui('多雷达融合', 'Multi-radar fusion')}</strong>
+            <p>
+              ${this._ui(
+                '把多台二维定位雷达放入统一户型坐标系，并同步到持续运行的 HA 后端。',
+                'Place multiple 2-D radars in one floor-plan coordinate system and sync them to the persistent HA backend.',
+              )}
+            </p>
+          </div>
+        </div>
+        ${this._modeSelector('fusion')}
+
+        <h3><span>1</span>${this._ui('户型与后端', 'Floor plan and backend')}</h3>
+        <div class="field">
+          <label>${this._ui('卡片标题', 'Card title')}</label>
+          <input
+            type="text"
+            .value=${this._config.name ?? ''}
+            @change=${(event: Event) => this._changed('name', (event.target as HTMLInputElement).value)}
+          />
+        </div>
+        <div class="field">
+          <label>Fusion ID</label>
+          <input
+            type="text"
+            .value=${this._config.fusion_id ?? 'home'}
+            @change=${(event: Event) => this._changed('fusion_id', (event.target as HTMLInputElement).value)}
+          />
+        </div>
+        <div class="room-grid">
+          <div class="field compact">
+            <label>${this._L('editor.room_w')}</label>
+            <input
+              type="number"
+              min="50"
+              step="10"
+              .value=${String(this._config.room_w ?? 400)}
+              @change=${(event: Event) => this._changed('room_w', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._L('editor.room_d')}</label>
+            <input
+              type="number"
+              min="50"
+              step="10"
+              .value=${String(this._config.room_d ?? 600)}
+              @change=${(event: Event) => this._changed('room_d', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+        </div>
+        <label class="check-row">
+          <input
+            type="checkbox"
+            .checked=${this._config.sync_backend !== false}
+            @change=${(event: Event) => this._changed('sync_backend', (event.target as HTMLInputElement).checked)}
+          />
+          <span
+            >${this._ui(
+              '管理员打开卡片时自动同步配置到后端',
+              'Sync configuration to the backend when an administrator opens the card',
+            )}</span
+          >
+        </label>
+
+        <h3><span>2</span>${this._ui('雷达设备', 'Radar devices')}</h3>
+        <p class="section-help">
+          ${this._ui(
+            '只显示可输出二维或三维位置的雷达型号。每台雷达必须使用唯一 ID。',
+            'Only radar models with 2-D or 3-D positions are shown. Every radar needs a unique ID.',
+          )}
+        </p>
+        <div class="radar-list">
+          ${(this._config.radars ?? []).map((radar, index) => {
+            const adapter = getAdapter(radar.radar_model);
+            const calibration = radar.calibration ?? {};
+            return html`
+              <section class="radar-editor">
+                <header>
+                  <strong>${this._ui('雷达', 'Radar')} ${index + 1}</strong>
+                  <button
+                    type="button"
+                    class="remove-button"
+                    ?disabled=${(this._config.radars?.length ?? 0) <= 1}
+                    @click=${() => this._removeFusionRadar(index)}
+                  >
+                    ×
+                  </button>
+                </header>
+                <div class="two-col">
+                  <div class="field compact">
+                    <label>ID</label>
+                    <input
+                      type="text"
+                      .value=${radar.id}
+                      @change=${(event: Event) =>
+                        this._updateFusionRadar(index, { id: (event.target as HTMLInputElement).value })}
+                    />
+                  </div>
+                  <div class="field compact">
+                    <label>${this._L('editor.model')}</label>
+                    <select
+                      .value=${radar.radar_model}
+                      @change=${(event: Event) =>
+                        this._updateFusionRadar(index, { radar_model: (event.target as HTMLSelectElement).value })}
+                    >
+                      ${spatialModels.map(
+                        (model) =>
+                          html`<option value=${model.id} ?selected=${model.id === radar.radar_model}>
+                            ${model.label}
+                          </option>`,
+                      )}
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>${this._ui('雷达设备', 'Radar device')}</label>
+                  <select
+                    .value=${radar.device_id ?? ''}
+                    @change=${(event: Event) => this._fusionDeviceChanged(index, event)}
+                  >
+                    <option value="">-- ${this._ui('选择设备', 'Select device')} --</option>
+                    ${this._devices.map(
+                      (device) =>
+                        html`<option value=${device.id} ?selected=${device.id === radar.device_id}>
+                          ${device.name_by_user || device.name || 'Unknown device'}
+                        </option>`,
+                    )}
+                  </select>
+                </div>
+                <div class="cal-grid">
+                  ${(['radar_x', 'radar_y', 'radar_z', 'yaw'] as const).map(
+                    (key) => html`
+                      <div class="field compact">
+                        <label>${key}</label>
+                        <input
+                          type="number"
+                          step=${key === 'yaw' ? '1' : '10'}
+                          .value=${String(calibration[key] ?? (key === 'radar_z' ? 220 : 0))}
+                          @change=${(event: Event) =>
+                            this._updateRadarCalibration(index, key, Number((event.target as HTMLInputElement).value))}
+                        />
+                      </div>
+                    `,
+                  )}
+                </div>
+                ${adapter
+                  ? html`
+                      <details class="advanced">
+                        <summary>${this._ui('实体映射', 'Entity mapping')}</summary>
+                        <div class="advanced-fields">
+                          ${adapter.getEntitySchema().map(
+                            (field) => html`
+                              <div class="field">
+                                <label>${this._L(field.labelKey)}${field.required ? '' : ' *'}</label>
+                                <input
+                                  type="text"
+                                  list="entities-list"
+                                  .value=${String(radar[field.key] ?? '')}
+                                  @change=${(event: Event) =>
+                                    this._updateFusionRadar(index, {
+                                      [field.key]: (event.target as HTMLInputElement).value,
+                                    })}
+                                />
+                              </div>
+                            `,
+                          )}
+                        </div>
+                      </details>
+                    `
+                  : nothing}
+              </section>
+            `;
+          })}
+        </div>
+        <button class="add-button" type="button" @click=${this._addFusionRadar}>
+          ＋ ${this._ui('添加雷达', 'Add radar')}
+        </button>
+
+        <h3><span>3</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
+        <p class="section-help">
+          ${this._ui(
+            '在户型图上点击添加区域顶点，保存后同步到融合后端。',
+            'Draw polygon vertices on the floor plan. Saved zones are synchronized to the fusion backend.',
+          )}
+        </p>
+        <mmwave-zone-editor
+          .roomW=${Number(this._config.room_w ?? 400)}
+          .roomD=${Number(this._config.room_d ?? 600)}
+          .zones=${this._config.zones ?? []}
+          .radars=${this._config.radars ?? []}
+          .lang=${this.hass.language}
+          @zones-changed=${this._fusionZonesChanged}
+        ></mmwave-zone-editor>
+        <div class="json-field">
+          <label>Cameras JSON</label>
+          <textarea
+            rows="7"
+            .value=${JSON.stringify(this._config.cameras ?? [], null, 2)}
+            @change=${(event: Event) => this._updateFusionJson('cameras', event)}
+          ></textarea>
+        </div>
+        ${this._fusionJsonError ? html`<div class="json-error">${this._fusionJsonError}</div>` : nothing}
+
+        <datalist id="entities-list">
+          ${Object.keys(this.hass.states).map((id) => html`<option value=${id}></option>`)}
+        </datalist>
+      </div>
+    `;
+  }
+
   protected render() {
     if (!this.hass || !this._config) return nothing;
 
     const modelId = (this._config.radar_model ?? '') as string;
     const adapter = getAdapter(modelId);
     const models = getModelList();
+
+    if (this._config.radars?.length) return this._renderFusionEditor();
 
     return html` <div class="card-config">
       <div class="editor-hero">
@@ -180,6 +523,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           </p>
         </div>
       </div>
+      ${this._modeSelector('single')}
 
       <!-- Basic settings -->
       <h3><span>1</span>${this._ui('基本信息', 'Basics')}</h3>
@@ -315,6 +659,128 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
     .card-config {
       padding: 4px 2px 12px;
+    }
+    .mode-switch {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      margin: 10px 0 2px;
+      padding: 4px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 10px;
+      background: rgba(128, 128, 128, 0.045);
+    }
+    .mode-switch button,
+    .add-button,
+    .remove-button {
+      border: 0;
+      border-radius: 7px;
+      color: var(--secondary-text-color);
+      background: transparent;
+      font-size: 10px;
+      cursor: pointer;
+    }
+    .mode-switch button {
+      padding: 7px;
+    }
+    .mode-switch button.active {
+      color: #fff;
+      background: var(--mmwave-primary);
+      font-weight: 700;
+    }
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 9px;
+      padding: 9px 10px;
+      border-radius: 9px;
+      color: var(--secondary-text-color);
+      background: rgba(128, 128, 128, 0.045);
+      font-size: 10px;
+    }
+    .check-row input {
+      accent-color: var(--mmwave-primary);
+    }
+    .radar-list {
+      display: grid;
+      gap: 10px;
+    }
+    .radar-editor {
+      padding: 10px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 12px;
+      background: rgba(128, 128, 128, 0.025);
+    }
+    .radar-editor > header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      color: var(--primary-text-color);
+      font-size: 11px;
+    }
+    .remove-button {
+      width: 24px;
+      height: 24px;
+      color: var(--error-color, #e53935);
+      background: rgba(229, 57, 53, 0.08);
+      font-size: 16px;
+    }
+    .remove-button:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+    .two-col,
+    .cal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 7px;
+    }
+    .cal-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+    .radar-editor .field {
+      margin-bottom: 7px;
+    }
+    .add-button {
+      width: 100%;
+      margin-top: 9px;
+      padding: 9px;
+      border: 1px dashed rgba(11, 130, 92, 0.4);
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.05);
+      font-weight: 700;
+    }
+    .json-field {
+      display: grid;
+      gap: 5px;
+      margin-bottom: 9px;
+    }
+    .json-field label {
+      color: var(--primary-text-color);
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .json-field textarea {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 8px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 9px;
+      color: var(--primary-text-color);
+      background: var(--card-background-color, #fff);
+      font:
+        9px ui-monospace,
+        monospace;
+      resize: vertical;
+    }
+    .json-error {
+      padding: 7px 9px;
+      border-radius: 8px;
+      color: var(--error-color, #e53935);
+      background: rgba(229, 57, 53, 0.08);
+      font-size: 9px;
     }
     .editor-hero {
       display: flex;
@@ -496,6 +962,9 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       }
       .room-grid {
         grid-template-columns: 1fr;
+      }
+      .cal-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
     }
   `;
