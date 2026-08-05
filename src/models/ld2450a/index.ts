@@ -81,7 +81,10 @@ export const ld2450aAdapter: RadarModelAdapter = {
     if (!distState) return { present: true, targets: [] };
 
     const distance = parseFloat(distState.state) || 0;
-    if (distance <= 0) return { present: true, targets: [] };
+    // For LD2450A, distance may be invalid (255) causing it to be unknown/0.
+    // If we have presence, we must push a target (even at distance 0) 
+    // so the UI shows "Present" instead of "Outside Boundary" and draws the sector.
+    const effectiveDistance = distance > 0 ? distance : 0;
 
     const targets: RadarTarget[] = [];
 
@@ -90,7 +93,7 @@ export const ld2450aAdapter: RadarModelAdapter = {
     targets.push({
       index: 0,
       rawX: 0,
-      rawY: distance,
+      rawY: effectiveDistance,
       rawZ: 0,
     });
 
