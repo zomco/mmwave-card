@@ -65,22 +65,32 @@ zones:
 cameras:
   - entity_id: camera.living_room
     zones: [sofa]
-    event_types: [enter, dwell]
+    # Only a complete, quality-approved crossing starts a recording.
+    event_types: [traverse]
     lookback: 5
-    duration: 20
-    cooldown_s: 300
-    # Read the already-recorded event interval instead of keeping HA streaming.
-    recording_source: hikvision_sd
-    track_id: 101
-    archive_settle_s: 15
-    archive_retry_interval_s: 30
-    archive_retries: 24
-    # For a Hikvision NVR use recording_source: hikvision_nvr and set:
-    # archive_host: 192.168.1.20
+    duration: 10
+    cooldown_s: 60
+    # One HA HLS worker keeps a bounded in-memory lookback; SD/NVR archives are not read.
+    recording_source: ha_live
+    buffer_seconds: 30
 
 fusion:
   rate_hz: 10
   merge_gate_cm: 70
   association_gate_cm: 90
-  track_ttl_s: 1.2
-  confirm_hits: 2
+  track_ttl_s: 1.8
+  confirm_hits: 3
+
+quality:
+  min_score: 70
+  min_duration_s: 3
+  min_observed_points: 20
+  min_displacement_cm: 120
+  min_observed_ratio: 0.6
+  min_inside_ratio: 0.6
+  max_gap_s: 0.8
+  max_jump_cm: 100
+  require_enter_exit: true
+  smoothing_s: 0.5
+  history_s: 60
+  persist_interval_s: 0.5

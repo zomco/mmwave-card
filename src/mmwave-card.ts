@@ -364,6 +364,7 @@ export class MMWaveCard extends LitElement {
               zones: this._config.zones ?? [],
               cameras: this._config.cameras ?? [],
               fusion: this._config.fusion ?? {},
+              quality: this._config.quality ?? {},
             },
           });
         } catch (error) {
@@ -377,10 +378,13 @@ export class MMWaveCard extends LitElement {
           if (update.fusion_id !== fusionId) return;
           this._fusionTargets = update.tracks;
           if (update.events.length) this._fusionEvents = [...update.events, ...this._fusionEvents].slice(0, 100);
-          const health = new Map(update.radars.map((radar) => [radar.id, radar.available]));
+          const health = new Map(update.radars.map((radar) => [radar.id, radar]));
           this._fusionRadars = this._fusionRadars.map((radar) => ({
             ...radar,
-            available: health.get(radar.config.id) ?? radar.available,
+            available: health.get(radar.config.id)?.available ?? radar.available,
+            observations: health.get(radar.config.id)?.observations,
+            inRoomRatio: health.get(radar.config.id)?.in_room_ratio,
+            calibrationWarning: health.get(radar.config.id)?.calibration_warning,
           }));
           this._fusionBackendState = 'online';
           this.requestUpdate();
@@ -424,6 +428,17 @@ export class MMWaveCard extends LitElement {
         clip_status: row.clip_status ? (String(row.clip_status) as FusionEvent['clip_status']) : undefined,
         clip_provider: row.clip_provider ? (String(row.clip_provider) as FusionEvent['clip_provider']) : undefined,
         clip_file_size: row.clip_file_size ? Number(row.clip_file_size) : undefined,
+        clip_error: row.clip_error ? String(row.clip_error) : undefined,
+        metadata:
+          row.metadata && typeof row.metadata === 'object' ? (row.metadata as Record<string, unknown>) : undefined,
+        quality_score: row.quality_score == null ? undefined : Number(row.quality_score),
+        quality_reason: row.quality_reason ? String(row.quality_reason) : undefined,
+        recording_decision: row.recording_decision
+          ? (String(row.recording_decision) as FusionEvent['recording_decision'])
+          : undefined,
+        recording_decisions: Array.isArray(row.recording_decisions)
+          ? (row.recording_decisions as FusionEvent['recording_decisions'])
+          : undefined,
       }));
     } catch (error) {
       console.info('MMWave Fusion history is not available', error);
@@ -894,6 +909,15 @@ export class MMWaveCard extends LitElement {
                     >
                     <span>${new Date(this._selectedFusionEvent.timestamp * 1000).toLocaleString()}</span>
                   </header>
+                  ${this._selectedFusionEvent.quality_score != null
+                    ? html`<p class="quality-detail">
+                        ${this._ui('轨迹质量', 'Trajectory quality')}:
+                        <strong>${this._selectedFusionEvent.quality_score}/100</strong>
+                        ${this._selectedFusionEvent.quality_reason
+                          ? html` · ${this._selectedFusionEvent.quality_reason}`
+                          : nothing}
+                      </p>`
+                    : nothing}
                   ${this._fusionVideoUrl
                     ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
                     : html`<p>
@@ -903,6 +927,9 @@ export class MMWaveCard extends LitElement {
                         )}
                         ${this._selectedFusionEvent.clip_status
                           ? html` (${this._selectedFusionEvent.clip_status})`
+                          : nothing}
+                        ${this._selectedFusionEvent.clip_error
+                          ? html`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`
                           : nothing}
                       </p>`}
                 </section>
@@ -1180,6 +1207,13 @@ export class MMWaveCard extends LitElement {
     .fusion-playback p {
       color: var(--secondary-text-color);
       font-size: 9px;
+    }
+    .fusion-playback .quality-detail strong {
+      color: var(--primary-text-color);
+    }
+    .fusion-playback .clip-error {
+      color: var(--error-color, #e53935);
+      overflow-wrap: anywhere;
     }
     .fusion-playback video {
       display: block;

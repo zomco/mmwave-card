@@ -109,20 +109,15 @@ export interface FusionZoneConfig {
 export interface FusionCameraConfig {
   entity_id: string;
   zones?: string[];
-  event_types?: Array<'enter' | 'exit' | 'dwell'>;
+  event_types?: Array<'enter' | 'exit' | 'dwell' | 'trajectory' | 'traverse'>;
   lookback?: number;
   duration?: number;
   /** Minimum interval between clips for the same camera, zone and event type. */
   cooldown_s?: number;
-  /** ha_live uses camera.record; Hikvision providers read an already-recorded interval. */
-  recording_source?: 'ha_live' | 'hikvision_sd' | 'hikvision_nvr';
-  track_id?: number;
-  archive_host?: string;
-  http_port?: number;
-  rtsp_port?: number;
-  archive_settle_s?: number;
-  archive_retry_interval_s?: number;
-  archive_retries?: number;
+  /** Keep the HA HLS stream warm and record from its bounded in-memory lookback. */
+  recording_source?: 'ha_live';
+  /** Requested in-memory lookback window; HA currently retains at most about 30 seconds. */
+  buffer_seconds?: number;
 }
 
 export interface FusionSettings {
@@ -131,6 +126,22 @@ export interface FusionSettings {
   merge_gate_cm?: number;
   track_ttl_s?: number;
   confirm_hits?: number;
+}
+
+export interface TrajectoryQualitySettings {
+  min_score?: number;
+  min_duration_s?: number;
+  min_observed_points?: number;
+  min_displacement_cm?: number;
+  min_observed_ratio?: number;
+  min_inside_ratio?: number;
+  max_gap_s?: number;
+  max_jump_cm?: number;
+  require_enter_exit?: boolean;
+  smoothing_s?: number;
+  history_s?: number;
+  /** Persist at most one observed point per track per interval. */
+  persist_interval_s?: number;
 }
 
 export interface FusionTarget {
@@ -150,14 +161,36 @@ export interface FusionUpdate {
   timestamp: number;
   tracks: FusionTarget[];
   events: FusionEvent[];
-  radars: Array<{ id: string; available: boolean; last_updated?: number; age_s?: number; stale?: boolean }>;
+  radars: FusionRadarHealth[];
+}
+
+export interface FusionRadarHealth {
+  id: string;
+  available: boolean;
+  last_updated?: number;
+  age_s?: number;
+  stale?: boolean;
+  observations?: number;
+  in_room_observations?: number;
+  in_room_ratio?: number;
+  calibration_warning?: boolean;
+}
+
+export interface RecordingDecision {
+  camera_entity_id: string;
+  status: 'not_applicable' | 'zone_filtered' | 'event_type_filtered' | 'cooldown' | 'scheduled' | 'failed';
+  retry_after_s?: number;
+  clip_id?: string;
+  lookback_s?: number;
+  buffer_truncated?: boolean;
+  error?: string;
 }
 
 export interface FusionEvent {
   event_id: string;
   fusion_id: string;
   track_id: string;
-  event_type: 'enter' | 'exit' | 'dwell';
+  event_type: 'enter' | 'exit' | 'dwell' | 'trajectory' | 'traverse';
   zone_id: string;
   timestamp: number;
   x: number;
@@ -165,8 +198,14 @@ export interface FusionEvent {
   clip_path?: string;
   camera_entity_id?: string;
   clip_status?: 'requested' | 'waiting' | 'extracting' | 'ready' | 'failed';
-  clip_provider?: 'ha_live' | 'hikvision_sd' | 'hikvision_nvr';
+  clip_provider?: 'ha_live';
   clip_file_size?: number;
+  clip_error?: string;
+  metadata?: Record<string, unknown>;
+  quality_score?: number;
+  quality_reason?: string;
+  recording_decision?: 'eligible' | 'rejected_quality';
+  recording_decisions?: RecordingDecision[];
 }
 
 export interface FusionHistoryPoint {
@@ -261,6 +300,7 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
   zones?: FusionZoneConfig[];
   cameras?: FusionCameraConfig[];
   fusion?: FusionSettings;
+  quality?: TrajectoryQualitySettings;
   /** Let an administrator opening the card persist this layout to the backend. */
   sync_backend?: boolean;
   /** Any entity IDs needed by the selected model. */

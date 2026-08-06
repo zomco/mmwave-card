@@ -218,8 +218,8 @@ export function drawRadarFov(
   const toPx = (rangeM: number) => Math.max(rangeM * 100 * scale, 1);
 
   const halfFov = (fovDeg / 2) * (Math.PI / 180);
-  // yaw=0 → pointing down (+Y). Canvas angle 0=right, CW-positive.
-  const base = Math.PI / 2 + yawDeg * (Math.PI / 180);
+  // yaw=0 → +Y and positive yaw → +X, matching applyTransform().
+  const base = Math.PI / 2 - yawDeg * (Math.PI / 180);
 
   // Calculate a pitch factor: 1.0 when looking straight down (pitch=0), approaches 0 when sideways (pitch=90 or -90)
   // We use this to scale the perceived radius of the footprint on the floor.
@@ -506,7 +506,7 @@ export function drawTargetArc(
   const r_px = toPx(rangeM * pf);
 
   const halfFov = (fovDeg / 2) * (Math.PI / 180);
-  const base = Math.PI / 2 + yawDeg * (Math.PI / 180);
+  const base = Math.PI / 2 - yawDeg * (Math.PI / 180);
 
   if (inBoundary) {
     // Glowing background arc across FOV

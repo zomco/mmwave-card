@@ -23,6 +23,9 @@ export interface FusionRadarVisual {
   adapter: RadarModelAdapter;
   calibration: CalibrationConfig;
   available: boolean;
+  observations?: number;
+  inRoomRatio?: number;
+  calibrationWarning?: boolean;
 }
 
 const PALETTE = ['#ff9800', '#03a9f4', '#e91e63', '#8bc34a', '#9c27b0', '#00bcd4'];
@@ -148,7 +151,11 @@ export class FusionPanel extends LitElement {
         radar.adapter.info.vitalRangeM,
       );
       context.restore();
-      context.fillStyle = radar.available ? 'var(--primary-text-color, #fff)' : 'var(--error-color, #e53935)';
+      context.fillStyle = radar.calibrationWarning
+        ? 'var(--warning-color, #ff9800)'
+        : radar.available
+          ? 'var(--primary-text-color, #fff)'
+          : 'var(--error-color, #e53935)';
       context.font = 'bold 9px system-ui';
       context.textAlign = 'center';
       context.fillText(radar.config.id, point.cx, point.cy - 14);
@@ -218,8 +225,26 @@ export class FusionPanel extends LitElement {
     return this.lang.toLowerCase().startsWith('zh') ? zh : en;
   }
 
+  private eventStatus(event: FusionEvent): string {
+    if (event.clip_path) return '▶';
+    if (event.clip_status === 'failed') return this.ui('录像失败', 'Clip failed');
+    if (event.clip_status === 'waiting' || event.clip_status === 'extracting') {
+      return this.ui('录像中', 'Recording');
+    }
+    if (event.recording_decision === 'rejected_quality' || event.event_type === 'trajectory') {
+      return this.ui('已过滤', 'Filtered');
+    }
+    if (event.event_type === 'traverse') return this.ui('关键轨迹', 'Key track');
+    return '';
+  }
+
   protected render() {
     const onlineRadars = this.radars.filter((radar) => radar.available).length;
+    const calibrationWarnings = this.radars.filter((radar) => radar.calibrationWarning);
+    const scoredEvents = this.events.filter(
+      (event) => event.event_type === 'trajectory' || event.event_type === 'traverse',
+    );
+    const recentEvents = scoredEvents.length ? scoredEvents : this.events;
     return html`
       <div class="scene">
         <canvas id="fusion-cv"></canvas>
@@ -237,6 +262,17 @@ export class FusionPanel extends LitElement {
           <span class="radar-count">${onlineRadars}/${this.radars.length} ${this.ui('雷达在线', 'radars online')}</span>
         </div>
       </div>
+      ${calibrationWarnings.length
+        ? html`<div class="calibration-warning">
+            ${this.ui('安装校准异常', 'Calibration warning')}:
+            ${calibrationWarnings
+              .map((radar) => {
+                const ratio = radar.inRoomRatio == null ? '?' : `${Math.round(radar.inRoomRatio * 100)}%`;
+                return `${radar.config.id} (${ratio})`;
+              })
+              .join(', ')}
+          </div>`
+        : ''}
       <div class="summary">
         <div><strong>${this.targets.length}</strong><span>${this.ui('融合目标', 'Fused targets')}</span></div>
         ${this.targets.map(
@@ -250,20 +286,23 @@ export class FusionPanel extends LitElement {
           `,
         )}
       </div>
-      ${this.events.length
+      ${recentEvents.length
         ? html`
             <div class="events">
               <strong>${this.ui('最近事件', 'Recent events')}</strong>
-              ${this.events.slice(0, 8).map(
+              ${recentEvents.slice(0, 8).map(
                 (event) => html`
                   <button
                     type="button"
                     class=${event.event_id === this.selectedEventId ? 'selected' : ''}
                     @click=${() => this.selectEvent(event)}
                   >
-                    <span>${event.event_type.toUpperCase()} · ${event.zone_id}</span>
+                    <span>
+                      ${event.event_type.toUpperCase()} · ${event.zone_id}
+                      ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
+                    </span>
                     <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
-                    ${event.clip_path ? html`<em>▶</em>` : ''}
+                    <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
                   </button>
                 `,
               )}
@@ -339,6 +378,15 @@ export class FusionPanel extends LitElement {
       gap: 6px;
       margin-top: 8px;
     }
+    .calibration-warning {
+      margin-top: 8px;
+      padding: 7px 9px;
+      border: 1px solid color-mix(in srgb, var(--warning-color, #ff9800) 45%, transparent);
+      border-radius: 8px;
+      color: var(--warning-color, #ff9800);
+      background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent);
+      font-size: 9px;
+    }
     .summary > div:first-child {
       display: flex;
       align-items: baseline;
@@ -413,6 +461,9 @@ export class FusionPanel extends LitElement {
     .events em {
       color: #0b825c;
       font-style: normal;
+    }
+    .events em.failed {
+      color: var(--error-color, #e53935);
     }
   `;
 }

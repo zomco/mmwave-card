@@ -162,7 +162,7 @@ export class ZoneEditor extends LitElement {
           const calibration = radar.calibration ?? {};
           return html`<g
             class="radar"
-            transform=${`translate(${Number(calibration.radar_x ?? 0)} ${Number(calibration.radar_y ?? 0)}) rotate(${Number(calibration.yaw ?? 0)})`}
+            transform=${`translate(${Number(calibration.radar_x ?? 0)} ${Number(calibration.radar_y ?? 0)}) rotate(${-Number(calibration.yaw ?? 0)})`}
           >
             <circle r="11" /><path d="M 0 0 L -12 25 M 0 0 L 12 25" /><text y="-17">${radar.id}</text>
           </g>`;
