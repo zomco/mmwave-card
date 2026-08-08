@@ -126,6 +126,8 @@ export interface FusionSettings {
   merge_gate_cm?: number;
   track_ttl_s?: number;
   confirm_hits?: number;
+  /** Number of distinct radars that must support a track before it is published. */
+  min_confirm_sources?: number;
 }
 
 export interface TrajectoryQualitySettings {
@@ -140,6 +142,8 @@ export interface TrajectoryQualitySettings {
   require_enter_exit?: boolean;
   smoothing_s?: number;
   history_s?: number;
+  /** Distance from a room edge that counts as entering/leaving the floor plan. */
+  boundary_margin_cm?: number;
   /** Persist at most one observed point per track per interval. */
   persist_interval_s?: number;
 }
@@ -152,6 +156,8 @@ export interface FusionTarget {
   vy: number;
   confidence: number;
   sources: string[];
+  /** Distinct radar sources that have supported this track over its lifetime. */
+  source_count?: number;
   started_at: number;
   last_seen: number;
 }

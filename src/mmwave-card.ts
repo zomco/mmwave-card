@@ -133,6 +133,7 @@ export class MMWaveCard extends LitElement {
       this._cal = this._fusionRadars[0].calibration;
       this._localFusion = new LocalFusionTracker({
         ...config.fusion,
+        min_confirm_sources: config.fusion?.min_confirm_sources ?? (config.radars.length > 1 ? 2 : 1),
         track_ttl_s:
           config.fusion?.track_ttl_s ?? (config.radars.some((radar) => radar.radar_model === 'r60abd1') ? 3 : 1.2),
       });
@@ -335,7 +336,14 @@ export class MMWaveCard extends LitElement {
       };
     });
 
-    if (observations.length) this._localObservationBuffer.push(...observations);
+    const inRoomObservations = observations.filter(
+      (observation) =>
+        observation.x >= 0 &&
+        observation.x <= Number(this._config.room_w) &&
+        observation.y >= 0 &&
+        observation.y <= Number(this._config.room_d),
+    );
+    if (inRoomObservations.length) this._localObservationBuffer.push(...inRoomObservations);
     this._localObservationBuffer = this._localObservationBuffer.filter(
       (observation) => now - observation.timestamp <= 250,
     );

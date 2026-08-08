@@ -21,6 +21,7 @@ interface MutableTrack extends FusionTarget {
   updated_at: number;
   hits: number;
   confirmed: boolean;
+  seenSources: Set<string>;
 }
 
 const uuid = () =>
@@ -89,12 +90,14 @@ export class LocalFusionTracker {
   private readonly mergeGate: number;
   private readonly ttlMs: number;
   private readonly confirmHits: number;
+  private readonly minConfirmSources: number;
 
   constructor(settings: FusionSettings = {}) {
     this.associationGate = Math.max(settings.association_gate_cm ?? 90, 10);
     this.mergeGate = Math.max(settings.merge_gate_cm ?? 70, 10);
     this.ttlMs = Math.max(settings.track_ttl_s ?? 1.2, 0.2) * 1000;
     this.confirmHits = Math.max(settings.confirm_hits ?? 2, 1);
+    this.minConfirmSources = Math.max(settings.min_confirm_sources ?? 1, 1);
   }
 
   public reset() {
@@ -150,9 +153,11 @@ export class LocalFusionTracker {
       track.vy += (beta * residualY) / dt;
       track.last_seen = cluster.timestamp;
       track.sources = cluster.sources;
+      cluster.sources.forEach((source) => track.seenSources.add(source));
       track.hits += Math.max(cluster.sources.length, 1);
-      track.confirmed = track.hits >= this.confirmHits;
-      track.confidence = Math.min(1, track.confidence + 0.1 + sourceBonus * 0.08);
+      track.confirmed = track.hits >= this.confirmHits && track.seenSources.size >= this.minConfirmSources;
+      const confidenceCeiling = track.seenSources.size >= this.minConfirmSources ? 1 : 0.74;
+      track.confidence = Math.min(confidenceCeiling, track.confidence + 0.1 + sourceBonus * 0.08);
     }
 
     for (const track of this.tracks.values()) {
@@ -177,7 +182,8 @@ export class LocalFusionTracker {
         last_seen: cluster.timestamp,
         updated_at: now,
         hits,
-        confirmed: hits >= this.confirmHits,
+        confirmed: hits >= this.confirmHits && cluster.sources.length >= this.minConfirmSources,
+        seenSources: new Set(cluster.sources),
       };
       this.tracks.set(track.track_id, track);
     });
@@ -187,7 +193,10 @@ export class LocalFusionTracker {
     }
     return [...this.tracks.values()]
       .filter((track) => track.confirmed)
-      .map(({ updated_at: _u, hits: _h, confirmed: _c, ...track }) => track);
+      .map(({ updated_at: _u, hits: _h, confirmed: _c, seenSources, ...track }) => ({
+        ...track,
+        source_count: seenSources.size,
+      }));
   }
 
   private cluster(observations: FusionObservation[]): Cluster[] {

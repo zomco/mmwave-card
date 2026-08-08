@@ -3,7 +3,13 @@ import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { getModelList, getAdapter } from './models';
 import { localize } from './localize/localize';
-import type { CalibrationConfig, MMWaveCardConfig, RadarSourceConfig } from './types';
+import type {
+  CalibrationConfig,
+  FusionSettings,
+  MMWaveCardConfig,
+  RadarSourceConfig,
+  TrajectoryQualitySettings,
+} from './types';
 import { DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
 import './panels/zone-editor';
@@ -166,6 +172,14 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     } catch (error) {
       this._fusionJsonError = error instanceof Error ? error.message : String(error);
     }
+  }
+
+  private _updateFusionSetting(key: keyof FusionSettings, value: number) {
+    this._changed('fusion', { ...(this._config.fusion ?? {}), [key]: value });
+  }
+
+  private _updateQualitySetting(key: keyof TrajectoryQualitySettings, value: number | boolean) {
+    this._changed('quality', { ...(this._config.quality ?? {}), [key]: value });
   }
 
   private _fusionZonesChanged(event: CustomEvent<MMWaveCardConfig['zones']>) {
@@ -421,13 +435,13 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                   </select>
                 </div>
                 <div class="cal-grid">
-                  ${(['radar_x', 'radar_y', 'radar_z', 'yaw'] as const).map(
+                  ${(['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'] as const).map(
                     (key) => html`
                       <div class="field compact">
                         <label>${key}</label>
                         <input
                           type="number"
-                          step=${key === 'yaw' ? '1' : '10'}
+                          step=${key === 'yaw' || key === 'pitch' || key === 'roll' ? '1' : '10'}
                           .value=${String(calibration[key] ?? (key === 'radar_z' ? 220 : 0))}
                           @change=${(event: Event) =>
                             this._updateRadarCalibration(index, key, Number((event.target as HTMLInputElement).value))}
@@ -469,7 +483,116 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           ＋ ${this._ui('添加雷达', 'Add radar')}
         </button>
 
-        <h3><span>3</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
+        <h3><span>3</span>${this._ui('融合与录像规则', 'Fusion and recording rules')}</h3>
+        <p class="section-help">
+          ${this._ui(
+            '过滤单雷达误报，并在轨迹结束后只为完整、连续的穿越轨迹保存录像。',
+            'Filter single-radar false alarms and save recordings only for complete, continuous crossings after a track ends.',
+          )}
+        </p>
+        <div class="rules-grid">
+          <div class="field compact">
+            <label>${this._ui('最少支持雷达数', 'Minimum supporting radars')}</label>
+            <input
+              type="number"
+              min="1"
+              max=${String(Math.max(1, this._config.radars?.length ?? 1))}
+              step="1"
+              .value=${String(
+                this._config.fusion?.min_confirm_sources ?? Math.min(2, this._config.radars?.length ?? 1),
+              )}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('min_confirm_sources', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('融合距离 (cm)', 'Merge distance (cm)')}</label>
+            <input
+              type="number"
+              min="20"
+              step="5"
+              .value=${String(this._config.fusion?.merge_gate_cm ?? 70)}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('merge_gate_cm', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('轨迹结束等待 (s)', 'Track end delay (s)')}</label>
+            <input
+              type="number"
+              min="0.5"
+              step="0.1"
+              .value=${String(this._config.fusion?.track_ttl_s ?? 1.8)}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('track_ttl_s', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('录像最低评分', 'Recording score')}</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="1"
+              .value=${String(this._config.quality?.min_score ?? 70)}
+              @change=${(event: Event) =>
+                this._updateQualitySetting('min_score', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('最短持续时间 (s)', 'Minimum duration (s)')}</label>
+            <input
+              type="number"
+              min="0.5"
+              step="0.5"
+              .value=${String(this._config.quality?.min_duration_s ?? 3)}
+              @change=${(event: Event) =>
+                this._updateQualitySetting('min_duration_s', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('最短位移 (cm)', 'Minimum displacement (cm)')}</label>
+            <input
+              type="number"
+              min="20"
+              step="10"
+              .value=${String(this._config.quality?.min_displacement_cm ?? 120)}
+              @change=${(event: Event) =>
+                this._updateQualitySetting('min_displacement_cm', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+          <div class="field compact">
+            <label>${this._ui('边界判定范围 (cm)', 'Boundary margin (cm)')}</label>
+            <input
+              type="number"
+              min="10"
+              step="10"
+              .value=${String(this._config.quality?.boundary_margin_cm ?? 60)}
+              @change=${(event: Event) =>
+                this._updateQualitySetting('boundary_margin_cm', Number((event.target as HTMLInputElement).value))}
+            />
+          </div>
+        </div>
+        <label class="check-row">
+          <input
+            type="checkbox"
+            .checked=${this._config.quality?.require_enter_exit !== false}
+            @change=${(event: Event) =>
+              this._updateQualitySetting('require_enter_exit', (event.target as HTMLInputElement).checked)}
+          />
+          <span>${this._ui('只保存完整穿越轨迹', 'Record complete crossings only')}</span>
+        </label>
+        <div class="test-hint">
+          <strong>${this._ui('录像测试方法', 'Recording test')}</strong>
+          <span>
+            ${this._ui(
+              `从房间一侧边缘进入，连续行走至少 ${this._config.quality?.min_displacement_cm ?? 120} cm 并从另一侧边缘离开；离开雷达范围后等待 ${this._config.fusion?.track_ttl_s ?? 1.8} 秒。合格事件会由 TRAJECTORY 变为 TRAVERSE 并触发摄像头。`,
+              `Enter near one room edge, walk continuously for at least ${this._config.quality?.min_displacement_cm ?? 120} cm, and leave at another edge. Wait ${this._config.fusion?.track_ttl_s ?? 1.8} seconds after leaving radar coverage. A qualified event becomes TRAVERSE and triggers the camera.`,
+            )}
+          </span>
+        </div>
+
+        <h3><span>4</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
         <p class="section-help">
           ${this._ui(
             '在户型图上点击添加区域顶点，保存后同步到融合后端。',
@@ -656,8 +779,13 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       --mmwave-primary: #0b825c;
       --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
       display: block;
+      max-width: 100%;
+      overflow-x: hidden;
     }
     .card-config {
+      box-sizing: border-box;
+      max-width: 100%;
+      min-width: 0;
       padding: 4px 2px 12px;
     }
     .mode-switch {
@@ -705,8 +833,13 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     .radar-list {
       display: grid;
       gap: 10px;
+      min-width: 0;
     }
     .radar-editor {
+      box-sizing: border-box;
+      max-width: 100%;
+      min-width: 0;
+      overflow: hidden;
       padding: 10px;
       border: 1px solid var(--mmwave-line);
       border-radius: 12px;
@@ -732,13 +865,15 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       cursor: default;
     }
     .two-col,
-    .cal-grid {
+    .cal-grid,
+    .rules-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 7px;
+      min-width: 0;
     }
     .cal-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
     }
     .radar-editor .field {
       margin-bottom: 7px;
@@ -781,6 +916,22 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       color: var(--error-color, #e53935);
       background: rgba(229, 57, 53, 0.08);
       font-size: 9px;
+    }
+    .test-hint {
+      display: grid;
+      gap: 4px;
+      margin-top: 9px;
+      padding: 10px 12px;
+      border-left: 3px solid var(--mmwave-primary);
+      border-radius: 8px;
+      color: var(--secondary-text-color);
+      background: rgba(11, 130, 92, 0.065);
+      font-size: 10px;
+      line-height: 1.5;
+    }
+    .test-hint strong {
+      color: var(--primary-text-color);
+      font-size: 11px;
     }
     .editor-hero {
       display: flex;
@@ -836,7 +987,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       margin: -3px 0 9px 27px;
     }
     .field {
+      box-sizing: border-box;
       display: flex;
+      max-width: 100%;
+      min-width: 0;
       align-items: center;
       gap: 12px;
       margin-bottom: 8px;
@@ -859,7 +1013,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     .field ha-entity-picker,
     .field select,
     .field input {
+      box-sizing: border-box;
       flex: 1;
+      max-width: 100%;
+      min-width: 0;
     }
     .field select,
     .field input {
@@ -910,8 +1067,9 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
     .room-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
+      min-width: 0;
     }
     .room-grid .field {
       margin: 0;
@@ -965,6 +1123,9 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       }
       .cal-grid {
         grid-template-columns: repeat(2, 1fr);
+      }
+      .rules-grid {
+        grid-template-columns: 1fr;
       }
     }
   `;

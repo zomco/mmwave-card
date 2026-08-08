@@ -1,5 +1,5 @@
 import { LitElement, css, html, PropertyValues } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import type { RadarModelAdapter } from '../models';
 import type {
   CalibrationConfig,
@@ -10,7 +10,7 @@ import type {
   RadarSourceConfig,
 } from '../types';
 import { drawBase, drawRadarFov, drawTarget, roomToCanvas, setupCanvas, type CanvasMetrics } from '../utils/canvas';
-import { TRAIL_MAX_MS } from '../const';
+import { FUSION_TRAIL_MAX_MS } from '../const';
 
 interface TrailPoint {
   x: number;
@@ -48,6 +48,7 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) selectedEventId = '';
   @property({ attribute: false }) lang = 'en';
   @property({ attribute: false }) backendState: 'connecting' | 'online' | 'fallback' | 'error' = 'connecting';
+  @state() private showCoverage = false;
 
   @query('#fusion-cv') private canvas?: HTMLCanvasElement;
   private trails = new Map<string, TrailPoint[]>();
@@ -74,13 +75,15 @@ export class FusionPanel extends LitElement {
       }
       this.trails.set(
         target.track_id,
-        trail.filter((point) => point.timestamp >= now - TRAIL_MAX_MS),
+        trail.filter((point) => point.timestamp >= now - FUSION_TRAIL_MAX_MS),
       );
     }
     const active = new Set(this.targets.map((target) => target.track_id));
     for (const trackId of this.trails.keys()) {
       const trail = this.trails.get(trackId) ?? [];
-      if (!active.has(trackId) && (trail.at(-1)?.timestamp ?? 0) < now - TRAIL_MAX_MS) this.trails.delete(trackId);
+      if (!active.has(trackId) && (trail.at(-1)?.timestamp ?? 0) < now - FUSION_TRAIL_MAX_MS) {
+        this.trails.delete(trackId);
+      }
     }
   }
 
@@ -136,26 +139,39 @@ export class FusionPanel extends LitElement {
   private drawRadars(context: CanvasRenderingContext2D, metrics: CanvasMetrics) {
     for (const radar of this.radars) {
       const point = roomToCanvas(radar.calibration.radar_x, radar.calibration.radar_y, metrics);
+      const color = radar.calibrationWarning ? '#ff9800' : radar.available ? '#0b825c' : '#9ca3af';
+      if (this.showCoverage) {
+        context.save();
+        context.globalAlpha = radar.available ? 0.14 : 0.06;
+        drawRadarFov(
+          context,
+          point.cx,
+          point.cy,
+          radar.calibration.yaw,
+          radar.calibration.pitch,
+          radar.adapter.info.fovDegrees,
+          radar.adapter.info.minRangeM,
+          radar.adapter.info.maxRangeM,
+          metrics,
+          radar.adapter.info.vitalRangeM,
+        );
+        context.restore();
+      }
+      const heading = Math.PI / 2 - radar.calibration.yaw * (Math.PI / 180);
       context.save();
-      context.globalAlpha = radar.available ? 0.45 : 0.12;
-      drawRadarFov(
-        context,
-        point.cx,
-        point.cy,
-        radar.calibration.yaw,
-        radar.calibration.pitch,
-        radar.adapter.info.fovDegrees,
-        radar.adapter.info.minRangeM,
-        radar.adapter.info.maxRangeM,
-        metrics,
-        radar.adapter.info.vitalRangeM,
-      );
+      context.strokeStyle = color;
+      context.fillStyle = color;
+      context.lineWidth = 1.5;
+      context.globalAlpha = radar.available ? 0.9 : 0.4;
+      context.beginPath();
+      context.arc(point.cx, point.cy, 4, 0, Math.PI * 2);
+      context.fill();
+      context.beginPath();
+      context.moveTo(point.cx, point.cy);
+      context.lineTo(point.cx + Math.cos(heading) * 18, point.cy + Math.sin(heading) * 18);
+      context.stroke();
       context.restore();
-      context.fillStyle = radar.calibrationWarning
-        ? 'var(--warning-color, #ff9800)'
-        : radar.available
-          ? 'var(--primary-text-color, #fff)'
-          : 'var(--error-color, #e53935)';
+      context.fillStyle = color;
       context.font = 'bold 9px system-ui';
       context.textAlign = 'center';
       context.fillText(radar.config.id, point.cx, point.cy - 14);
@@ -172,7 +188,7 @@ export class FusionPanel extends LitElement {
       for (let index = 1; index < trail.length; index++) {
         const from = roomToCanvas(trail[index - 1].x, trail[index - 1].y, metrics);
         const to = roomToCanvas(trail[index].x, trail[index].y, metrics);
-        context.globalAlpha = Math.max(0.05, 0.65 - ((now - trail[index].timestamp) / TRAIL_MAX_MS) * 0.65);
+        context.globalAlpha = Math.max(0.05, 0.65 - ((now - trail[index].timestamp) / FUSION_TRAIL_MAX_MS) * 0.65);
         context.beginPath();
         context.moveTo(from.cx, from.cy);
         context.lineTo(to.cx, to.cy);
@@ -225,6 +241,24 @@ export class FusionPanel extends LitElement {
     return this.lang.toLowerCase().startsWith('zh') ? zh : en;
   }
 
+  private qualityReason(reason?: string): string {
+    const reasons: Record<string, [string, string]> = {
+      insufficient_observations: ['观测不足', 'Too few observations'],
+      too_short: ['持续时间不足', 'Too short'],
+      too_few_observations: ['有效点不足', 'Too few valid points'],
+      insufficient_displacement: ['位移不足', 'Insufficient displacement'],
+      discontinuous_observations: ['轨迹不连续', 'Discontinuous'],
+      mostly_outside_room: ['大部分在房间外', 'Mostly outside room'],
+      observation_gap: ['观测中断', 'Observation gap'],
+      trajectory_jump: ['轨迹跳变', 'Trajectory jump'],
+      incomplete_crossing: ['未完整穿越', 'Incomplete crossing'],
+      unstable_boundary_crossing: ['边界反复跳变', 'Unstable crossing'],
+      below_score_threshold: ['质量分不足', 'Below score threshold'],
+    };
+    const label = reason ? reasons[reason] : undefined;
+    return label ? this.ui(label[0], label[1]) : this.ui('已过滤', 'Filtered');
+  }
+
   private eventStatus(event: FusionEvent): string {
     if (event.clip_path) return '▶';
     if (event.clip_status === 'failed') return this.ui('录像失败', 'Clip failed');
@@ -232,7 +266,7 @@ export class FusionPanel extends LitElement {
       return this.ui('录像中', 'Recording');
     }
     if (event.recording_decision === 'rejected_quality' || event.event_type === 'trajectory') {
-      return this.ui('已过滤', 'Filtered');
+      return this.qualityReason(event.quality_reason);
     }
     if (event.event_type === 'traverse') return this.ui('关键轨迹', 'Key track');
     return '';
@@ -259,7 +293,14 @@ export class FusionPanel extends LitElement {
                   ? this.ui('后端异常', 'Backend error')
                   : this.ui('正在连接', 'Connecting')}
           </span>
-          <span class="radar-count">${onlineRadars}/${this.radars.length} ${this.ui('雷达在线', 'radars online')}</span>
+          <span class="overlay-actions">
+            <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>
+              ${this.showCoverage ? this.ui('隐藏覆盖', 'Hide coverage') : this.ui('显示覆盖', 'Show coverage')}
+            </button>
+            <span class="radar-count"
+              >${onlineRadars}/${this.radars.length} ${this.ui('雷达在线', 'radars online')}</span
+            >
+          </span>
         </div>
       </div>
       ${calibrationWarnings.length
@@ -334,6 +375,23 @@ export class FusionPanel extends LitElement {
       justify-content: space-between;
       gap: 8px;
       pointer-events: none;
+    }
+    .overlay-actions {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .coverage-toggle {
+      pointer-events: auto;
+      padding: 4px 8px;
+      border: 1px solid var(--divider-color);
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
+      font: inherit;
+      font-size: 9px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
     }
     .status,
     .radar-count {
