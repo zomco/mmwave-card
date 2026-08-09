@@ -47,11 +47,21 @@ export function applyTransform(rx: number, ry: number, rz: number, cal: Calibrat
   return { roomX, roomY, roomZ, inBoundary: pointInPolygon(roomX, roomY, cal.polygon) };
 }
 
-/** Two-point geometric yaw calculation. */
+/**
+ * Two-point geometric yaw calculation.
+ *
+ * buildRotation maps a radar-local vector to the room by *decreasing* its
+ * standard math angle by yaw, so solving R(yaw)·det = map gives
+ *   angle(map) = angle(det) - yaw   ->   yaw = angle(det) - angle(map)
+ *
+ * This previously returned `am - ad`, i.e. the negated yaw, which mirrored
+ * every two-point calibration and left calcCalibrationResidual reporting
+ * roughly the full A-B separation instead of ~0.
+ */
 export function calcYawFromTwoPoints(mapA: Vec2, mapB: Vec2, detA: Vec2, detB: Vec2): number {
   const am = Math.atan2(mapB.y - mapA.y, mapB.x - mapA.x);
   const ad = Math.atan2(detB.y - detA.y, detB.x - detA.x);
-  let y = (am - ad) * (180 / Math.PI);
+  let y = (ad - am) * (180 / Math.PI);
   while (y > 180) y -= 360;
   while (y < -180) y += 360;
   return Math.round(y * 10) / 10;
