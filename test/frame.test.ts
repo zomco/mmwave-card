@@ -29,6 +29,14 @@ describe('parseAtomicTargetFrame — accepts valid frames', () => {
     expect(r!.targets[0]).toEqual({ x: 10, y: 20, z: 30, speed: 4 });
   });
 
+  it('parses the exact payload r60abd1 firmware emits', () => {
+    // R60ABD1 is single-target 3-D with no speed, so its snprintf writes a
+    // 4-tuple with speed 0. A 3-tuple would be read as [x, y, speed] and the
+    // height would be silently reinterpreted as a velocity.
+    const r = parseAtomicTargetFrame('{"v":1,"f":1,"ts":123456,"t":[[120,340,-8,0]]}');
+    expect(r!.targets).toEqual([{ x: 120, y: 340, z: -8, speed: 0 }]);
+  });
+
   it('accepts object-form targets', () => {
     const r = parseAtomicTargetFrame(frame({ t: [{ x: 1, y: 2, z: 3, speed: 4 }] }));
     expect(r!.targets[0]).toEqual({ x: 1, y: 2, z: 3, speed: 4 });

@@ -38,6 +38,10 @@ const INFO: RadarModelInfo = {
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
+  // Atomic v1 target frame. Preferred over the split x/y/z entities for
+  // multi-radar fusion: those arrive as three independent state changes, so
+  // the backend can pair a fresh X with a stale Y.
+  { key: 'frame_entity', labelKey: 'editor.target_frame', required: false, domain: 'sensor' },
   { key: 'x_entity', labelKey: 'editor.x_entity', required: true, domain: 'sensor' },
   { key: 'y_entity', labelKey: 'editor.y_entity', required: true, domain: 'sensor' },
   { key: 'z_entity', labelKey: 'editor.z_entity', required: false, domain: 'sensor' },
