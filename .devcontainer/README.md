@@ -15,10 +15,10 @@ This directory contains the development container configuration for building and
 
 3. **Build the Card**
    ```bash
-   yarn build      # Lint and build
-   yarn start      # Start dev server with hot reload (port 5000)
-   yarn lint       # Check code quality
-   yarn rollup     # Production build
+   npm run build      # Lint and build
+   npm run start      # Start dev server with hot reload (port 5000)
+   npm run lint       # Check code quality
+   npm run build     # Production build
    ```
 
 4. **Access Services**
@@ -54,17 +54,17 @@ The image includes the `container` helper used by the devcontainer lifecycle com
 
 ```bash
 # One-time setup (automatic on container creation)
-yarn install
+npm ci
 
 # Development with hot reload
-yarn start              # Runs Rollup in watch mode on port 5000
+npm run start              # Runs Rollup in watch mode on port 5000
 
 # Quality checks
-yarn lint             # ESLint check
-yarn build            # Full build pipeline (lint + rollup)
+npm run lint             # ESLint check
+npm run build            # Full build pipeline (lint + rollup)
 
 # Production build
-yarn rollup           # Create optimized dist files
+npm run build           # Create optimized dist files
 ```
 
 ### File Locations
@@ -92,7 +92,7 @@ lsof -i :8123
 ```bash
 # Clear and reinstall dependencies
 rm -rf node_modules
-yarn install
+npm ci
 ```
 
 ## Additional Resources

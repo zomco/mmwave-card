@@ -10,10 +10,10 @@ Use these instructions as project-specific guardrails when generating, editing, 
 ### Core commands
 
 ```bash
-yarn install
-yarn start
-yarn build
-yarn lint
+npm ci
+npm run start
+npm run build
+npm run lint
 ```
 
 ### Primary files
@@ -72,8 +72,8 @@ yarn lint
 
 ## Build and quality expectations
 
-- Keep `yarn lint` clean for changed code.
-- Ensure `yarn build` succeeds after non-trivial changes.
+- Keep `npm run lint` clean for changed code.
+- Ensure `npm run build` succeeds after non-trivial changes.
 - Do not introduce unrelated refactors in focused changes.
 - If updating build tooling, keep dev and prod Rollup configs consistent.
 
@@ -81,7 +81,7 @@ yarn lint
 
 1. Read adjacent code before editing.
 2. Implement the smallest viable change.
-3. Run relevant checks (`yarn lint`, `yarn build`, or targeted command).
+3. Run relevant checks (`npm run lint`, `npm run build`, or targeted command).
 4. Update docs/README when behavior or config changes.
 5. Summarize what changed and why.
 

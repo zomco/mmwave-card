@@ -28,7 +28,6 @@
 
   // Container environment variables for Home Assistant setup
   "containerEnv": {
-    "COREPACK_ENABLE_DOWNLOAD_PROMPT": "0",
     "DEVCONTAINER": "1",
     "HASS_USERNAME": "dev",
     "HASS_PASSWORD": "dev",
@@ -36,8 +35,8 @@
   },
 
   // Setup Home Assistant and install dependencies
-  "postCreateCommand": "container setup && corepack enable && yarn install && pip3 install esphome",
-  "postStartCommand": "container launch & yarn start & wait",
+  "postCreateCommand": "container setup && npm ci && pip3 install esphome",
+  "postStartCommand": "container launch & npm run start & wait",
 
   // VS Code extensions for development
   "customizations": {
