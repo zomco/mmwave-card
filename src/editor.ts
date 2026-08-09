@@ -2,7 +2,7 @@ import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { getModelList, getAdapter } from './models';
-import { localize } from './localize/localize';
+import { entityAliases, localize } from './localize/localize';
 import type {
   CalibrationConfig,
   CalibrationProfile,
@@ -28,6 +28,23 @@ interface EntityRegistryEntry {
   device_id?: string;
   entity_id: string;
   original_name?: string;
+}
+
+/**
+ * Does an entity look like `concept`?
+ *
+ * The entity_id is checked first: ESPHome derives it from the YAML `name:`, so
+ * for these radar components it is ASCII whatever language the user's Home
+ * Assistant runs in. Display names are then checked against the aliases every
+ * shipped language declares.
+ *
+ * This used to inline Chinese literals, which meant an English-named radar
+ * matched and a German-named one silently did not, with no way to extend the
+ * list short of editing the editor.
+ */
+function matchesConcept(entityId: string, displayName: string, concept: string): boolean {
+  const haystack = `${entityId} ${displayName}`.toLowerCase();
+  return entityAliases(concept).some((alias) => haystack.includes(alias));
 }
 
 @customElement(EDITOR_TAG)
@@ -83,8 +100,15 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     return localize(k, this.hass?.language);
   }
 
-  private _ui(zh: string, en: string) {
-    return (this.hass?.language ?? 'en').toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * This replaced a `_ui(zh, en)` helper that inlined both languages at every
+   * call site, which made a third language impossible and kept the strings out
+   * of the language files.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.hass?.language, params);
   }
 
   private _changed(key: string, value: unknown) {
@@ -187,10 +211,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       calibration_profile_id: profile.profile_id,
       calibration_profile_revision: profile.revision,
     });
-    this._profileStatus = this._ui(
-      `已导入 ${profile.name}（版本 ${profile.revision}）`,
-      `Imported ${profile.name} (revision ${profile.revision})`,
-    );
+    this._profileStatus = this._t('editor.imported_p0_revision_p1', { p0: profile.name, p1: profile.revision });
   }
 
   private async _fusionDeviceChanged(index: number, event: Event) {
@@ -222,10 +243,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         patch.calibration = structuredClone(profile.calibration);
         patch.calibration_profile_id = profile.profile_id;
         patch.calibration_profile_revision = profile.revision;
-        this._profileStatus = this._ui(
-          `已自动导入设备校准档案：${profile.name}`,
-          `Imported device calibration profile: ${profile.name}`,
-        );
+        this._profileStatus = this._t('editor.imported_device_calibration_profile_p0', { p0: profile.name });
       }
       this._updateFusionRadar(index, patch);
     } catch (error) {
@@ -264,7 +282,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     });
     this._config = { ...this._config, radars };
     this._emitConfig();
-    this._profileStatus = this._ui('正在保存设备校准档案…', 'Saving device calibration profiles…');
+    this._profileStatus = this._t('editor.saving_device_calibration_profiles');
     const saved = await Promise.all(
       radars.map(async (radar) => {
         const solution = solutionByRadar.get(radar.id);
@@ -295,7 +313,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     this._config = { ...this._config, radars: saved };
     this._emitConfig();
     await this._loadCalibrationProfiles();
-    this._profileStatus = this._ui('全部校准已应用并保存。', 'All calibrations were applied and saved.');
+    this._profileStatus = this._t('editor.all_calibrations_were_applied_and_saved');
   }
 
   private async _deviceDropdownChanged(e: Event) {
@@ -325,20 +343,9 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
         if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
           configPatch.presence_entity = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (name.includes('distance') || id.includes('distance') || name.includes('距离'))
-        ) {
+        } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'distance')) {
           configPatch.distance_entity = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (name.includes('motion_state') ||
-            id.includes('motion_state') ||
-            name.includes('运动状态') ||
-            name.includes('target_state') ||
-            id.includes('target_state') ||
-            name.includes('目标状态'))
-        ) {
+        } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'motion_state')) {
           configPatch.motion_state_entity = id;
           configPatch.target_state_entity = id;
         } else if (matchTargetX) {
@@ -374,13 +381,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           configPatch.heart_entity = id;
         } else if (id.startsWith('sensor.') && id.includes('sleep')) {
           configPatch.sleep_entity = id;
-        } else if (
-          id.startsWith('text.') &&
-          (id.includes('polygon') ||
-            name.toLowerCase().includes('polygon') ||
-            name.includes('多边形') ||
-            name.includes('边界'))
-        ) {
+        } else if (id.startsWith('text.') && matchesConcept(id, name, 'polygon')) {
           configPatch.polygon_entity = id;
         }
       }
@@ -399,12 +400,12 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _modeSelector(mode: 'single' | 'fusion') {
     return html`
-      <div class="mode-switch" role="group" aria-label=${this._ui('运行模式', 'Operating mode')}>
+      <div class="mode-switch" role="group" aria-label=${this._t('editor.operating_mode')}>
         <button type="button" class=${mode === 'single' ? 'active' : ''} @click=${() => this._setMode('single')}>
-          ${this._ui('单雷达', 'Single radar')}
+          ${this._t('editor.single_radar')}
         </button>
         <button type="button" class=${mode === 'fusion' ? 'active' : ''} @click=${() => this._setMode('fusion')}>
-          ${this._ui('多雷达融合', 'Multi-radar fusion')}
+          ${this._t('editor.multi_radar_fusion')}
         </button>
       </div>
     `;
@@ -441,20 +442,15 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <div class="editor-hero">
           <span class="hero-icon">◎</span>
           <div>
-            <strong>${this._ui('多雷达融合', 'Multi-radar fusion')}</strong>
-            <p>
-              ${this._ui(
-                '把多台二维定位雷达放入统一户型坐标系，并同步到持续运行的 HA 后端。',
-                'Place multiple 2-D radars in one floor-plan coordinate system and sync them to the persistent HA backend.',
-              )}
-            </p>
+            <strong>${this._t('editor.multi_radar_fusion_2')}</strong>
+            <p>${this._t('editor.place_multiple_2_d_radars_in')}</p>
           </div>
         </div>
         ${this._modeSelector('fusion')}
 
-        <h3><span>1</span>${this._ui('户型与后端', 'Floor plan and backend')}</h3>
+        <h3><span>1</span>${this._t('editor.floor_plan_and_backend')}</h3>
         <div class="field">
-          <label>${this._ui('卡片标题', 'Card title')}</label>
+          <label>${this._t('editor.card_title')}</label>
           <input
             type="text"
             .value=${this._config.name ?? ''}
@@ -497,21 +493,11 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             .checked=${this._config.sync_backend !== false}
             @change=${(event: Event) => this._changed('sync_backend', (event.target as HTMLInputElement).checked)}
           />
-          <span
-            >${this._ui(
-              '管理员打开卡片时自动同步配置到后端',
-              'Sync configuration to the backend when an administrator opens the card',
-            )}</span
-          >
+          <span>${this._t('editor.sync_configuration_to_the_backend_when')}</span>
         </label>
 
-        <h3><span>2</span>${this._ui('雷达设备', 'Radar devices')}</h3>
-        <p class="section-help">
-          ${this._ui(
-            '只显示可输出二维或三维位置的雷达型号。每台雷达必须使用唯一 ID。',
-            'Only radar models with 2-D or 3-D positions are shown. Every radar needs a unique ID.',
-          )}
-        </p>
+        <h3><span>2</span>${this._t('editor.radar_devices')}</h3>
+        <p class="section-help">${this._t('editor.only_radar_models_with_2_d')}</p>
         <div class="radar-list">
           ${(this._config.radars ?? []).map((radar, index) => {
             const adapter = getAdapter(radar.radar_model);
@@ -519,7 +505,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             return html`
               <section class="radar-editor">
                 <header>
-                  <strong>${this._ui('雷达', 'Radar')} ${index + 1}</strong>
+                  <strong>${this._t('editor.radar')} ${index + 1}</strong>
                   <button
                     type="button"
                     class="remove-button"
@@ -556,12 +542,12 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                   </div>
                 </div>
                 <div class="field">
-                  <label>${this._ui('雷达设备', 'Radar device')}</label>
+                  <label>${this._t('editor.radar_device')}</label>
                   <select
                     .value=${radar.device_id ?? ''}
                     @change=${(event: Event) => this._fusionDeviceChanged(index, event)}
                   >
-                    <option value="">-- ${this._ui('选择设备', 'Select device')} --</option>
+                    <option value="">-- ${this._t('editor.select_device')} --</option>
                     ${this._devices.map(
                       (device) =>
                         html`<option value=${device.id} ?selected=${device.id === radar.device_id}>
@@ -571,12 +557,12 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                   </select>
                 </div>
                 <div class="field profile-field">
-                  <label>${this._ui('校准档案', 'Calibration profile')}</label>
+                  <label>${this._t('editor.calibration_profile')}</label>
                   <select
                     .value=${radar.calibration_profile_id ?? ''}
                     @change=${(event: Event) => this._profileChanged(index, event)}
                   >
-                    <option value="">${this._ui('手工配置 / 未绑定', 'Manual / not linked')}</option>
+                    <option value="">${this._t('editor.manual_not_linked')}</option>
                     ${this._calibrationProfiles.map(
                       (profile) => html`
                         <option
@@ -590,8 +576,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                   </select>
                   ${radar.calibration_profile_id
                     ? html`<small class="profile-badge">
-                        ${this._ui('设备档案快照', 'Device profile snapshot')} ·
-                        v${radar.calibration_profile_revision ?? '?'}
+                        ${this._t('editor.device_profile_snapshot')} · v${radar.calibration_profile_revision ?? '?'}
                       </small>`
                     : nothing}
                 </div>
@@ -614,7 +599,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                 ${adapter
                   ? html`
                       <details class="advanced">
-                        <summary>${this._ui('实体映射', 'Entity mapping')}</summary>
+                        <summary>${this._t('editor.entity_mapping')}</summary>
                         <div class="advanced-fields">
                           ${adapter.getEntitySchema().map(
                             (field) => html`
@@ -641,17 +626,12 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           })}
         </div>
         <button class="add-button" type="button" @click=${this._addFusionRadar}>
-          ＋ ${this._ui('添加雷达', 'Add radar')}
+          ＋ ${this._t('editor.add_radar')}
         </button>
         ${this._profileStatus ? html`<div class="profile-status">${this._profileStatus}</div>` : nothing}
 
-        <h3><span>3</span>${this._ui('交互式安装定位', 'Interactive installation')}</h3>
-        <p class="section-help">
-          ${this._ui(
-            '在同一房间模型中选择雷达，并拖动彩色控制柄调整位置、高度和姿态。其他雷达会作为灰色参照保留。',
-            'Select a radar in the shared room model, then drag the handles to adjust its position, height and orientation. Other radars remain as gray landmarks.',
-          )}
-        </p>
+        <h3><span>3</span>${this._t('editor.interactive_installation')}</h3>
+        <p class="section-help">${this._t('editor.select_a_radar_in_the_shared')}</p>
         <div class="radar-selector">
           ${radars.map(
             (radar, index) => html`
@@ -681,13 +661,8 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             `
           : nothing}
 
-        <h3><span>4</span>${this._ui('多雷达联合方向校准', 'Joint multi-radar calibration')}</h3>
-        <p class="section-help">
-          ${this._ui(
-            '同一个参考位置会同步采集全部雷达，并为每台设备独立计算 yaw 与 X/Y 修正。',
-            'Each shared reference position captures every radar and independently solves yaw and X/Y corrections for each device.',
-          )}
-        </p>
+        <h3><span>4</span>${this._t('editor.joint_multi_radar_calibration')}</h3>
+        <p class="section-help">${this._t('editor.each_shared_reference_position_captures_every')}</p>
         <mmwave-fusion-calibration
           .hass=${this.hass}
           .radars=${radars}
@@ -697,16 +672,11 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           @fusion-calibration-applied=${this._fusionCalibrationApplied}
         ></mmwave-fusion-calibration>
 
-        <h3><span>5</span>${this._ui('融合与录像规则', 'Fusion and recording rules')}</h3>
-        <p class="section-help">
-          ${this._ui(
-            '过滤单雷达误报，并在轨迹结束后只为完整、连续的穿越轨迹保存录像。',
-            'Filter single-radar false alarms and save recordings only for complete, continuous crossings after a track ends.',
-          )}
-        </p>
+        <h3><span>5</span>${this._t('editor.fusion_and_recording_rules')}</h3>
+        <p class="section-help">${this._t('editor.filter_single_radar_false_alarms_and')}</p>
         <div class="rules-grid">
           <div class="field compact">
-            <label>${this._ui('最少支持雷达数', 'Minimum supporting radars')}</label>
+            <label>${this._t('editor.minimum_supporting_radars')}</label>
             <input
               type="number"
               min="1"
@@ -720,7 +690,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('融合距离 (cm)', 'Merge distance (cm)')}</label>
+            <label>${this._t('editor.merge_distance_cm')}</label>
             <input
               type="number"
               min="20"
@@ -731,7 +701,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('轨迹结束等待 (s)', 'Track end delay (s)')}</label>
+            <label>${this._t('editor.track_end_delay_s')}</label>
             <input
               type="number"
               min="0.5"
@@ -742,7 +712,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('录像最低评分', 'Recording score')}</label>
+            <label>${this._t('editor.recording_score')}</label>
             <input
               type="number"
               min="0"
@@ -754,7 +724,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('最短持续时间 (s)', 'Minimum duration (s)')}</label>
+            <label>${this._t('editor.minimum_duration_s')}</label>
             <input
               type="number"
               min="0.5"
@@ -765,7 +735,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('最短位移 (cm)', 'Minimum displacement (cm)')}</label>
+            <label>${this._t('editor.minimum_displacement_cm')}</label>
             <input
               type="number"
               min="20"
@@ -776,7 +746,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
-            <label>${this._ui('边界判定范围 (cm)', 'Boundary margin (cm)')}</label>
+            <label>${this._t('editor.boundary_margin_cm')}</label>
             <input
               type="number"
               min="10"
@@ -794,25 +764,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             @change=${(event: Event) =>
               this._updateQualitySetting('require_enter_exit', (event.target as HTMLInputElement).checked)}
           />
-          <span>${this._ui('只保存完整穿越轨迹', 'Record complete crossings only')}</span>
+          <span>${this._t('editor.record_complete_crossings_only')}</span>
         </label>
         <div class="test-hint">
-          <strong>${this._ui('录像测试方法', 'Recording test')}</strong>
+          <strong>${this._t('editor.recording_test')}</strong>
           <span>
-            ${this._ui(
-              `从房间一侧边缘进入，连续行走至少 ${this._config.quality?.min_displacement_cm ?? 120} cm 并从另一侧边缘离开；离开雷达范围后等待 ${this._config.fusion?.track_ttl_s ?? 1.8} 秒。合格事件会由 TRAJECTORY 变为 TRAVERSE 并触发摄像头。`,
-              `Enter near one room edge, walk continuously for at least ${this._config.quality?.min_displacement_cm ?? 120} cm, and leave at another edge. Wait ${this._config.fusion?.track_ttl_s ?? 1.8} seconds after leaving radar coverage. A qualified event becomes TRAVERSE and triggers the camera.`,
-            )}
+            ${this._t('editor.enter_near_one_room_edge_walk', {
+              p0: this._config.quality?.min_displacement_cm ?? 120,
+              p1: this._config.fusion?.track_ttl_s ?? 1.8,
+            })}
           </span>
         </div>
 
-        <h3><span>6</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
-        <p class="section-help">
-          ${this._ui(
-            '在户型图上点击添加区域顶点，保存后同步到融合后端。',
-            'Draw polygon vertices on the floor plan. Saved zones are synchronized to the fusion backend.',
-          )}
-        </p>
+        <h3><span>6</span>${this._t('editor.event_zones_and_cameras')}</h3>
+        <p class="section-help">${this._t('editor.draw_polygon_vertices_on_the_floor')}</p>
         <mmwave-zone-editor
           .roomW=${Number(this._config.room_w ?? 400)}
           .roomD=${Number(this._config.room_d ?? 600)}
@@ -851,25 +816,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       <div class="editor-hero">
         <span class="hero-icon">◎</span>
         <div>
-          <strong>${this._ui('毫米波雷达卡片', 'MMWave radar card')}</strong>
-          <p>
-            ${this._ui(
-              '选择雷达设备后自动完成实体匹配，只需确认房间尺寸即可开始。',
-              'Choose a radar device to match entities automatically, then confirm the room size.',
-            )}
-          </p>
+          <strong>${this._t('editor.mmwave_radar_card')}</strong>
+          <p>${this._t('editor.choose_a_radar_device_to_match')}</p>
         </div>
       </div>
       ${this._modeSelector('single')}
 
       <!-- Basic settings -->
-      <h3><span>1</span>${this._ui('基本信息', 'Basics')}</h3>
+      <h3><span>1</span>${this._t('editor.basics')}</h3>
       <div class="field">
-        <label>${this._ui('卡片标题', 'Card title')}</label>
+        <label>${this._t('editor.card_title_2')}</label>
         <input
           type="text"
           .value=${this._config.name ?? ''}
-          placeholder=${this._ui('人体存在雷达', 'Presence radar')}
+          placeholder=${this._t('editor.presence_radar')}
           @change=${(e: Event) => this._changed('name', (e.target as HTMLInputElement).value)}
         />
       </div>
@@ -887,15 +847,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       </div>
 
       <!-- Device selector -->
-      <h3><span>2</span>${this._ui('连接雷达设备', 'Connect radar device')}</h3>
-      <p class="section-help">
-        ${this._ui(
-          '从 Home Assistant 设备列表中选择雷达，卡片会自动识别所需实体。',
-          'Select the radar from Home Assistant and the card will identify the required entities.',
-        )}
-      </p>
+      <h3><span>2</span>${this._t('editor.connect_radar_device')}</h3>
+      <p class="section-help">${this._t('editor.select_the_radar_from_home_assistant')}</p>
       <div class="field">
-        <label>${this._ui('雷达设备', 'Radar device')}</label>
+        <label>${this._t('editor.radar_device_2')}</label>
         <select .value=${this._config.device_id ?? ''} @change=${this._deviceDropdownChanged}>
           <option value="">-- 选择设备 (Select Device) --</option>
           ${this._devices.map(
@@ -910,27 +865,16 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         ? html`<div class="match-status ${this._deviceStatus}">
             <span>${this._deviceStatus === 'loading' ? '···' : this._deviceStatus === 'success' ? '✓' : '!'}</span>
             ${this._deviceStatus === 'loading'
-              ? this._ui('正在识别设备实体…', 'Detecting device entities…')
+              ? this._t('editor.detecting_device_entities')
               : this._deviceStatus === 'success'
-                ? this._ui(
-                    `已自动匹配 ${this._matchedEntities} 个配置项`,
-                    `Matched ${this._matchedEntities} configuration fields`,
-                  )
-                : this._ui(
-                    '自动识别失败，请展开高级选项手动配置。',
-                    'Automatic detection failed. Configure entities manually below.',
-                  )}
+                ? this._t('editor.matched_p0_configuration_fields', { p0: this._matchedEntities })
+                : this._t('editor.automatic_detection_failed_configure_entities_manually')}
           </div>`
         : ''}
 
       <!-- Room dimensions -->
       <h3><span>3</span>${this._L('editor.room_dimensions')}</h3>
-      <p class="section-help">
-        ${this._ui(
-          '填写房间实际尺寸，后续 3D 安装定位和轨迹显示会使用此比例。',
-          'Enter the room dimensions used by the 3D placement and target map.',
-        )}
-      </p>
+      <p class="section-help">${this._t('editor.enter_the_room_dimensions_used_by')}</p>
       <div class="room-grid">
         <div class="field compact">
           <label>${this._L('editor.room_w')}</label>
@@ -962,8 +906,8 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             @toggle=${(e: Event) => (this._advOpen = (e.target as HTMLDetailsElement).open)}
           >
             <summary>
-              <span>${this._ui('高级选项：手动指定实体', 'Advanced: assign entities manually')}</span>
-              <small>${this._ui('故障排查', 'Troubleshooting')}</small>
+              <span>${this._t('editor.advanced_assign_entities_manually')}</span>
+              <small>${this._t('editor.troubleshooting')}</small>
             </summary>
             <div class="advanced-fields">
               ${adapter.getEntitySchema().map(
