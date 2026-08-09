@@ -5,14 +5,18 @@ import { getModelList, getAdapter } from './models';
 import { localize } from './localize/localize';
 import type {
   CalibrationConfig,
+  CalibrationProfile,
   FusionSettings,
   MMWaveCardConfig,
   RadarSourceConfig,
   TrajectoryQualitySettings,
 } from './types';
-import { DEFAULT_CARD_CONFIG } from './types';
+import type { RadarCalibrationSolution } from './fusion/calibration';
+import { DEFAULT_CALIBRATION, DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
 import './panels/zone-editor';
+import './panels/installation-3d';
+import './panels/fusion-calibration';
 
 interface DeviceRegistryEntry {
   id: string;
@@ -36,11 +40,19 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @state() private _deviceStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @state() private _matchedEntities = 0;
   @state() private _fusionJsonError = '';
+  @state() private _calibrationProfiles: CalibrationProfile[] = [];
+  @state() private _selectedFusionRadar = 0;
+  @state() private _profileStatus = '';
+  private _profilesLoaded = false;
 
   protected updated(changedProps: Map<string, unknown>) {
     super.updated(changedProps);
     if (changedProps.has('hass') && this.hass && this._devices.length === 0) {
       this._loadDevices();
+    }
+    if (changedProps.has('hass') && this.hass && !this._profilesLoaded) {
+      this._profilesLoaded = true;
+      this._loadCalibrationProfiles();
     }
   }
 
@@ -49,6 +61,17 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       this._devices = await this.hass.callWS<DeviceRegistryEntry[]>({ type: 'config/device_registry/list' });
     } catch (e) {
       console.warn('Failed to load devices', e);
+    }
+  }
+
+  private async _loadCalibrationProfiles() {
+    try {
+      this._calibrationProfiles = await this.hass.callWS<CalibrationProfile[]>({
+        type: 'mmwave_fusion/list_calibration_profiles',
+      });
+    } catch (error) {
+      console.info('Calibration profiles are not available', error);
+      this._calibrationProfiles = [];
     }
   }
 
@@ -73,7 +96,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     if (mode === 'fusion') {
       const first: RadarSourceConfig = {
         id: 'radar_1',
-        radar_model: 'ld2450|ld2452',
+        radar_model: 'ld2450',
         device_id: '',
         calibration: { radar_x: 100, radar_y: 100, radar_z: 220, yaw: 0, pitch: 0, roll: 0, polygon: [] },
       };
@@ -103,7 +126,19 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   private _updateRadarCalibration(index: number, key: keyof CalibrationConfig, value: number) {
     const radar = this._config.radars?.[index];
     if (!radar) return;
-    this._updateFusionRadar(index, { calibration: { ...radar.calibration, [key]: value } });
+    this._updateFusionRadar(index, {
+      calibration: { ...radar.calibration, [key]: value },
+      calibration_profile_id: undefined,
+      calibration_profile_revision: undefined,
+    });
+  }
+
+  private _fusionInstallationChanged(index: number, event: CustomEvent<CalibrationConfig>) {
+    this._updateFusionRadar(index, {
+      calibration: event.detail,
+      calibration_profile_id: undefined,
+      calibration_profile_revision: undefined,
+    });
   }
 
   private _addFusionRadar() {
@@ -111,7 +146,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     const index = radars.length + 1;
     radars.push({
       id: `radar_${index}`,
-      radar_model: 'ld2450|ld2452',
+      radar_model: 'ld2450',
       device_id: '',
       calibration: {
         radar_x: Math.round((Number(this._config.room_w) * index) / (index + 1)),
@@ -130,7 +165,32 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   private _removeFusionRadar(index: number) {
     const radars = (this._config.radars ?? []).filter((_, itemIndex) => itemIndex !== index);
     this._config = { ...this._config, radars };
+    this._selectedFusionRadar = Math.max(0, Math.min(this._selectedFusionRadar, radars.length - 1));
     this._emitConfig();
+  }
+
+  private _profileChanged(index: number, event: Event) {
+    const profileId = (event.target as HTMLSelectElement).value;
+    if (!profileId) {
+      this._updateFusionRadar(index, {
+        calibration_profile_id: undefined,
+        calibration_profile_revision: undefined,
+      });
+      return;
+    }
+    const profile = this._calibrationProfiles.find((item) => item.profile_id === profileId);
+    if (!profile) return;
+    this._updateFusionRadar(index, {
+      device_id: profile.device_id,
+      radar_model: profile.radar_model,
+      calibration: structuredClone(profile.calibration),
+      calibration_profile_id: profile.profile_id,
+      calibration_profile_revision: profile.revision,
+    });
+    this._profileStatus = this._ui(
+      `已导入 ${profile.name}（版本 ${profile.revision}）`,
+      `Imported ${profile.name} (revision ${profile.revision})`,
+    );
   }
 
   private async _fusionDeviceChanged(index: number, event: Event) {
@@ -156,6 +216,16 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         else if (id.startsWith('sensor.') && (id.endsWith('_x') || name.endsWith(' x'))) patch.x_entity = id;
         else if (id.startsWith('sensor.') && (id.endsWith('_y') || name.endsWith(' y'))) patch.y_entity = id;
         else if (id.startsWith('sensor.') && (id.endsWith('_z') || name.endsWith(' z'))) patch.z_entity = id;
+      }
+      const profile = this._calibrationProfiles.find((item) => item.device_id === deviceId);
+      if (profile) {
+        patch.calibration = structuredClone(profile.calibration);
+        patch.calibration_profile_id = profile.profile_id;
+        patch.calibration_profile_revision = profile.revision;
+        this._profileStatus = this._ui(
+          `已自动导入设备校准档案：${profile.name}`,
+          `Imported device calibration profile: ${profile.name}`,
+        );
       }
       this._updateFusionRadar(index, patch);
     } catch (error) {
@@ -184,6 +254,48 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _fusionZonesChanged(event: CustomEvent<MMWaveCardConfig['zones']>) {
     this._changed('zones', event.detail ?? []);
+  }
+
+  private async _fusionCalibrationApplied(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) {
+    const solutionByRadar = new Map(event.detail.solutions.map((solution) => [solution.radarId, solution]));
+    const radars = (this._config.radars ?? []).map((radar) => {
+      const solution = solutionByRadar.get(radar.id);
+      return solution ? { ...radar, calibration: solution.calibration } : radar;
+    });
+    this._config = { ...this._config, radars };
+    this._emitConfig();
+    this._profileStatus = this._ui('正在保存设备校准档案…', 'Saving device calibration profiles…');
+    const saved = await Promise.all(
+      radars.map(async (radar) => {
+        const solution = solutionByRadar.get(radar.id);
+        if (!solution || !radar.device_id) return radar;
+        try {
+          const profile = await this.hass.callWS<CalibrationProfile>({
+            type: 'mmwave_fusion/upsert_calibration_profile',
+            profile: {
+              profile_id: `device:${radar.device_id}`,
+              device_id: radar.device_id,
+              radar_model: radar.radar_model,
+              name: this._devices.find((device) => device.id === radar.device_id)?.name_by_user || radar.id,
+              calibration: solution.calibration,
+              residual_cm: solution.residualAfterCm,
+            },
+          });
+          return {
+            ...radar,
+            calibration_profile_id: profile.profile_id,
+            calibration_profile_revision: profile.revision,
+          };
+        } catch (error) {
+          console.warn(`Failed to save calibration profile for ${radar.id}`, error);
+          return radar;
+        }
+      }),
+    );
+    this._config = { ...this._config, radars: saved };
+    this._emitConfig();
+    await this._loadCalibrationProfiles();
+    this._profileStatus = this._ui('全部校准已应用并保存。', 'All calibrations were applied and saved.');
   }
 
   private async _deviceDropdownChanged(e: Event) {
@@ -300,6 +412,30 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _renderFusionEditor() {
     const spatialModels = getModelList().filter((model) => !getAdapter(model.id)?.info.is1DRanging);
+    const radars = this._config.radars ?? [];
+    const selectedIndex = Math.max(0, Math.min(this._selectedFusionRadar, radars.length - 1));
+    const selectedRadar = radars[selectedIndex];
+    const selectedAdapter = selectedRadar ? getAdapter(selectedRadar.radar_model) : undefined;
+    const selectedCalibration = selectedRadar
+      ? {
+          ...DEFAULT_CALIBRATION,
+          ...(selectedAdapter?.getDefaultCalibration() ?? {}),
+          ...(selectedRadar.calibration ?? {}),
+          polygon: selectedRadar.calibration?.polygon ?? [],
+        }
+      : undefined;
+    const peerCalibrations = radars
+      .map((radar, index) => ({
+        index,
+        id: radar.id,
+        calibration: {
+          ...DEFAULT_CALIBRATION,
+          ...(getAdapter(radar.radar_model)?.getDefaultCalibration() ?? {}),
+          ...(radar.calibration ?? {}),
+          polygon: radar.calibration?.polygon ?? [],
+        },
+      }))
+      .filter((peer) => peer.index !== selectedIndex);
     return html`
       <div class="card-config">
         <div class="editor-hero">
@@ -434,6 +570,31 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                     )}
                   </select>
                 </div>
+                <div class="field profile-field">
+                  <label>${this._ui('校准档案', 'Calibration profile')}</label>
+                  <select
+                    .value=${radar.calibration_profile_id ?? ''}
+                    @change=${(event: Event) => this._profileChanged(index, event)}
+                  >
+                    <option value="">${this._ui('手工配置 / 未绑定', 'Manual / not linked')}</option>
+                    ${this._calibrationProfiles.map(
+                      (profile) => html`
+                        <option
+                          value=${profile.profile_id}
+                          ?selected=${profile.profile_id === radar.calibration_profile_id}
+                        >
+                          ${profile.name} · ${profile.radar_model} · v${profile.revision}
+                        </option>
+                      `,
+                    )}
+                  </select>
+                  ${radar.calibration_profile_id
+                    ? html`<small class="profile-badge">
+                        ${this._ui('设备档案快照', 'Device profile snapshot')} ·
+                        v${radar.calibration_profile_revision ?? '?'}
+                      </small>`
+                    : nothing}
+                </div>
                 <div class="cal-grid">
                   ${(['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'] as const).map(
                     (key) => html`
@@ -482,8 +643,61 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <button class="add-button" type="button" @click=${this._addFusionRadar}>
           ＋ ${this._ui('添加雷达', 'Add radar')}
         </button>
+        ${this._profileStatus ? html`<div class="profile-status">${this._profileStatus}</div>` : nothing}
 
-        <h3><span>3</span>${this._ui('融合与录像规则', 'Fusion and recording rules')}</h3>
+        <h3><span>3</span>${this._ui('交互式安装定位', 'Interactive installation')}</h3>
+        <p class="section-help">
+          ${this._ui(
+            '在同一房间模型中选择雷达，并拖动彩色控制柄调整位置、高度和姿态。其他雷达会作为灰色参照保留。',
+            'Select a radar in the shared room model, then drag the handles to adjust its position, height and orientation. Other radars remain as gray landmarks.',
+          )}
+        </p>
+        <div class="radar-selector">
+          ${radars.map(
+            (radar, index) => html`
+              <button
+                type="button"
+                class=${index === selectedIndex ? 'active' : ''}
+                @click=${() => (this._selectedFusionRadar = index)}
+              >
+                ${radar.id}<small>${radar.radar_model}</small>
+              </button>
+            `,
+          )}
+        </div>
+        ${selectedRadar && selectedAdapter && selectedCalibration
+          ? html`
+              <mmwave-installation-3d
+                .adapter=${selectedAdapter}
+                .calibration=${selectedCalibration}
+                .peerCalibrations=${peerCalibrations}
+                .lang=${this.hass.language}
+                .roomW=${Number(this._config.room_w ?? 400)}
+                .roomD=${Number(this._config.room_d ?? 600)}
+                .maxRangeM=${selectedAdapter.info.maxRangeM}
+                @calibration-changed=${(event: CustomEvent<CalibrationConfig>) =>
+                  this._fusionInstallationChanged(selectedIndex, event)}
+              ></mmwave-installation-3d>
+            `
+          : nothing}
+
+        <h3><span>4</span>${this._ui('多雷达联合方向校准', 'Joint multi-radar calibration')}</h3>
+        <p class="section-help">
+          ${this._ui(
+            '同一个参考位置会同步采集全部雷达，并为每台设备独立计算 yaw 与 X/Y 修正。',
+            'Each shared reference position captures every radar and independently solves yaw and X/Y corrections for each device.',
+          )}
+        </p>
+        <mmwave-fusion-calibration
+          .hass=${this.hass}
+          .radars=${radars}
+          .roomW=${Number(this._config.room_w ?? 400)}
+          .roomD=${Number(this._config.room_d ?? 600)}
+          .lang=${this.hass.language}
+          @fusion-calibration-applied=${this._fusionCalibrationApplied}
+        ></mmwave-fusion-calibration>
+
+        <h3><span>5</span>${this._ui('融合与录像规则', 'Fusion and recording rules')}</h3>
         <p class="section-help">
           ${this._ui(
             '过滤单雷达误报，并在轨迹结束后只为完整、连续的穿越轨迹保存录像。',
@@ -592,7 +806,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           </span>
         </div>
 
-        <h3><span>4</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
+        <h3><span>6</span>${this._ui('事件区域与摄像头', 'Event zones and cameras')}</h3>
         <p class="section-help">
           ${this._ui(
             '在户型图上点击添加区域顶点，保存后同步到融合后端。',
@@ -878,6 +1092,18 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     .radar-editor .field {
       margin-bottom: 7px;
     }
+    .profile-field {
+      position: relative;
+    }
+    .profile-badge {
+      flex: none;
+      padding: 3px 6px;
+      border-radius: 999px;
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.08);
+      font-size: 8px;
+      white-space: nowrap;
+    }
     .add-button {
       width: 100%;
       margin-top: 9px;
@@ -886,6 +1112,51 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       color: var(--mmwave-primary);
       background: rgba(11, 130, 92, 0.05);
       font-weight: 700;
+    }
+    .profile-status {
+      margin-top: 7px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.07);
+      font-size: 10px;
+    }
+    .radar-selector {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+    .radar-selector button {
+      display: grid;
+      gap: 1px;
+      min-width: 78px;
+      padding: 7px 10px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 9px;
+      color: var(--primary-text-color);
+      background: rgba(128, 128, 128, 0.035);
+      font: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .radar-selector button.active {
+      border-color: rgba(11, 130, 92, 0.5);
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.08);
+    }
+    .radar-selector small {
+      color: var(--secondary-text-color);
+      font-size: 8px;
+      font-weight: 500;
+    }
+    mmwave-installation-3d,
+    mmwave-fusion-calibration {
+      display: block;
+      max-width: 100%;
+      min-width: 0;
     }
     .json-field {
       display: grid;

@@ -57,6 +57,7 @@ export class Installation3D extends LitElement {
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 350;
   @property({ type: Number }) maxRangeM?: number;
+  @property({ attribute: false }) peerCalibrations: Array<{ id: string; calibration: CalibrationConfig }> = [];
 
   @query('#installation-cv') private _cv?: HTMLCanvasElement;
   private _handles = new Map<DragMode, Point2>();
@@ -254,6 +255,41 @@ export class Installation3D extends LitElement {
     ctx.fillText('X', floor[1].x + 8, floor[1].y + 2);
     ctx.fillText('Y', floor[3].x - 14, floor[3].y + 2);
     ctx.fillText('Z', ceilingBack[0].x - 13, ceilingBack[0].y - 2);
+
+    // Other radars remain visible as lightweight landmarks while the selected
+    // radar keeps the only interactive handles and scan volume.
+    for (const peer of this.peerCalibrations) {
+      const peerPoint = this._project(
+        {
+          x: peer.calibration.radar_x,
+          y: peer.calibration.radar_y,
+          z: peer.calibration.radar_z,
+        },
+        scene,
+      );
+      const peerYaw = radians(peer.calibration.yaw);
+      const peerHeading = this._project(
+        {
+          x: peer.calibration.radar_x + Math.sin(peerYaw) * 45,
+          y: peer.calibration.radar_y + Math.cos(peerYaw) * 45,
+          z: peer.calibration.radar_z,
+        },
+        scene,
+      );
+      ctx.save();
+      ctx.globalAlpha = 0.48;
+      ctx.strokeStyle = secondaryColor;
+      ctx.fillStyle = secondaryColor;
+      ctx.lineWidth = 1.2;
+      this._line(ctx, peerPoint, peerHeading);
+      ctx.beginPath();
+      ctx.arc(peerPoint.x, peerPoint.y, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center';
+      ctx.fillText(peer.id, peerPoint.x, peerPoint.y - 9);
+      ctx.restore();
+    }
 
     const base = this._project({ x: c.radar_x, y: c.radar_y, z: 0 }, scene);
     const radar = this._project({ x: c.radar_x, y: c.radar_y, z: c.radar_z }, scene);

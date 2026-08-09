@@ -642,6 +642,25 @@ export class MMWaveCard extends LitElement {
         }
       }
 
+      // Persist the same snapshot in HA so fusion cards can import this
+      // device's calibration without depending on another Lovelace card.
+      if (this._config.device_id && this._config.radar_model) {
+        try {
+          await this._hass.callWS({
+            type: 'mmwave_fusion/upsert_calibration_profile',
+            profile: {
+              profile_id: `device:${this._config.device_id}`,
+              device_id: this._config.device_id,
+              radar_model: this._config.radar_model,
+              name: this._adapter.info.displayName,
+              calibration: this._cal,
+            },
+          });
+        } catch (error) {
+          console.info('Shared calibration profile is not available', error);
+        }
+      }
+
       this._syncState = 'success';
     } catch (e) {
       this._syncState = 'error';

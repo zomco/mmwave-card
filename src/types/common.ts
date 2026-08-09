@@ -84,6 +84,10 @@ export interface RadarSourceConfig {
   id: string;
   radar_model: string;
   device_id?: string;
+  /** Stable device-level profile shared by single and fusion cards. */
+  calibration_profile_id?: string;
+  /** Profile revision copied into this configuration snapshot. */
+  calibration_profile_revision?: number;
   calibration?: Partial<CalibrationConfig>;
   /** Relative trust used when overlapping observations are combined. */
   measurement_weight?: number;
@@ -97,6 +101,17 @@ export interface RadarSourceConfig {
   frame_stale_after_s?: number;
   /** Model-specific HA entity mappings. */
   [key: string]: unknown;
+}
+
+export interface CalibrationProfile {
+  profile_id: string;
+  device_id: string;
+  radar_model: string;
+  name: string;
+  calibration: CalibrationConfig;
+  revision: number;
+  residual_cm?: number | null;
+  updated_at: number;
 }
 
 export interface FusionZoneConfig {
