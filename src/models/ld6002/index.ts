@@ -46,6 +46,13 @@ const INFO: RadarModelInfo = {
   hasBreathing: true,
   hasHeartRate: true,
   hasSleep: false,
+  // The ESPHome component publishes distance, presence and vitals - there is
+  // no x/y output - so this is a ranging-only radar. Without this flag the
+  // fusion editor offered LD6002 as a spatial source while the backend's
+  // SPATIAL_MODELS refused it, so the radar was accepted into a fusion config
+  // and then silently ignored. The x/y entities below remain as an escape
+  // hatch for user-supplied template sensors.
+  is1DRanging: true,
 };
 
 // ── Entity schema ─────────────────────────────────────────────────────────────
