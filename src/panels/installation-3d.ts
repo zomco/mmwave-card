@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit';
+import { localize } from '../localize/localize';
 import { customElement, property, query } from 'lit/decorators.js';
 import type { CalibrationConfig } from '../types';
 import type { RadarModelAdapter } from '../models';
@@ -69,8 +70,9 @@ export class Installation3D extends LitElement {
     return this.lang.toLowerCase().startsWith('zh');
   }
 
-  private _label(zh: string, en: string) {
-    return this._isZh ? zh : en;
+  /** Translate through the shared i18n system (was an inline zh/en pair). */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   private get _verticalFovDegrees() {
@@ -482,9 +484,9 @@ export class Installation3D extends LitElement {
 
     this._drawHandle(ctx, 'position', base, 'XY');
     this._drawHandle(ctx, 'height', heightHandle, 'Z');
-    this._drawHandle(ctx, 'yaw', yawHandle, this._label('偏航', 'Yaw'));
-    this._drawHandle(ctx, 'pitch', pitchHandle, this._label('俯仰', 'Pitch'));
-    this._drawHandle(ctx, 'roll', rollHandle, this._label('横滚', 'Roll'));
+    this._drawHandle(ctx, 'yaw', yawHandle, this._t('install3d.yaw'));
+    this._drawHandle(ctx, 'pitch', pitchHandle, this._t('install3d.pitch'));
+    this._drawHandle(ctx, 'roll', rollHandle, this._t('install3d.roll'));
 
     ctx.save();
     ctx.fillStyle = textColor;
@@ -601,29 +603,21 @@ export class Installation3D extends LitElement {
           <span
             class="coverage"
             title=${this._isVerticalFovEstimated
-              ? this._label(
-                  '说明书未标注垂直视场角，当前为保守示意值',
-                  'Vertical FOV is not specified; showing a conservative estimate',
-                )
-              : this._label('型号说明书标称扫描范围', 'Nominal scan volume from the model manual')}
+              ? this._t('install3d.vertical_fov_is_not_specified_showing')
+              : this._t('install3d.nominal_scan_volume_from_the_model')}
           >
-            ${this._label('扫描空间', 'Scan volume')} · H ${this.adapter?.info.fovDegrees ?? 60}° · V
+            ${this._t('install3d.scan_volume')} · H ${this.adapter?.info.fovDegrees ?? 60}° · V
             ${this._isVerticalFovEstimated ? '≈' : ''}${this._verticalFovDegrees}° ·
             ${this.maxRangeM ?? this.adapter?.info.maxRangeM ?? 3} m
           </span>
         </div>
       </div>
-      <div class="hint">
-        ${this._label(
-          '拖拽彩色控制柄直接调整安装位置与姿态',
-          'Drag the colored handles to position and orient the radar',
-        )}
-      </div>
+      <div class="hint">${this._t('install3d.drag_the_colored_handles_to_position')}</div>
       <div class="legend">
-        <span class="beam-key"><i></i>${this._label('型号扫描范围', 'Model scan range')}</span>
-        ${this._legend('position', this._label('位置 X/Y', 'Position X/Y'))}
-        ${this._legend('height', this._label('高度', 'Height'))} ${this._legend('yaw', this._label('偏航', 'Yaw'))}
-        ${this._legend('pitch', this._label('俯仰', 'Pitch'))} ${this._legend('roll', this._label('横滚', 'Roll'))}
+        <span class="beam-key"><i></i>${this._t('install3d.model_scan_range')}</span>
+        ${this._legend('position', this._t('install3d.position_x_y'))}
+        ${this._legend('height', this._t('install3d.height'))} ${this._legend('yaw', this._t('install3d.yaw_2'))}
+        ${this._legend('pitch', this._t('install3d.pitch_2'))} ${this._legend('roll', this._t('install3d.roll_2'))}
       </div>
     `;
   }

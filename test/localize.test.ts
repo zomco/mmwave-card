@@ -37,12 +37,17 @@ describe('language files', () => {
     expect(walk(zhHans)).toEqual([]);
   });
 
-  it('keep placeholders consistent across languages', () => {
-    // A translation that drops {p0} silently renders a sentence with a hole.
-    const placeholders = (s: string) => (s.match(/\{\w+\}/g) ?? []).sort();
+  it('never use a placeholder the caller does not supply', () => {
+    // English is the reference because the extraction derived the parameter
+    // list from the English literal. A translation may legitimately use fewer
+    // placeholders — "{n} target{s}" needs a pluralisation slot that "{n} 个目标"
+    // does not — but one the caller never passes would render as a literal
+    // "{p1}" on screen.
+    const placeholders = (s: string) => new Set(s.match(/\{\w+\}/g) ?? []);
     const walk = (a: unknown, b: unknown, path = ''): void => {
       if (typeof a === 'string' && typeof b === 'string') {
-        expect(placeholders(b), `placeholders differ at ${path}`).toEqual(placeholders(a));
+        const extra = [...placeholders(b)].filter((p) => !placeholders(a).has(p));
+        expect(extra, `${path} uses placeholders English does not supply`).toEqual([]);
         return;
       }
       if (a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a)) {
@@ -50,6 +55,26 @@ describe('language files', () => {
       }
     };
     walk(en, zhHans);
+  });
+
+  it('never leave a captured expression in place of a literal', () => {
+    // The extraction that moved these strings out of the components read the
+    // literal arguments of a two-language helper. A call whose arguments were
+    // variables rather than literals would capture the expression text —
+    // "label[1]" — and silently freeze a dynamic lookup into one constant.
+    const suspicious: string[] = [];
+    const walk = (obj: unknown, path = ''): void => {
+      if (typeof obj === 'string') {
+        if (/^[A-Za-z_$][\w$]*(\[|\.\w|\()/.test(obj)) suspicious.push(`${path} => ${obj}`);
+        return;
+      }
+      if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+        for (const [k, v] of Object.entries(obj)) walk(v, path ? `${path}.${k}` : k);
+      }
+    };
+    walk(en);
+    walk(zhHans);
+    expect(suspicious).toEqual([]);
   });
 });
 

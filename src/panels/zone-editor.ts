@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing } from 'lit';
+import { localize } from '../localize/localize';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { FusionZoneConfig, RadarSourceConfig, Vec2 } from '../types';
 
@@ -16,15 +17,22 @@ export class ZoneEditor extends LitElement {
   @state() private originalId = '';
   @state() private error = '';
 
-  private ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   private beginNew() {
     let number = this.zones.length + 1;
     while (this.zones.some((zone) => zone.id === `zone_${number}`)) number++;
     this.originalId = '';
-    this.draft = { id: `zone_${number}`, name: this.ui(`区域 ${number}`, `Zone ${number}`), dwell_s: 0, polygon: [] };
+    this.draft = { id: `zone_${number}`, name: this._t('zone.zone_p0', { p0: number }), dwell_s: 0, polygon: [] };
     this.error = '';
   }
 
@@ -55,11 +63,10 @@ export class ZoneEditor extends LitElement {
   private save() {
     if (!this.draft) return;
     const id = this.draft.id.trim();
-    if (!id) return void (this.error = this.ui('区域 ID 不能为空', 'Zone ID cannot be empty'));
+    if (!id) return void (this.error = this._t('zone.zone_id_cannot_be_empty'));
     if (this.zones.some((zone) => zone.id === id && zone.id !== this.originalId))
-      return void (this.error = this.ui('区域 ID 必须唯一', 'Zone ID must be unique'));
-    if (this.draft.polygon.length < 3)
-      return void (this.error = this.ui('至少需要 3 个顶点', 'At least three vertices are required'));
+      return void (this.error = this._t('zone.zone_id_must_be_unique'));
+    if (this.draft.polygon.length < 3) return void (this.error = this._t('zone.at_least_three_vertices_are_required'));
     const saved = { ...this.draft, id, name: this.draft.name?.trim() || id };
     const next = this.originalId
       ? this.zones.map((zone) => (zone.id === this.originalId ? saved : zone))
@@ -104,7 +111,7 @@ export class ZoneEditor extends LitElement {
               </button>`,
           )}
         </div>
-        <button type="button" class="new" @click=${this.beginNew}>＋ ${this.ui('新建区域', 'New zone')}</button>
+        <button type="button" class="new" @click=${this.beginNew}>＋ ${this._t('zone.new_zone')}</button>
       </div>
       <svg
         class=${this.draft ? 'floor active' : 'floor'}
@@ -112,7 +119,7 @@ export class ZoneEditor extends LitElement {
         style=${`aspect-ratio:${this.roomW}/${this.roomD}`}
         @click=${this.addPoint}
         role="img"
-        aria-label=${this.ui('事件区域户型编辑器', 'Floor-plan event zone editor')}
+        aria-label=${this._t('zone.floor_plan_event_zone_editor')}
       >
         <defs>
           <pattern id="zone-grid" width="50" height="50" patternUnits="userSpaceOnUse">
@@ -180,40 +187,35 @@ export class ZoneEditor extends LitElement {
                   @input=${(event: Event) => this.patch({ id: (event.target as HTMLInputElement).value })}
               /></label>
               <label
-                >${this.ui('名称', 'Name')}<input
+                >${this._t('zone.name')}<input
                   .value=${this.draft.name ?? ''}
                   @input=${(event: Event) => this.patch({ name: (event.target as HTMLInputElement).value })}
               /></label>
               <label
-                >${this.ui('驻留秒数', 'Dwell seconds')}<input
+                >${this._t('zone.dwell_seconds')}<input
                   type="number"
                   min="0"
                   step="1"
                   .value=${String(this.draft.dwell_s ?? 0)}
                   @input=${(event: Event) => this.patch({ dwell_s: Number((event.target as HTMLInputElement).value) })}
               /></label>
-              <div class="vertex-count">${this.draft.polygon.length} ${this.ui('个顶点', 'vertices')}</div>
+              <div class="vertex-count">${this.draft.polygon.length} ${this._t('zone.vertices')}</div>
             </div>
             <div class="actions">
               <button type="button" @click=${this.undoPoint} ?disabled=${!this.draft.polygon.length}>
-                ↶ ${this.ui('撤销顶点', 'Undo point')}
+                ↶ ${this._t('zone.undo_point')}
               </button>
               <button type="button" @click=${() => this.patch({ polygon: [] })} ?disabled=${!this.draft.polygon.length}>
-                ${this.ui('清空', 'Clear')}
+                ${this._t('zone.clear')}
               </button>
               <button type="button" class="danger" @click=${this.removeZone}>
-                ${this.originalId ? this.ui('删除区域', 'Delete zone') : this.ui('取消', 'Cancel')}
+                ${this.originalId ? this._t('zone.delete_zone') : this._t('zone.cancel')}
               </button>
-              <button type="button" class="save" @click=${this.save}>${this.ui('保存区域', 'Save zone')}</button>
+              <button type="button" class="save" @click=${this.save}>${this._t('zone.save_zone')}</button>
             </div>
             ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
           `
-        : html`<p class="hint">
-            ${this.ui(
-              '选择已有区域或新建区域，然后在户型图上依次点击顶点。',
-              'Select or create a zone, then click its vertices on the floor plan.',
-            )}
-          </p>`}
+        : html`<p class="hint">${this._t('zone.select_or_create_a_zone_then')}</p>`}
     `;
   }
 

@@ -266,8 +266,15 @@ export class MMWaveCard extends LitElement {
     return localize(k, this._hass?.language);
   }
 
-  private _ui(zh: string, en: string) {
-    return (this._hass?.language ?? 'en').toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `_ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this._hass?.language, params);
   }
 
   private _insideTargetCount() {
@@ -275,10 +282,10 @@ export class MMWaveCard extends LitElement {
   }
 
   private _syncLabel() {
-    if (this._syncState === 'syncing') return this._ui('正在同步…', 'Syncing…');
-    if (this._syncState === 'success') return this._ui('已同步', 'Synced');
-    if (this._syncState === 'error') return this._ui('同步失败', 'Sync failed');
-    return this._ui('同步到设备', 'Sync to device');
+    if (this._syncState === 'syncing') return this._t('card.syncing');
+    if (this._syncState === 'success') return this._t('card.synced');
+    if (this._syncState === 'error') return this._t('card.sync_failed');
+    return this._t('card.sync_to_device');
   }
 
   disconnectedCallback() {
@@ -696,18 +703,18 @@ export class MMWaveCard extends LitElement {
     const steps = [
       {
         icon: 'mdi:cube-scan',
-        title: this._ui('安装定位', 'Installation'),
-        description: this._ui('在 3D 房间中放置雷达', 'Place the radar in the 3D room'),
+        title: this._t('card.installation'),
+        description: this._t('card.place_the_radar_in_the_3d'),
       },
       {
         icon: 'mdi:compass-outline',
-        title: this._ui('方向校准', 'Direction'),
-        description: this._ui('通过两个参考点校准偏航', 'Calibrate yaw with two reference points'),
+        title: this._t('card.direction'),
+        description: this._t('card.calibrate_yaw_with_two_reference_points'),
       },
       {
         icon: 'mdi:radar',
-        title: this._ui('实时验证', 'Live test'),
-        description: this._ui('检查目标、边界和运动轨迹', 'Verify targets, boundary and trails'),
+        title: this._t('card.live_test'),
+        description: this._t('card.verify_targets_boundary_and_trails'),
       },
     ];
 
@@ -719,7 +726,7 @@ export class MMWaveCard extends LitElement {
             <div class="identity">
               <div class="logo-tile ${this._present ? 'online' : ''}">${logoSvg}</div>
               <div class="identity-copy">
-                <div class="card-title">${this._config.name || this._ui('人体存在雷达', 'Presence radar')}</div>
+                <div class="card-title">${this._config.name || this._t('card.presence_radar')}</div>
                 <div class="card-subtitle">${this._adapter.info.displayName}</div>
               </div>
             </div>
@@ -727,16 +734,16 @@ export class MMWaveCard extends LitElement {
               <span class="presence-chip ${insideTargets > 0 ? 'active' : this._present ? 'filtered' : ''}">
                 <i></i>
                 ${insideTargets > 0
-                  ? this._ui(`${insideTargets} 个目标`, `${insideTargets} target${insideTargets === 1 ? '' : 's'}`)
+                  ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
                   : this._present
-                    ? this._ui('边界外', 'Outside')
-                    : this._ui('无人', 'Clear')}
+                    ? this._t('card.outside')
+                    : this._t('card.clear')}
               </span>
               <button
                 class="icon-button"
                 type="button"
-                title=${this._ui('打开校准', 'Open calibration')}
-                aria-label=${this._ui('打开校准', 'Open calibration')}
+                title=${this._t('card.open_calibration')}
+                aria-label=${this._t('card.open_calibration_2')}
                 @click=${() => {
                   this._isCalibrating = true;
                   this._tab = TAB_GEO;
@@ -770,20 +777,20 @@ export class MMWaveCard extends LitElement {
           <button
             class="icon-button"
             type="button"
-            title=${this._ui('返回雷达视图', 'Back to radar view')}
-            aria-label=${this._ui('返回雷达视图', 'Back to radar view')}
+            title=${this._t('card.back_to_radar_view')}
+            aria-label=${this._t('card.back_to_radar_view_2')}
             @click=${() => (this._isCalibrating = false)}
           >
             <ha-icon icon="mdi:arrow-left"></ha-icon>
           </button>
           <div class="workflow-title">
-            <strong>${this._ui('雷达空间校准', 'Radar spatial calibration')}</strong>
+            <strong>${this._t('card.radar_spatial_calibration')}</strong>
             <span>${this._adapter.info.displayName}</span>
           </div>
           <span class="step-count">${this._tab + 1} / ${steps.length}</span>
         </header>
 
-        <nav class="workflow-steps" aria-label=${this._ui('校准步骤', 'Calibration steps')}>
+        <nav class="workflow-steps" aria-label=${this._t('card.calibration_steps')}>
           ${steps.map(
             (step, index) => html`
               <button
@@ -850,21 +857,21 @@ export class MMWaveCard extends LitElement {
         <footer class="workflow-footer">
           <div class="footer-tools">
             <button class="text-button" type="button" @click=${this._loadFromDevice}>
-              <ha-icon icon="mdi:backup-restore"></ha-icon><span>${this._ui('撤销修改', 'Revert')}</span>
+              <ha-icon icon="mdi:backup-restore"></ha-icon><span>${this._t('card.revert')}</span>
             </button>
             <button class="text-button danger" type="button" @click=${this._reset}>
-              <ha-icon icon="mdi:restore-alert"></ha-icon><span>${this._ui('恢复默认', 'Reset')}</span>
+              <ha-icon icon="mdi:restore-alert"></ha-icon><span>${this._t('card.reset')}</span>
             </button>
           </div>
           <div class="footer-actions">
             ${this._tab > TAB_GEO
               ? html`<button class="secondary-button" type="button" @click=${() => this._gotoTab(this._tab - 1)}>
-                  <ha-icon icon="mdi:chevron-left"></ha-icon>${this._ui('上一步', 'Back')}
+                  <ha-icon icon="mdi:chevron-left"></ha-icon>${this._t('card.back')}
                 </button>`
               : nothing}
             ${this._tab < TAB_LIVE
               ? html`<button class="primary-button" type="button" @click=${() => this._gotoTab(this._tab + 1)}>
-                  ${this._ui('下一步', 'Continue')}<ha-icon icon="mdi:chevron-right"></ha-icon>
+                  ${this._t('card.continue')}<ha-icon icon="mdi:chevron-right"></ha-icon>
                 </button>`
               : html`<button
                   class="primary-button sync ${this._syncState}"
@@ -896,20 +903,21 @@ export class MMWaveCard extends LitElement {
           <div class="identity">
             <div class="logo-tile ${this._fusionTargets.length ? 'online' : ''}">${logoSvg}</div>
             <div class="identity-copy">
-              <div class="card-title">${this._config.name || this._ui('多雷达融合', 'Multi-radar fusion')}</div>
+              <div class="card-title">${this._config.name || this._t('card.multi_radar_fusion')}</div>
               <div class="card-subtitle">
-                ${this._ui(
-                  `${online}/${this._fusionRadars.length} 台雷达 · ${this._config.fusion_id || 'home'}`,
-                  `${online}/${this._fusionRadars.length} radars · ${this._config.fusion_id || 'home'}`,
-                )}
+                ${this._t('card.p0_p1_radars_p2', {
+                  p0: online,
+                  p1: this._fusionRadars.length,
+                  p2: this._config.fusion_id || 'home',
+                })}
               </div>
             </div>
           </div>
           <span class="presence-chip ${this._fusionTargets.length ? 'active' : ''}">
             <i></i>
             ${this._fusionTargets.length
-              ? this._ui(`${this._fusionTargets.length} 个目标`, `${this._fusionTargets.length} targets`)
-              : this._ui('无人', 'Clear')}
+              ? this._t('card.p0_targets', { p0: this._fusionTargets.length })
+              : this._t('card.clear_2')}
           </span>
         </header>
         <div class="live-body">
@@ -938,7 +946,7 @@ export class MMWaveCard extends LitElement {
                   </header>
                   ${this._selectedFusionEvent.quality_score != null
                     ? html`<p class="quality-detail">
-                        ${this._ui('轨迹质量', 'Trajectory quality')}:
+                        ${this._t('card.trajectory_quality')}:
                         <strong>${this._selectedFusionEvent.quality_score}/100</strong>
                         ${this._selectedFusionEvent.quality_reason
                           ? html` · ${this._selectedFusionEvent.quality_reason}`
@@ -948,10 +956,7 @@ export class MMWaveCard extends LitElement {
                   ${this._fusionVideoUrl
                     ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
                     : html`<p>
-                        ${this._ui(
-                          '该事件没有可播放片段，或录像仍在生成。',
-                          'No playable clip is available yet, or recording is still in progress.',
-                        )}
+                        ${this._t('card.no_playable_clip_is_available_yet')}
                         ${this._selectedFusionEvent.clip_status
                           ? html` (${this._selectedFusionEvent.clip_status})`
                           : nothing}

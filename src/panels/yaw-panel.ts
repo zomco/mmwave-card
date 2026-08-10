@@ -34,8 +34,15 @@ export class YawPanel extends LitElement {
     return localize(k, this.lang);
   }
 
-  private _ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `_ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   connectedCallback() {
@@ -237,14 +244,9 @@ export class YawPanel extends LitElement {
 
     return html`
       <div class="panel-heading">
-        <span class="eyebrow">${this._ui('步骤 2 · 方向校准', 'Step 2 · Direction')}</span>
-        <h2>${this._ui('用两个位置自动计算偏航', 'Calculate yaw from two positions')}</h2>
-        <p>
-          ${this._ui(
-            '依次选择两个相距较远且方便站立的位置，雷达会自动完成方向校准。',
-            'Choose two well-separated places you can stand, then capture one reading at each.',
-          )}
-        </p>
+        <span class="eyebrow">${this._t('yaw.step_2_direction')}</span>
+        <h2>${this._t('yaw.calculate_yaw_from_two_positions')}</h2>
+        <p>${this._t('yaw.choose_two_well_separated_places_you')}</p>
       </div>
 
       <div class="ref-grid">${this._refStep(0)} ${this._refStep(1)}</div>
@@ -252,10 +254,10 @@ export class YawPanel extends LitElement {
         <canvas id="yaw-cv" @click=${this._onCanvasClick}></canvas>
         <span class="map-tip">
           ${yw.sub === 0 || yw.sub === 1
-            ? this._ui('点击地图选择站立位置', 'Click the map to choose where to stand')
+            ? this._t('yaw.click_the_map_to_choose_where')
             : yw.capturing
-              ? this._ui('保持站立，正在等待雷达数据…', 'Stand still while waiting for radar data…')
-              : this._ui('请走到已标记的位置', 'Walk to the marked position')}
+              ? this._t('yaw.stand_still_while_waiting_for_radar')
+              : this._t('yaw.walk_to_the_marked_position')}
         </span>
       </div>
       <button class="cap-btn" type="button" ?disabled=${!canCap || yw.capturing} @click=${this._onCapture}>
@@ -263,15 +265,13 @@ export class YawPanel extends LitElement {
         ${yw.capturing
           ? this._L('yaw.capture_wait')
           : canCap
-            ? this._ui('我已站好，捕获雷达位置', 'I am ready — capture position')
-            : this._ui('请先在地图上选择位置', 'Choose a position on the map first')}
+            ? this._t('yaw.i_am_ready_capture_position')
+            : this._t('yaw.choose_a_position_on_the_map')}
       </button>
       <div class="result-card ${ok ? 'ok' : ''}">
         <span class="result-icon">${ok ? '✓' : 'i'}</span>
         <span>${resText}</span>
-        ${yw.sub > 0
-          ? html`<button type="button" @click=${this._restart}>${this._ui('重新校准', 'Start over')}</button>`
-          : ''}
+        ${yw.sub > 0 ? html`<button type="button" @click=${this._restart}>${this._t('yaw.start_over')}</button>` : ''}
       </div>
     `;
   }

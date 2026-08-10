@@ -308,8 +308,15 @@ export class LivePanel extends LitElement {
     return localize(k, this.lang);
   }
 
-  private _ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `_ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   private _badgeText() {
@@ -329,14 +336,9 @@ export class LivePanel extends LitElement {
     return html`
       ${this.showStatus
         ? html`<div class="panel-heading">
-            <span class="eyebrow">${this._ui('步骤 3 · 实时验证', 'Step 3 · Live test')}</span>
-            <h2>${this._ui('确认检测区域与目标轨迹', 'Verify coverage and target trails')}</h2>
-            <p>
-              ${this._ui(
-                '在房间内走动，检查每个目标的颜色、位置和轨迹是否符合实际。',
-                'Walk through the room and confirm that target positions and trails match reality.',
-              )}
-            </p>
+            <span class="eyebrow">${this._t('live.step_3_live_test')}</span>
+            <h2>${this._t('live.verify_coverage_and_target_trails')}</h2>
+            <p>${this._t('live.walk_through_the_room_and_confirm')}</p>
           </div>`
         : ''}
       <div class="scene-shell">
@@ -344,20 +346,18 @@ export class LivePanel extends LitElement {
         <div class="scene-toolbar">
           <div class="badge ${this._badgeCls()}"><i></i>${this._badgeText()}</div>
           ${this.showStatus
-            ? html`<button type="button" @click=${this.clearTrail}>${this._ui('清除轨迹', 'Clear trails')}</button>`
+            ? html`<button type="button" @click=${this.clearTrail}>${this._t('live.clear_trails')}</button>`
             : ''}
         </div>
         ${!this.present
-          ? html`<div class="idle-hint">
-              <span>◎</span>${this._ui('等待雷达检测到目标', 'Waiting for a radar target')}
-            </div>`
+          ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
           : ''}
       </div>
       ${this.showStatus
         ? html`
             <div class="target-summary">
               <div class="summary-head">
-                <strong>${this._ui('检测目标', 'Detected targets')}</strong>
+                <strong>${this._t('live.detected_targets')}</strong>
                 <span
                   >${this.targets.filter((target) => target.room?.inBoundary).length} /
                   ${this.adapter.info.maxTargets}</span
@@ -371,21 +371,19 @@ export class LivePanel extends LitElement {
                           class="target-row ${target.room?.inBoundary ? '' : 'outside'}"
                           style="--target-color:${targetColor(target.index)}"
                         >
-                          <span class="target-id"><i></i>${this._ui('目标', 'Target')} ${target.index + 1}</span>
+                          <span class="target-id"><i></i>${this._t('live.target')} ${target.index + 1}</span>
                           <span class="target-coord">
                             ${target.room
                               ? `X ${Math.round(target.room.roomX)} · Y ${Math.round(target.room.roomY)}${this.adapter.info.hasZAxis ? ` · Z ${Math.round(target.room.roomZ)}` : ''} cm`
                               : '—'}
                           </span>
                           <span class="target-state"
-                            >${target.room?.inBoundary
-                              ? this._ui('有效', 'Inside')
-                              : this._ui('边界外', 'Outside')}</span
+                            >${target.room?.inBoundary ? this._t('live.inside') : this._t('live.outside')}</span
                           >
                         </div>
                       `,
                     )
-                  : html`<div class="target-empty">${this._ui('当前没有目标数据', 'No target data yet')}</div>`}
+                  : html`<div class="target-empty">${this._t('live.no_target_data_yet')}</div>`}
               </div>
             </div>
           `

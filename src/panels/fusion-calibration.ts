@@ -1,4 +1,5 @@
 import { LitElement, css, html, nothing, type PropertyValues } from 'lit';
+import { localize } from '../localize/localize';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
 import { getAdapter } from '../models';
@@ -66,8 +67,15 @@ export class FusionCalibrationPanel extends LitElement {
   private captureTimer?: number;
   private drawFrame = 0;
 
-  private ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   protected firstUpdated() {
@@ -178,7 +186,7 @@ export class FusionCalibrationPanel extends LitElement {
     if (!this.pendingPoint || this.capturing) return;
     this.capturing = true;
     this.captureProgress = 0;
-    this.captureMessage = this.ui('正在同步采集所有雷达…', 'Capturing all radars synchronously…');
+    this.captureMessage = this._t('fusioncal.capturing_all_radars_synchronously');
     this.sampleBuffers = new Map(this.radars.map((radar) => [radar.id, []]));
     this.signatures.clear();
     const startedAt = Date.now();
@@ -270,10 +278,7 @@ export class FusionCalibrationPanel extends LitElement {
     }
     const capturedCount = Object.keys(readings).length;
     if (!capturedCount) {
-      this.captureMessage = this.ui(
-        '没有雷达获得足够的稳定样本，请重试。',
-        'No radar produced enough stable samples. Try again.',
-      );
+      this.captureMessage = this._t('fusioncal.no_radar_produced_enough_stable_samples');
       return;
     }
     this.references = [
@@ -285,10 +290,7 @@ export class FusionCalibrationPanel extends LitElement {
       },
     ];
     this.pendingPoint = undefined;
-    this.captureMessage = this.ui(
-      `已采集 ${capturedCount}/${this.radars.length} 台雷达。`,
-      `Captured ${capturedCount}/${this.radars.length} radars.`,
-    );
+    this.captureMessage = this._t('fusioncal.captured_p0_p1_radars', { p0: capturedCount, p1: this.radars.length });
     this.scheduleDraw();
   }
 
@@ -371,29 +373,19 @@ export class FusionCalibrationPanel extends LitElement {
     return html`
       <section class="calibration-shell">
         <div class="intro">
-          <span class="eyebrow">${this.ui('联合方向校准', 'Joint direction calibration')}</span>
-          <strong>${this.ui('用多个位置同时校准全部雷达', 'Calibrate every radar from shared positions')}</strong>
-          <p>
-            ${this.ui(
-              '保持空间内只有一名测试人员。依次选择至少三个分散位置，每个位置静止两秒完成同步采集。',
-              'Keep only one test person in the room. Select at least three well-spaced positions and stand still for two seconds at each.',
-            )}
-          </p>
+          <span class="eyebrow">${this._t('fusioncal.joint_direction_calibration')}</span>
+          <strong>${this._t('fusioncal.calibrate_every_radar_from_shared_positions')}</strong>
+          <p>${this._t('fusioncal.keep_only_one_test_person_in')}</p>
         </div>
         <canvas id="fusion-calibration-canvas" @click=${this.onCanvasClick}></canvas>
         <div class="capture-bar">
           <span>
             ${this.pendingPoint
-              ? this.ui(
-                  `待采集：X ${this.pendingPoint.x} / Y ${this.pendingPoint.y} cm`,
-                  `Pending: X ${this.pendingPoint.x} / Y ${this.pendingPoint.y} cm`,
-                )
-              : this.ui('点击户型图选择下一个参考位置', 'Click the floor plan to choose the next reference position')}
+              ? this._t('fusioncal.pending_x_p0_y_p1_cm', { p0: this.pendingPoint.x, p1: this.pendingPoint.y })
+              : this._t('fusioncal.click_the_floor_plan_to_choose')}
           </span>
           <button type="button" ?disabled=${!this.pendingPoint || this.capturing} @click=${this.beginCapture}>
-            ${this.capturing
-              ? this.ui('正在采集…', 'Capturing…')
-              : this.ui('我已站好，同步采集', 'I am ready — capture all')}
+            ${this.capturing ? this._t('fusioncal.capturing') : this._t('fusioncal.i_am_ready_capture_all')}
           </button>
         </div>
         ${this.capturing
@@ -407,7 +399,7 @@ export class FusionCalibrationPanel extends LitElement {
                 <b>${String.fromCharCode(65 + index)}</b>
                 <span>X ${reference.room.x} · Y ${reference.room.y} cm</span>
                 <small
-                  >${Object.keys(reference.readings).length}/${this.radars.length} ${this.ui('台雷达', 'radars')}</small
+                  >${Object.keys(reference.readings).length}/${this.radars.length} ${this._t('fusioncal.radars')}</small
                 >
                 <button type="button" @click=${() => this.removeReference(index)}>×</button>
               </div>
@@ -426,11 +418,11 @@ export class FusionCalibrationPanel extends LitElement {
                         ? html`
                             <span>${solution.residualBeforeCm} → ${solution.residualAfterCm} cm</span>
                             <small>
-                              ${solution.pointCount} ${this.ui('点', 'points')} · yaw ${solution.calibration.yaw}° · X
-                              ${solution.calibration.radar_x} · Y ${solution.calibration.radar_y}
+                              ${solution.pointCount} ${this._t('fusioncal.points')} · yaw ${solution.calibration.yaw}° ·
+                              X ${solution.calibration.radar_x} · Y ${solution.calibration.radar_y}
                             </small>
                           `
-                        : html`<span>${this.ui('参考点不足', 'Not enough references')}</span>`}
+                        : html`<span>${this._t('fusioncal.not_enough_references')}</span>`}
                     </div>
                   `;
                 })}
@@ -444,12 +436,10 @@ export class FusionCalibrationPanel extends LitElement {
             ?disabled=${this.capturing || !this.references.length}
             @click=${this.reset}
           >
-            ${this.ui('重新采集', 'Start over')}
+            ${this._t('fusioncal.start_over')}
           </button>
           <button type="button" class="primary" ?disabled=${!ready} @click=${this.applySolutions}>
-            ${ready
-              ? this.ui('应用全部校准', 'Apply all calibrations')
-              : this.ui('至少 3 点、跨度 120 cm 且残差 ≤ 40 cm', 'Need 3 points, 120 cm span and residual ≤ 40 cm')}
+            ${ready ? this._t('fusioncal.apply_all_calibrations') : this._t('fusioncal.need_3_points_120_cm_span')}
           </button>
         </div>
       </section>

@@ -31,8 +31,15 @@ export class GeoPanel extends LitElement {
     return localize(k, this.lang);
   }
 
-  private _ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `_ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   connectedCallback() {
@@ -196,14 +203,9 @@ export class GeoPanel extends LitElement {
     const roomD = c.room_d ?? this.roomD;
     return html`
       <div class="panel-heading">
-        <span class="eyebrow">${this._ui('步骤 1 · 安装定位', 'Step 1 · Installation')}</span>
-        <h2>${this._ui('在房间中放置雷达', 'Place the radar in the room')}</h2>
-        <p>
-          ${this._ui(
-            '拖拽 3D 模型上的彩色控制柄，直观调整安装位置、高度和朝向。',
-            'Drag the colored handles to set position, height and orientation.',
-          )}
-        </p>
+        <span class="eyebrow">${this._t('geo.step_1_installation')}</span>
+        <h2>${this._t('geo.place_the_radar_in_the_room')}</h2>
+        <p>${this._t('geo.drag_the_colored_handles_to_set')}</p>
       </div>
 
       <mmwave-installation-3d
@@ -217,8 +219,8 @@ export class GeoPanel extends LitElement {
 
       <details class="precision">
         <summary>
-          <span>${this._ui('精确数值调整', 'Precise numeric adjustment')}</span>
-          <small>${this._ui('可选', 'Optional')}</small>
+          <span>${this._t('geo.precise_numeric_adjustment')}</span>
+          <small>${this._t('geo.optional')}</small>
         </summary>
         <div class="precision-fields">
           ${this._numField(this._L('geo.radar_x'), 'radar_x', c.radar_x, 5, 0, roomW)}
@@ -234,24 +236,19 @@ export class GeoPanel extends LitElement {
       <section class="boundary-card">
         <div class="section-heading">
           <div>
-            <span class="eyebrow">${this._ui('可选设置', 'Optional')}</span>
+            <span class="eyebrow">${this._t('geo.optional_2')}</span>
             <h3>${this._L('geo.boundary')}</h3>
-            <p>
-              ${this._ui(
-                '在俯视图中点击，依次勾画实际有效检测区域。',
-                'Click the top-down map to outline the active detection area.',
-              )}
-            </p>
+            <p>${this._t('geo.click_the_top_down_map_to')}</p>
           </div>
           <span class="boundary-badge ${pn >= 3 ? 'active' : ''}"
-            >${pn >= 3 ? `${pn} ${this._ui('个点', 'points')}` : this._ui('未启用', 'Off')}</span
+            >${pn >= 3 ? `${pn} ${this._t('geo.points')}` : this._t('geo.off')}</span
           >
         </div>
         <div class="poly-bar">
           <span class="poly-hint ${pn >= 3 ? 'ok' : ''}">${hint}</span>
           <div class="poly-btns">
             <button class="pbtn" type="button" ?disabled=${pn === 0} @click=${this._undo}>
-              ${this._ui('撤销一点', 'Undo point')}
+              ${this._t('geo.undo_point')}
             </button>
             <button class="pbtn danger" type="button" ?disabled=${pn === 0} @click=${this._clear}>
               ${this._L('geo.poly_clear')}
@@ -260,11 +257,7 @@ export class GeoPanel extends LitElement {
         </div>
         <div class="map-shell">
           <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
-          ${pn === 0
-            ? html`<span class="map-empty"
-                >${this._ui('点击地图添加第一个边界点', 'Click the map to add the first point')}</span
-              >`
-            : ''}
+          ${pn === 0 ? html`<span class="map-empty">${this._t('geo.click_the_map_to_add_the')}</span>` : ''}
         </div>
         <p class="note">${this._L('geo.boundary_note')}</p>
       </section>

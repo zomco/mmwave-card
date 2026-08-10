@@ -1,4 +1,5 @@
 import { LitElement, css, html, PropertyValues } from 'lit';
+import { localize } from '../localize/localize';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import type { RadarModelAdapter } from '../models';
 import type {
@@ -237,38 +238,34 @@ export class FusionPanel extends LitElement {
     );
   }
 
-  private ui(zh: string, en: string) {
-    return this.lang.toLowerCase().startsWith('zh') ? zh : en;
+  /**
+   * Translate through the shared i18n system.
+   *
+   * Replaced a `ui(zh, en)` helper that inlined both languages at every
+   * call site. Seven files each carried their own copy, which is why the
+   * card's strings were not reachable by a translator.
+   */
+  private _t(key: string, params?: Record<string, unknown>) {
+    return localize(key, this.lang, params);
   }
 
   private qualityReason(reason?: string): string {
-    const reasons: Record<string, [string, string]> = {
-      insufficient_observations: ['观测不足', 'Too few observations'],
-      too_short: ['持续时间不足', 'Too short'],
-      too_few_observations: ['有效点不足', 'Too few valid points'],
-      insufficient_displacement: ['位移不足', 'Insufficient displacement'],
-      discontinuous_observations: ['轨迹不连续', 'Discontinuous'],
-      mostly_outside_room: ['大部分在房间外', 'Mostly outside room'],
-      observation_gap: ['观测中断', 'Observation gap'],
-      trajectory_jump: ['轨迹跳变', 'Trajectory jump'],
-      incomplete_crossing: ['未完整穿越', 'Incomplete crossing'],
-      unstable_boundary_crossing: ['边界反复跳变', 'Unstable crossing'],
-      below_score_threshold: ['质量分不足', 'Below score threshold'],
-    };
-    const label = reason ? reasons[reason] : undefined;
-    return label ? this.ui(label[0], label[1]) : this.ui('已过滤', 'Filtered');
+    // The reason codes come from the backend's quality engine; their labels
+    // live in the language files so a translator can reach them and so adding
+    // a reason does not mean editing this panel.
+    return reason ? this._t(`fusion_reason.${reason}`) : this._t('fusion.filtered');
   }
 
   private eventStatus(event: FusionEvent): string {
     if (event.clip_path) return '▶';
-    if (event.clip_status === 'failed') return this.ui('录像失败', 'Clip failed');
+    if (event.clip_status === 'failed') return this._t('fusion.clip_failed');
     if (event.clip_status === 'waiting' || event.clip_status === 'extracting') {
-      return this.ui('录像中', 'Recording');
+      return this._t('fusion.recording');
     }
     if (event.recording_decision === 'rejected_quality' || event.event_type === 'trajectory') {
       return this.qualityReason(event.quality_reason);
     }
-    if (event.event_type === 'traverse') return this.ui('关键轨迹', 'Key track');
+    if (event.event_type === 'traverse') return this._t('fusion.key_track');
     return '';
   }
 
@@ -286,26 +283,24 @@ export class FusionPanel extends LitElement {
           <span class="status ${this.backendState}">
             <i></i>
             ${this.backendState === 'online'
-              ? this.ui('后端融合', 'Backend fusion')
+              ? this._t('fusion.backend_fusion')
               : this.backendState === 'fallback'
-                ? this.ui('本地降级', 'Local fallback')
+                ? this._t('fusion.local_fallback')
                 : this.backendState === 'error'
-                  ? this.ui('后端异常', 'Backend error')
-                  : this.ui('正在连接', 'Connecting')}
+                  ? this._t('fusion.backend_error')
+                  : this._t('fusion.connecting')}
           </span>
           <span class="overlay-actions">
             <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>
-              ${this.showCoverage ? this.ui('隐藏覆盖', 'Hide coverage') : this.ui('显示覆盖', 'Show coverage')}
+              ${this.showCoverage ? this._t('fusion.hide_coverage') : this._t('fusion.show_coverage')}
             </button>
-            <span class="radar-count"
-              >${onlineRadars}/${this.radars.length} ${this.ui('雷达在线', 'radars online')}</span
-            >
+            <span class="radar-count">${onlineRadars}/${this.radars.length} ${this._t('fusion.radars_online')}</span>
           </span>
         </div>
       </div>
       ${calibrationWarnings.length
         ? html`<div class="calibration-warning">
-            ${this.ui('安装校准异常', 'Calibration warning')}:
+            ${this._t('fusion.calibration_warning')}:
             ${calibrationWarnings
               .map((radar) => {
                 const ratio = radar.inRoomRatio == null ? '?' : `${Math.round(radar.inRoomRatio * 100)}%`;
@@ -315,7 +310,7 @@ export class FusionPanel extends LitElement {
           </div>`
         : ''}
       <div class="summary">
-        <div><strong>${this.targets.length}</strong><span>${this.ui('融合目标', 'Fused targets')}</span></div>
+        <div><strong>${this.targets.length}</strong><span>${this._t('fusion.fused_targets')}</span></div>
         ${this.targets.map(
           (target) => html`
             <div class="track" style="--track-color:${colorForId(target.track_id)}">
@@ -330,7 +325,7 @@ export class FusionPanel extends LitElement {
       ${recentEvents.length
         ? html`
             <div class="events">
-              <strong>${this.ui('最近事件', 'Recent events')}</strong>
+              <strong>${this._t('fusion.recent_events')}</strong>
               ${recentEvents.slice(0, 8).map(
                 (event) => html`
                   <button
