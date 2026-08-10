@@ -154,15 +154,23 @@ views:
         radar_model: ld2450
 
         # ── 必填实体 ──────────────────────────────────────────────────────────
-        presence_entity: binary_sensor.ld2450_presence
-        target1_x:       sensor.ld2450_target_1_x
-        target1_y:       sensor.ld2450_target_1_y
+        #
+        # 注意键名格式：多目标型号是 target_<n>_<轴>_entity，
+        # 不是 target1_x。写错的键会被静默忽略，卡片一片空白且不报错。
+        presence_entity:   binary_sensor.ld2450_presence
+        target_1_x_entity: sensor.ld2450_target_1_x
+        target_1_y_entity: sensor.ld2450_target_1_y
 
         # ── 可选实体：目标 2、3 ───────────────────────────────────────────────
-        target2_x:       sensor.ld2450_target_2_x
-        target2_y:       sensor.ld2450_target_2_y
-        target3_x:       sensor.ld2450_target_3_x
-        target3_y:       sensor.ld2450_target_3_y
+        target_2_x_entity: sensor.ld2450_target_2_x
+        target_2_y_entity: sensor.ld2450_target_2_y
+        target_3_x_entity: sensor.ld2450_target_3_x
+        target_3_y_entity: sensor.ld2450_target_3_y
+
+        # ── 可选：速度实体 ────────────────────────────────────────────────────
+        target_1_speed_entity: sensor.ld2450_target_1_speed
+        target_2_speed_entity: sensor.ld2450_target_2_speed
+        target_3_speed_entity: sensor.ld2450_target_3_speed
 
         # ── 房间尺寸 ──────────────────────────────────────────────────────────
         room_w: 500

@@ -9,57 +9,132 @@
 
 [中文文档](./README_CN.md)
 
-Multi-model millimeter-wave radar calibration & live visualization card for [Home Assistant](https://www.home-assistant.io/).
+Calibration and live visualization card for millimetre-wave radars in
+[Home Assistant](https://www.home-assistant.io/). Supports 16 radar models.
 
-## What is this?
+## What this is
 
-This Lovelace card provides a real-time, top-down map of your room, visualizing the exact location of targets detected by your mmWave radars. It includes built-in tools to easily calibrate your radar's orientation and define room boundaries, making smart home presence detection more accurate and intuitive than ever.
+A top-down map of your room showing where people actually are, plus the tools
+to make that map correct — you tell the card where the radar is mounted and
+which way it points, draw the room boundary, and it turns raw radar output into
+real room coordinates.
 
-## Screenshots
+This card is also the **only user interface** for the project. Calibration
+happens here; the ESPHome firmware and the fusion integration ship no UI of
+their own.
 
 <img src="./assets/screenshot-live.gif" alt="Live view panel" width="600">
 
 _(Tab ① — Geometry & Boundary | Tab ② — Yaw Calibration | Tab ③ — Live View)_
 
-## Quick Start (Out-of-the-Box)
+---
 
-### 1. Install via HACS (Recommended)
+## Quick start
+
+### 1. Install via HACS
 
 [![Open your Home Assistant instance and open a repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zomco&repository=mmwave-card&category=plugin)
 
-Alternatively: **HACS → Frontend → ⋮ → Custom repositories** → add this repo URL → category **Lovelace**.
+Or: **HACS → Frontend → ⋮ → Custom repositories** → add this repo URL →
+category **Lovelace**. Restart Home Assistant afterwards.
 
-### 2. Add to Dashboard
+### 2. Add it to a dashboard
 
-You can configure the card entirely through the Home Assistant UI! Just add a new card to your dashboard and search for **"MMWave Radar Card"**. The visual config editor includes a model-aware entity picker to help you set it up in seconds—**no YAML required**!
+Edit any dashboard, **Add Card**, search for **MMWave Radar Card**. Pick your
+model from the drop-down and the editor shows one picker per entity that model
+needs, filtered to plausible candidates. **No YAML required.**
 
-## Advanced Usage (DIY)
+### 3. Calibrate
 
-For advanced users who prefer YAML configuration, need to understand the underlying calibration parameters, or developers who want to add support for new radar models or build the card from source, please refer to our DIY documentation:
+Work through the three tabs in order — this is the step that makes the
+coordinates mean anything, and the step people skip:
 
-👉 **[Advanced Configuration & DIY Guide](./DIY.md)**
+| Tab | What you do | Why |
+| --- | --- | --- |
+| ① Geometry & Boundary | Enter where the radar is (cm from a room corner) and drag the room outline | Targets outside the outline stop driving presence — this is the through-wall ghost fix |
+| ② Yaw Calibration | Stand at two known points a couple of metres apart | Solves which way the radar faces |
+| ③ Live View | Walk around and watch the dot | Verifies the other two |
 
-## Supported Models
+A mirrored dot means yaw is 180° out; a dot moving at right angles to you means
+90° out. Redo Tab ② rather than nudging the number by hand.
 
-| Model                                        | Freq   | Targets | Z axis | Breathing | Heart rate | Sleep |
-| -------------------------------------------- | ------ | ------- | ------ | --------- | ---------- | ----- |
-| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1       | ✅     | ✅        | ✅         | ✅    |
-| [Hi-Link LD2450](https://www.hlktech.net/)   | 24 GHz | 3       | ❌     | ❌        | ❌         | ❌    |
+> **Don't have the firmware flashed yet?** The full journey — wiring, browser
+> flashing, then this card — is in
+> [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md).
 
-Adding a new model requires only creating one file — see [Adding a New Model](#adding-a-new-model).
+---
+
+## Supported models
+
+Sixteen adapters are registered. Range-only models report distance without
+direction, so they render as an arc rather than a point and cannot take part in
+multi-radar fusion.
+
+| Model | Freq | Targets | Range | FOV | Z axis | Breathing | Heart rate | Sleep | Fusion |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [MicRadar R60ABD1](https://www.micradar.cn/) | 60 GHz | 1 | 2.5 m | 40° | ✅ | ✅ | ✅ | ✅ | ✅ |
+| [Hi-Link LD2450](https://www.hlktech.net/) | 24 GHz | 3 | 6 m | 120° | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hi-Link LD2451 | 24 GHz | 3 | 100 m | 30° | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hi-Link LD2452 | 24 GHz | 3 | 6 m | 120° | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hi-Link LD2453 | 24 GHz | 3 | 6 m | 80° | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hi-Link LD2454 | 24 GHz | 3 | 6 m | 120° | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Hi-Link LD6002 | 60 GHz | 1 | 6 m | 120° | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Hi-Link LD2410 | 24 GHz | 1 | 8 m | 120° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2410B | 24 GHz | 1 | 6 m | 120° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2410C | 24 GHz | 1 | 8 m | 120° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2411 | 24 GHz | 1 | 6 m | 40° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2411S | 24 GHz | 1 | 6 m | 45° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2412 | 24 GHz | 1 | 9 m | 150° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2420 | 24 GHz | 1 | 8 m | 120° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Hi-Link LD2450A | 24 GHz | 1 | 2 m | 120° | ❌ | ❌ | ❌ | ❌ | ❌ |
+| [Ai-Thinker RD03E](https://www.ai-thinker.com/) | 24 GHz | 1 | 6 m | 40° | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+Per-model YAML reference lives in `docs/<model>/README.md`.
+
+Adding a model takes one new file plus one registry line — see
+[Adding a New Model](./DIY.md#adding-a-new-model) in the DIY guide.
+
+---
+
+## Multi-radar fusion (optional, experimental)
+
+**Single-radar use needs nothing beyond this card.**
+
+Covering one space with several radars, and wanting persisted trajectories,
+zone events and camera recording, additionally needs the
+**[mmwave-fusion](https://github.com/zomco/mmwave-fusion)** integration — a
+separate HACS entry under the **integration** category.
+
+Without it the card still renders a fused view, but fusion happens in the
+browser and nothing is stored. The card says so explicitly rather than
+pretending everything is fine.
+
+The two are released independently, so the integration stamps `api_version` on
+every push and the card reports a backend that is too old instead of
+half-working.
+
+---
+
+## Documentation map
+
+| If you are | Read |
+| --- | --- |
+| Setting up for the first time | [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md) |
+| Configuring the card in YAML | [DIY.md](./DIY.md) |
+| Looking up one model's entities | `docs/<model>/README.md` |
+| Adding a model or building from source | [DIY.md](./DIY.md#adding-a-new-model) |
+| An AI agent working in this repo | [AGENTS.md](./AGENTS.md) |
+
+## Related repositories
+
+| Repository | What it is | Needed? |
+| --- | --- | --- |
+| [mmwave-component](https://github.com/zomco/mmwave-component) | ESPHome firmware | Yes — the device side. |
+| **mmwave-card** (this) | Lovelace card | Yes — the only UI, and where calibration happens. |
+| [mmwave-fusion](https://github.com/zomco/mmwave-fusion) | HA integration | Multi-radar fusion only. Experimental. |
 
 ---
 
 ## License
 
 MIT © zomco
-
-## Multi-radar fusion (optional, experimental)
-
-Single-radar use needs nothing beyond this card.
-
-Multi-radar fusion additionally needs the **[mmwave-fusion](https://github.com/zomco/mmwave-fusion)** integration, a separate HACS entry under the integration category. It is what provides persisted trajectories, zone events and camera recording.
-
-Without it the card still renders a fused view, but fusion happens in the browser and nothing is stored. The card says so explicitly rather than pretending everything is fine.
-
-The two are released independently, so the integration stamps `api_version` on every push and the card reports a backend that is too old instead of half-working.

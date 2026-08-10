@@ -66,9 +66,6 @@ export class Installation3D extends LitElement {
   private _resizeObserver?: ResizeObserver;
   private _drawRaf = 0;
 
-  private get _isZh() {
-    return this.lang.toLowerCase().startsWith('zh');
-  }
 
   /** Translate through the shared i18n system (was an inline zh/en pair). */
   private _t(key: string, params?: Record<string, unknown>) {
