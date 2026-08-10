@@ -48,7 +48,13 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) historyTrack: FusionHistoryPoint[] = [];
   @property({ attribute: false }) selectedEventId = '';
   @property({ attribute: false }) lang = 'en';
-  @property({ attribute: false }) backendState: 'connecting' | 'online' | 'fallback' | 'error' = 'connecting';
+  @property({ attribute: false }) backendState:
+    | 'connecting'
+    | 'online'
+    | 'fallback'
+    | 'missing'
+    | 'outdated'
+    | 'error' = 'connecting';
   @state() private showCoverage = false;
 
   @query('#fusion-cv') private canvas?: HTMLCanvasElement;
@@ -284,11 +290,15 @@ export class FusionPanel extends LitElement {
             <i></i>
             ${this.backendState === 'online'
               ? this._t('fusion.backend_fusion')
-              : this.backendState === 'fallback'
-                ? this._t('fusion.local_fallback')
-                : this.backendState === 'error'
-                  ? this._t('fusion.backend_error')
-                  : this._t('fusion.connecting')}
+              : this.backendState === 'missing'
+                ? this._t('fusion.integration_missing')
+                : this.backendState === 'outdated'
+                  ? this._t('fusion.integration_outdated')
+                  : this.backendState === 'fallback'
+                    ? this._t('fusion.local_fallback')
+                    : this.backendState === 'error'
+                      ? this._t('fusion.backend_error')
+                      : this._t('fusion.connecting')}
           </span>
           <span class="overlay-actions">
             <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>

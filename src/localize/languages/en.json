@@ -230,7 +230,10 @@
     "radars_online": "radars online",
     "calibration_warning": "Calibration warning",
     "fused_targets": "Fused targets",
-    "recent_events": "Recent events"
+    "recent_events": "Recent events",
+    "integration_missing": "Fusion integration not installed",
+    "integration_missing_help": "Multi-radar fusion needs the separate mmwave-fusion integration (experimental). Without it the card fuses in the browser only: no stored trajectories, no events, no recordings.",
+    "integration_outdated": "Fusion integration is outdated"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "Capturing all radars synchronously…",

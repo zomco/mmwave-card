@@ -36,7 +36,7 @@ import {
   type RadarSourceConfig,
   DEFAULT_CARD_CONFIG,
 } from './types';
-import { CARD_TAG, EDITOR_TAG, CARD_VERSION } from './const';
+import { CARD_TAG, EDITOR_TAG, CARD_VERSION, REQUIRED_FUSION_API_VERSION } from './const';
 
 // Sub-elements (register them)
 import './panels/geo-panel';
@@ -202,7 +202,8 @@ export class MMWaveCard extends LitElement {
   @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
   @state() private _fusionTargets: FusionTarget[] = [];
   @state() private _fusionRadars: FusionRadarVisual[] = [];
-  @state() private _fusionBackendState: 'connecting' | 'online' | 'fallback' | 'error' = 'connecting';
+  @state() private _fusionBackendState: 'connecting' | 'online' | 'fallback' | 'missing' | 'outdated' | 'error' =
+    'connecting';
   @state() private _fusionEvents: FusionEvent[] = [];
   @state() private _fusionHistoryTrack: FusionHistoryPoint[] = [];
   @state() private _selectedFusionEvent?: FusionEvent;
@@ -356,6 +357,9 @@ export class MMWaveCard extends LitElement {
     );
     const localTargets = this._localFusion.step(this._localObservationBuffer, now);
     if (this._fusionBackendState !== 'online') {
+      // Still render locally so the room is not blank, but never downgrade
+      // 'missing' to 'fallback': that would hide the one message telling the
+      // user why persistence, events and recording are absent.
       this._fusionTargets = localTargets;
       if (this._fusionBackendState === 'connecting' && localTargets.length) this._fusionBackendState = 'fallback';
     }
@@ -391,6 +395,21 @@ export class MMWaveCard extends LitElement {
       this._fusionUnsubscribe = await this._hass.connection.subscribeMessage<FusionUpdate>(
         (update) => {
           if (update.fusion_id !== fusionId) return;
+          // The backend stamps every push. A backend older than this card
+          // needs is reported plainly instead of failing later on a command
+          // or field it does not have.
+          const backendApi = (update as { api_version?: number }).api_version ?? 0;
+          if (backendApi < REQUIRED_FUSION_API_VERSION) {
+            if (this._fusionBackendState !== 'outdated') {
+              console.warn(
+                `MMWave Fusion backend speaks api_version ${backendApi}, this card needs ` +
+                  `${REQUIRED_FUSION_API_VERSION}; please update the mmwave-fusion integration`,
+              );
+            }
+            this._fusionBackendState = 'outdated';
+            this.requestUpdate();
+            return;
+          }
           this._fusionTargets = update.tracks;
           if (update.events.length) this._fusionEvents = [...update.events, ...this._fusionEvents].slice(0, 100);
           const health = new Map(update.radars.map((radar) => [radar.id, radar]));
@@ -408,8 +427,18 @@ export class MMWaveCard extends LitElement {
       );
       await this._loadFusionEvents();
     } catch (error) {
-      console.warn('MMWave Fusion backend unavailable; using browser fallback', error);
-      this._fusionBackendState = 'fallback';
+      // Home Assistant answers an unregistered command with unknown_command,
+      // which is precisely the "integration not installed" case and is worth
+      // telling the user about explicitly. Anything else is a backend that is
+      // present but unhappy, where the browser fallback is the right answer.
+      const code = (error as { code?: string } | undefined)?.code;
+      if (code === 'unknown_command') {
+        console.info('MMWave Fusion integration is not installed; multi-radar fusion needs it');
+        this._fusionBackendState = 'missing';
+      } else {
+        console.warn('MMWave Fusion backend unavailable; using browser fallback', error);
+        this._fusionBackendState = 'fallback';
+      }
     } finally {
       this._fusionConnecting = false;
     }

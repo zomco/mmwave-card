@@ -228,7 +228,10 @@
     "radars_online": "雷达在线",
     "calibration_warning": "安装校准异常",
     "fused_targets": "融合目标",
-    "recent_events": "最近事件"
+    "recent_events": "最近事件",
+    "integration_missing": "未安装融合集成",
+    "integration_missing_help": "多雷达融合需要额外安装 mmwave-fusion 集成（实验性）。未安装时卡片仅在浏览器内做临时融合：不保存轨迹、不产生事件、不触发录像。",
+    "integration_outdated": "融合集成版本过旧"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "正在同步采集所有雷达…",

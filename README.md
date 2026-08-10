@@ -53,3 +53,13 @@ Adding a new model requires only creating one file — see [Adding a New Model](
 ## License
 
 MIT © zomco
+
+## Multi-radar fusion (optional, experimental)
+
+Single-radar use needs nothing beyond this card.
+
+Multi-radar fusion additionally needs the **[mmwave-fusion](https://github.com/zomco/mmwave-fusion)** integration, a separate HACS entry under the integration category. It is what provides persisted trajectories, zone events and camera recording.
+
+Without it the card still renders a fused view, but fusion happens in the browser and nothing is stored. The card says so explicitly rather than pretending everything is fine.
+
+The two are released independently, so the integration stamps `api_version` on every push and the card reports a backend that is too old instead of half-working.
