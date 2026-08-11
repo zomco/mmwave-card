@@ -189,6 +189,87 @@ export function drawPolygon(ctx: CanvasRenderingContext2D, poly: Vec2[], m: Canv
   }
 }
 
+// ── Occupancy heatmap ─────────────────────────────────────────────────────────
+
+/** One binned cell from the backend, keyed by its minimum corner in cm. */
+export interface HeatmapCell {
+  x: number;
+  y: number;
+  visits: number;
+}
+
+/**
+ * Colour ramp, cold to hot. Stops are [position, r, g, b] and are interpolated
+ * in RGB, which is good enough for a ramp this short and avoids shipping a
+ * colour-space library for one overlay.
+ */
+const HEAT_RAMP: [number, number, number, number][] = [
+  [0, 33, 102, 172],
+  [0.35, 5, 168, 170],
+  [0.65, 240, 190, 60],
+  [1, 214, 48, 49],
+];
+
+function rampColor(t: number, alpha: number): string {
+  const clamped = Math.min(1, Math.max(0, t));
+  let lower = HEAT_RAMP[0];
+  let upper = HEAT_RAMP[HEAT_RAMP.length - 1];
+  for (let i = 1; i < HEAT_RAMP.length; i++) {
+    if (clamped <= HEAT_RAMP[i][0]) {
+      lower = HEAT_RAMP[i - 1];
+      upper = HEAT_RAMP[i];
+      break;
+    }
+  }
+  const span = upper[0] - lower[0];
+  const f = span === 0 ? 0 : (clamped - lower[0]) / span;
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * f);
+  return `rgba(${mix(lower[1], upper[1])},${mix(lower[2], upper[2])},${mix(lower[3], upper[3])},${alpha})`;
+}
+
+/**
+ * Draw where people have actually been, as a grid of translucent cells.
+ *
+ * Visit counts are heavily skewed: a sofa someone sits on for three hours
+ * collects six figures of points at the fusion rate, while a hallway they cross
+ * twice a day collects a few hundred. Normalising linearly against the maximum
+ * would render the whole room as the sofa and nothing else — so the ramp is
+ * logarithmic, which is what makes the low-traffic structure of a room (doors,
+ * walking lines, the edge of coverage) visible at all.
+ *
+ * Cells are keyed by their minimum corner. This canvas has Y pointing down, so
+ * that corner is drawn at the rect's top-left.
+ */
+export function drawHeatmap(
+  ctx: CanvasRenderingContext2D,
+  cells: HeatmapCell[],
+  binCm: number,
+  maxVisits: number,
+  m: CanvasMetrics,
+): void {
+  if (!cells.length || maxVisits <= 0) return;
+
+  const scale = Math.log1p(maxVisits);
+  // Cells sit edge to edge; a fractional pixel of overlap keeps antialiasing
+  // from drawing a seam of background between every pair of them.
+  const w = (binCm / m.roomW) * m.W + 0.5;
+  const h = (binCm / m.roomD) * m.H + 0.5;
+
+  ctx.save();
+  for (const cell of cells) {
+    const t = scale === 0 ? 1 : Math.log1p(cell.visits) / scale;
+    const p = roomToCanvas(cell.x, cell.y, m);
+    ctx.fillStyle = rampColor(t, 0.14 + t * 0.58);
+    ctx.fillRect(p.cx, p.cy, w, h);
+  }
+  ctx.restore();
+}
+
+/** Ramp swatches for a legend, cold to hot. */
+export function heatmapLegendColors(steps = 5): string[] {
+  return Array.from({ length: steps }, (_, i) => rampColor(i / (steps - 1), 0.14 + (i / (steps - 1)) * 0.58));
+}
+
 // ── Radar FOV — annular sector(s) + icon ─────────────────────────────────────
 
 /**

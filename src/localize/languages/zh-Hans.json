@@ -170,17 +170,9 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": [
-      "距离"
-    ],
-    "motion_state": [
-      "运动状态",
-      "目标状态"
-    ],
-    "polygon": [
-      "多边形",
-      "边界"
-    ]
+    "distance": ["距离"],
+    "motion_state": ["运动状态", "目标状态"],
+    "polygon": ["多边形", "边界"]
   },
   "card": {
     "syncing": "正在同步…",
@@ -231,7 +223,19 @@
     "recent_events": "最近事件",
     "integration_missing": "未安装融合集成",
     "integration_missing_help": "多雷达融合需要额外安装 mmwave-fusion 集成（实验性）。未安装时卡片仅在浏览器内做临时融合：不保存轨迹、不产生事件、不触发录像。",
-    "integration_outdated": "融合集成版本过旧"
+    "integration_outdated": "融合集成版本过旧",
+    "show_heatmap": "热力图",
+    "hide_heatmap": "隐藏热力图",
+    "window_hour": "1 小时",
+    "window_day": "24 小时",
+    "window_week": "7 天",
+    "heatmap_rare": "少",
+    "heatmap_frequent": "多",
+    "heatmap_loading": "正在读取历史轨迹…",
+    "heatmap_summary": "{points} 个点 · {bin} 厘米网格",
+    "heatmap_truncated": "仅显示最密集的网格",
+    "heatmap_failed": "热力图查询失败",
+    "heatmap_needs_newer_backend": "热力图需要更新版本的 mmwave-fusion 集成"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "正在同步采集所有雷达…",

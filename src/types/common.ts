@@ -239,6 +239,25 @@ export interface FusionHistoryPoint {
   sources: string;
 }
 
+/**
+ * A binned occupancy grid over stored trajectories.
+ *
+ * The binning happens in SQLite because a week of points is millions of rows
+ * and the answer is a few hundred cells. `truncated` says the request asked for
+ * a finer grid than the backend will return in one go and only the busiest
+ * cells came back — a partial heatmap, not an error.
+ */
+export interface FusionHeatmap {
+  fusion_id: string;
+  since: number;
+  until: number;
+  bin_cm: number;
+  max_visits: number;
+  total_points: number;
+  truncated: boolean;
+  cells: { x: number; y: number; visits: number }[];
+}
+
 // ── Model capabilities ────────────────────────────────────────────────────────
 
 export interface RadarModelInfo {

@@ -33,6 +33,7 @@ import {
   type FusionUpdate,
   type FusionEvent,
   type FusionHistoryPoint,
+  type FusionHeatmap,
   type RadarSourceConfig,
   DEFAULT_CARD_CONFIG,
 } from './types';
@@ -141,6 +142,8 @@ export class MMWaveCard extends LitElement {
       this._fusionEvents = [];
       this._fusionHistoryTrack = [];
       this._selectedFusionEvent = undefined;
+      this._fusionHeatmap = undefined;
+      this._fusionHeatmapError = '';
       this._fusionVideoUrl = '';
       this._localObservationBuffer = [];
       this._sourceSignatures.clear();
@@ -208,6 +211,9 @@ export class MMWaveCard extends LitElement {
   @state() private _fusionHistoryTrack: FusionHistoryPoint[] = [];
   @state() private _selectedFusionEvent?: FusionEvent;
   @state() private _fusionVideoUrl = '';
+  @state() private _fusionHeatmap?: FusionHeatmap;
+  @state() private _fusionHeatmapLoading = false;
+  @state() private _fusionHeatmapError: '' | 'unsupported' | 'failed' = '';
   private _deviceLoaded = false;
   private _syncResetTimer?: number;
   private _localFusion = new LocalFusionTracker();
@@ -486,6 +492,30 @@ export class MMWaveCard extends LitElement {
       }));
     } catch (error) {
       console.info('MMWave Fusion history is not available', error);
+    }
+  }
+
+  private async _loadFusionHeatmap(event: CustomEvent<{ hours: number; binCm: number }>) {
+    if (!this._hass) return;
+    this._fusionHeatmapLoading = true;
+    this._fusionHeatmapError = '';
+    try {
+      this._fusionHeatmap = await this._hass.callWS<FusionHeatmap>({
+        type: 'mmwave_fusion/query_heatmap',
+        fusion_id: this._config.fusion_id || 'home',
+        hours: event.detail.hours,
+        bin_cm: event.detail.binCm,
+      });
+    } catch (error) {
+      // The heatmap is the one thing this card asks of api_version 2. Rather
+      // than raise the version floor and declare a working backend outdated
+      // over an optional overlay, the feature alone reports that it needs a
+      // newer integration and everything else keeps working.
+      const code = (error as { code?: string } | undefined)?.code;
+      this._fusionHeatmapError = code === 'unknown_command' ? 'unsupported' : 'failed';
+      if (code !== 'unknown_command') console.warn('MMWave Fusion heatmap query failed', error);
+    } finally {
+      this._fusionHeatmapLoading = false;
     }
   }
 
@@ -961,7 +991,11 @@ export class MMWaveCard extends LitElement {
             .selectedEventId=${this._selectedFusionEvent?.event_id ?? ''}
             .lang=${lang}
             .backendState=${this._fusionBackendState}
+            .heatmap=${this._fusionHeatmap}
+            .heatmapLoading=${this._fusionHeatmapLoading}
+            .heatmapError=${this._fusionHeatmapError}
             @fusion-event-selected=${this._selectFusionEvent}
+            @fusion-heatmap-requested=${this._loadFusionHeatmap}
           ></mmwave-fusion-panel>
           ${this._selectedFusionEvent
             ? html`
