@@ -14,9 +14,29 @@ import type {
 import type { RadarCalibrationSolution } from './fusion/calibration';
 import { DEFAULT_CALIBRATION, DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
+import fusionDefaults from './fusion-defaults.json';
 import './panels/zone-editor';
 import './panels/installation-3d';
 import './panels/fusion-calibration';
+
+/**
+ * The backend's default for a fusion setting.
+ *
+ * Every field in the tuning section used to carry its own `?? literal`, which
+ * is how track_ttl_s came to be displayed as 1.8 while the integration used
+ * 1.2 — the editor reported a value no fused track had ever been given. The
+ * numbers now come from fusion-defaults.json, which a workspace test compares
+ * against normalize_config() key for key.
+ */
+function fusionDefault(key: keyof typeof fusionDefaults.fusion, radars: RadarSourceConfig[]): number {
+  if (key === 'min_confirm_sources') return Math.min(2, Math.max(1, radars.length));
+  // A vital-signs radar reports slowly enough that the normal timeout drops
+  // people who are only breathing, so the backend raises it when one is there.
+  if (key === 'track_ttl_s' && radars.some((radar) => radar.radar_model === 'r60abd1')) {
+    return fusionDefaults.conditional.track_ttl_s_with_r60abd1;
+  }
+  return fusionDefaults.fusion[key];
+}
 
 interface DeviceRegistryEntry {
   id: string;
@@ -676,15 +696,50 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <p class="section-help">${this._t('editor.filter_single_radar_false_alarms_and')}</p>
         <div class="rules-grid">
           <div class="field compact">
+            <label>${this._t('editor.fusion_rate_hz')}</label>
+            <input
+              type="number"
+              min="1"
+              max="30"
+              step="1"
+              .value=${String(this._config.fusion?.rate_hz ?? fusionDefault('rate_hz', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('rate_hz', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.fusion_rate_hz_help')}</small>
+          </div>
+          <div class="field compact">
+            <label>${this._t('editor.association_distance_cm')}</label>
+            <input
+              type="number"
+              min="20"
+              step="5"
+              .value=${String(this._config.fusion?.association_gate_cm ?? fusionDefault('association_gate_cm', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('association_gate_cm', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.association_distance_cm_help')}</small>
+          </div>
+          <div class="field compact">
+            <label>${this._t('editor.confirm_hits')}</label>
+            <input
+              type="number"
+              min="1"
+              step="1"
+              .value=${String(this._config.fusion?.confirm_hits ?? fusionDefault('confirm_hits', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('confirm_hits', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.confirm_hits_help')}</small>
+          </div>
+          <div class="field compact">
             <label>${this._t('editor.minimum_supporting_radars')}</label>
             <input
               type="number"
               min="1"
               max=${String(Math.max(1, this._config.radars?.length ?? 1))}
               step="1"
-              .value=${String(
-                this._config.fusion?.min_confirm_sources ?? Math.min(2, this._config.radars?.length ?? 1),
-              )}
+              .value=${String(this._config.fusion?.min_confirm_sources ?? fusionDefault('min_confirm_sources', radars))}
               @change=${(event: Event) =>
                 this._updateFusionSetting('min_confirm_sources', Number((event.target as HTMLInputElement).value))}
             />
@@ -695,7 +750,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               type="number"
               min="20"
               step="5"
-              .value=${String(this._config.fusion?.merge_gate_cm ?? 70)}
+              .value=${String(this._config.fusion?.merge_gate_cm ?? fusionDefault('merge_gate_cm', radars))}
               @change=${(event: Event) =>
                 this._updateFusionSetting('merge_gate_cm', Number((event.target as HTMLInputElement).value))}
             />
@@ -706,7 +761,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               type="number"
               min="0.5"
               step="0.1"
-              .value=${String(this._config.fusion?.track_ttl_s ?? 1.8)}
+              .value=${String(this._config.fusion?.track_ttl_s ?? fusionDefault('track_ttl_s', radars))}
               @change=${(event: Event) =>
                 this._updateFusionSetting('track_ttl_s', Number((event.target as HTMLInputElement).value))}
             />
@@ -718,7 +773,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               min="0"
               max="100"
               step="1"
-              .value=${String(this._config.quality?.min_score ?? 70)}
+              .value=${String(this._config.quality?.min_score ?? fusionDefaults.quality.min_score)}
               @change=${(event: Event) =>
                 this._updateQualitySetting('min_score', Number((event.target as HTMLInputElement).value))}
             />
@@ -729,7 +784,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               type="number"
               min="0.5"
               step="0.5"
-              .value=${String(this._config.quality?.min_duration_s ?? 3)}
+              .value=${String(this._config.quality?.min_duration_s ?? fusionDefaults.quality.min_duration_s)}
               @change=${(event: Event) =>
                 this._updateQualitySetting('min_duration_s', Number((event.target as HTMLInputElement).value))}
             />
@@ -740,7 +795,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               type="number"
               min="20"
               step="10"
-              .value=${String(this._config.quality?.min_displacement_cm ?? 120)}
+              .value=${String(this._config.quality?.min_displacement_cm ?? fusionDefaults.quality.min_displacement_cm)}
               @change=${(event: Event) =>
                 this._updateQualitySetting('min_displacement_cm', Number((event.target as HTMLInputElement).value))}
             />
@@ -751,7 +806,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               type="number"
               min="10"
               step="10"
-              .value=${String(this._config.quality?.boundary_margin_cm ?? 60)}
+              .value=${String(this._config.quality?.boundary_margin_cm ?? fusionDefaults.quality.boundary_margin_cm)}
               @change=${(event: Event) =>
                 this._updateQualitySetting('boundary_margin_cm', Number((event.target as HTMLInputElement).value))}
             />
@@ -760,7 +815,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <label class="check-row">
           <input
             type="checkbox"
-            .checked=${this._config.quality?.require_enter_exit !== false}
+            .checked=${this._config.quality?.require_enter_exit ?? fusionDefaults.quality.require_enter_exit}
             @change=${(event: Event) =>
               this._updateQualitySetting('require_enter_exit', (event.target as HTMLInputElement).checked)}
           />
@@ -770,8 +825,8 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           <strong>${this._t('editor.recording_test')}</strong>
           <span>
             ${this._t('editor.enter_near_one_room_edge_walk', {
-              p0: this._config.quality?.min_displacement_cm ?? 120,
-              p1: this._config.fusion?.track_ttl_s ?? 1.8,
+              p0: this._config.quality?.min_displacement_cm ?? fusionDefaults.quality.min_displacement_cm,
+              p1: this._config.fusion?.track_ttl_s ?? fusionDefault('track_ttl_s', radars),
             })}
           </span>
         </div>

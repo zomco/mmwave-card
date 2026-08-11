@@ -166,7 +166,13 @@
     "automatic_detection_failed_configure_entities_manually": "Automatic detection failed. Configure entities manually below.",
     "enter_the_room_dimensions_used_by": "Enter the room dimensions used by the 3D placement and target map.",
     "advanced_assign_entities_manually": "Advanced: assign entities manually",
-    "troubleshooting": "Troubleshooting"
+    "troubleshooting": "Troubleshooting",
+    "fusion_rate_hz": "Fusion rate (Hz)",
+    "fusion_rate_hz_help": "How often positions are computed and stored. Higher is smoother and costs proportionally more disk — roughly 50 MB a day per two radars at 10 Hz.",
+    "association_distance_cm": "Association distance (cm)",
+    "association_distance_cm_help": "How far a target may move between frames and still be treated as the same person. Too small splits one person into several tracks; too large merges two people into one.",
+    "confirm_hits": "Frames before a track is published",
+    "confirm_hits_help": "Raising this suppresses brief false targets at the cost of a slower first detection."
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {

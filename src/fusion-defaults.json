@@ -1,0 +1,45 @@
+{
+  "_comment": [
+    "The backend's defaults, in one place.",
+    "",
+    "These are not the card's own choices. normalize_config() in the mmwave-fusion",
+    "integration fills in exactly these values for anything a configuration leaves",
+    "out, and the editor has to show the same numbers or it reports settings the",
+    "system is not using. It did: track_ttl_s was written as 1.8 in two places in",
+    "editor.ts while the backend used 1.2, so the field showed a value no fused",
+    "track had ever been given.",
+    "",
+    "Kept as JSON rather than as TypeScript constants so the other side can read it",
+    "too: tests/unit/test_fusion_defaults_match.py in the workspace repo loads this",
+    "file and asserts it equals what normalize_config() produces, key for key. A",
+    "setting added to the backend without being reflected here fails that test,",
+    "which is the only thing that makes this file stay true."
+  ],
+  "fusion": {
+    "rate_hz": 10.0,
+    "association_gate_cm": 90.0,
+    "merge_gate_cm": 70.0,
+    "track_ttl_s": 1.2,
+    "confirm_hits": 2,
+    "min_confirm_sources": 2
+  },
+  "quality": {
+    "min_score": 70,
+    "min_duration_s": 3.0,
+    "min_observed_points": 20,
+    "min_displacement_cm": 120.0,
+    "min_observed_ratio": 0.6,
+    "min_inside_ratio": 0.6,
+    "max_gap_s": 0.8,
+    "max_jump_cm": 100.0,
+    "require_enter_exit": true,
+    "smoothing_s": 0.5,
+    "history_s": 60.0,
+    "persist_interval_s": 0.5,
+    "boundary_margin_cm": 60.0
+  },
+  "conditional": {
+    "_comment": "A vital-signs radar reports slowly enough that the normal track timeout drops people who are only breathing, so the backend raises it whenever one is present.",
+    "track_ttl_s_with_r60abd1": 3.0
+  }
+}
