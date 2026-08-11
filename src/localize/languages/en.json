@@ -170,19 +170,9 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": [
-      "distance"
-    ],
-    "motion_state": [
-      "motion state",
-      "motion_state",
-      "target state",
-      "target_state"
-    ],
-    "polygon": [
-      "polygon",
-      "boundary"
-    ]
+    "distance": ["distance"],
+    "motion_state": ["motion state", "motion_state", "target state", "target_state"],
+    "polygon": ["polygon", "boundary"]
   },
   "card": {
     "syncing": "Syncing…",
@@ -233,7 +223,19 @@
     "recent_events": "Recent events",
     "integration_missing": "Fusion integration not installed",
     "integration_missing_help": "Multi-radar fusion needs the separate mmwave-fusion integration (experimental). Without it the card fuses in the browser only: no stored trajectories, no events, no recordings.",
-    "integration_outdated": "Fusion integration is outdated"
+    "integration_outdated": "Fusion integration is outdated",
+    "show_heatmap": "Heatmap",
+    "hide_heatmap": "Hide heatmap",
+    "window_hour": "1 h",
+    "window_day": "24 h",
+    "window_week": "7 d",
+    "heatmap_rare": "Rare",
+    "heatmap_frequent": "Frequent",
+    "heatmap_loading": "Reading stored trajectories…",
+    "heatmap_summary": "{points} points · {bin} cm cells",
+    "heatmap_truncated": "busiest cells only",
+    "heatmap_failed": "Heatmap query failed",
+    "heatmap_needs_newer_backend": "The heatmap needs a newer mmwave-fusion integration"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "Capturing all radars synchronously…",

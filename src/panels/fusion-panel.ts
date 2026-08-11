@@ -5,12 +5,22 @@ import type { RadarModelAdapter } from '../models';
 import type {
   CalibrationConfig,
   FusionEvent,
+  FusionHeatmap,
   FusionHistoryPoint,
   FusionTarget,
   FusionZoneConfig,
   RadarSourceConfig,
 } from '../types';
-import { drawBase, drawRadarFov, drawTarget, roomToCanvas, setupCanvas, type CanvasMetrics } from '../utils/canvas';
+import {
+  drawBase,
+  drawHeatmap,
+  drawRadarFov,
+  drawTarget,
+  heatmapLegendColors,
+  roomToCanvas,
+  setupCanvas,
+  type CanvasMetrics,
+} from '../utils/canvas';
 import { FUSION_TRAIL_MAX_MS } from '../const';
 
 interface TrailPoint {
@@ -55,7 +65,13 @@ export class FusionPanel extends LitElement {
     | 'missing'
     | 'outdated'
     | 'error' = 'connecting';
+  @property({ attribute: false }) heatmap?: FusionHeatmap;
+  @property({ type: Boolean }) heatmapLoading = false;
+  /** '' when fine, 'unsupported' when the backend predates the command. */
+  @property({ attribute: false }) heatmapError: '' | 'unsupported' | 'failed' = '';
   @state() private showCoverage = false;
+  @state() private showHeatmap = false;
+  @state() private heatmapHours = 24;
 
   @query('#fusion-cv') private canvas?: HTMLCanvasElement;
   private trails = new Map<string, TrailPoint[]>();
@@ -107,6 +123,9 @@ export class FusionPanel extends LitElement {
       const context = setupCanvas(canvas, metrics.H);
       const now = Date.now();
       drawBase(context, metrics);
+      if (this.showHeatmap && this.heatmap) {
+        drawHeatmap(context, this.heatmap.cells, this.heatmap.bin_cm, this.heatmap.max_visits, metrics);
+      }
       this.drawZones(context, metrics);
       this.drawRadars(context, metrics);
       this.drawTrails(context, metrics, now);
@@ -245,6 +264,42 @@ export class FusionPanel extends LitElement {
   }
 
   /**
+   * Cell size for the requested grid.
+   *
+   * Derived from the room rather than exposed as another control: about forty
+   * cells across the longer wall reads as a heatmap in a bedroom and in a
+   * warehouse alike, and a person is roughly one cell wide either way. Clamped
+   * to the range the backend accepts.
+   */
+  private binCm(): number {
+    const target = Math.max(this.roomW, this.roomD) / 40;
+    return Math.min(200, Math.max(5, Math.round(target / 5) * 5));
+  }
+
+  private requestHeatmap() {
+    this.dispatchEvent(
+      new CustomEvent('fusion-heatmap-requested', {
+        detail: { hours: this.heatmapHours, binCm: this.binCm() },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private toggleHeatmap() {
+    this.showHeatmap = !this.showHeatmap;
+    // Only fetch on the way in, and only once per window: this is a scan over
+    // stored points, not something to re-run on every frame or every re-render.
+    if (this.showHeatmap && !this.heatmap) this.requestHeatmap();
+  }
+
+  private setHeatmapHours(hours: number) {
+    if (hours === this.heatmapHours) return;
+    this.heatmapHours = hours;
+    this.requestHeatmap();
+  }
+
+  /**
    * Translate through the shared i18n system.
    *
    * Replaced a `ui(zh, en)` helper that inlined both languages at every
@@ -275,6 +330,54 @@ export class FusionPanel extends LitElement {
     return '';
   }
 
+  private renderHeatmapLegend() {
+    const windows: [number, string][] = [
+      [1, this._t('fusion.window_hour')],
+      [24, this._t('fusion.window_day')],
+      [168, this._t('fusion.window_week')],
+    ];
+    return html`
+      <div class="heatmap-bar">
+        <div class="windows">
+          ${windows.map(
+            ([hours, label]) => html`
+              <button
+                type="button"
+                class=${this.heatmapHours === hours ? 'selected' : ''}
+                ?disabled=${this.heatmapLoading}
+                @click=${() => this.setHeatmapHours(hours)}
+              >
+                ${label}
+              </button>
+            `,
+          )}
+        </div>
+        ${this.heatmapError === 'unsupported'
+          ? html`<span class="heatmap-note">${this._t('fusion.heatmap_needs_newer_backend')}</span>`
+          : this.heatmapError === 'failed'
+            ? html`<span class="heatmap-note">${this._t('fusion.heatmap_failed')}</span>`
+            : this.heatmapLoading
+              ? html`<span class="heatmap-note">${this._t('fusion.heatmap_loading')}</span>`
+              : this.heatmap
+                ? html`
+                    <span class="ramp">
+                      <small>${this._t('fusion.heatmap_rare')}</small>
+                      ${heatmapLegendColors().map((color) => html`<i style="background:${color}"></i>`)}
+                      <small>${this._t('fusion.heatmap_frequent')}</small>
+                    </span>
+                    <span class="heatmap-note">
+                      ${this._t('fusion.heatmap_summary', {
+                        points: this.heatmap.total_points.toLocaleString(),
+                        bin: this.heatmap.bin_cm,
+                      })}
+                      ${this.heatmap.truncated ? ` · ${this._t('fusion.heatmap_truncated')}` : ''}
+                    </span>
+                  `
+                : ''}
+      </div>
+    `;
+  }
+
   protected render() {
     const onlineRadars = this.radars.filter((radar) => radar.available).length;
     const calibrationWarnings = this.radars.filter((radar) => radar.calibrationWarning);
@@ -301,6 +404,13 @@ export class FusionPanel extends LitElement {
                       : this._t('fusion.connecting')}
           </span>
           <span class="overlay-actions">
+            <button
+              type="button"
+              class="coverage-toggle ${this.showHeatmap ? 'active' : ''}"
+              @click=${this.toggleHeatmap}
+            >
+              ${this.showHeatmap ? this._t('fusion.hide_heatmap') : this._t('fusion.show_heatmap')}
+            </button>
             <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>
               ${this.showCoverage ? this._t('fusion.hide_coverage') : this._t('fusion.show_coverage')}
             </button>
@@ -308,6 +418,7 @@ export class FusionPanel extends LitElement {
           </span>
         </div>
       </div>
+      ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
       ${calibrationWarnings.length
         ? html`<div class="calibration-warning">
             ${this._t('fusion.calibration_warning')}:
@@ -397,6 +508,59 @@ export class FusionPanel extends LitElement {
       font-size: 9px;
       cursor: pointer;
       backdrop-filter: blur(6px);
+    }
+    .coverage-toggle.active {
+      border-color: #0b825c;
+      color: #0b825c;
+      background: color-mix(in srgb, #0b825c 12%, var(--card-background-color, #fff));
+    }
+    .heatmap-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .windows {
+      display: inline-flex;
+      overflow: hidden;
+      border: 1px solid var(--divider-color);
+      border-radius: 999px;
+    }
+    .windows button {
+      padding: 3px 10px;
+      border: none;
+      color: var(--secondary-text-color);
+      background: transparent;
+      font: inherit;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .windows button + button {
+      border-left: 1px solid var(--divider-color);
+    }
+    .windows button.selected {
+      color: #fff;
+      background: #0b825c;
+    }
+    .windows button[disabled] {
+      cursor: progress;
+      opacity: 0.5;
+    }
+    .ramp {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .ramp i {
+      width: 14px;
+      height: 8px;
+      border-radius: 2px;
+    }
+    .ramp small,
+    .heatmap-note {
+      color: var(--secondary-text-color);
+      font-size: 9px;
     }
     .status,
     .radar-count {
