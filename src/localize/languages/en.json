@@ -168,7 +168,7 @@
     "advanced_assign_entities_manually": "Advanced: assign entities manually",
     "troubleshooting": "Troubleshooting",
     "fusion_rate_hz": "Fusion rate (Hz)",
-    "fusion_rate_hz_help": "How often positions are computed and stored. Higher is smoother and costs proportionally more disk — roughly 50 MB a day per two radars at 10 Hz.",
+    "fusion_rate_hz_help": "How often positions are computed. Higher is smoother and costs more CPU. It does not change how much is stored — that is the trajectory quality setting persist_interval_s, which saves one position per track every half second by default.",
     "association_distance_cm": "Association distance (cm)",
     "association_distance_cm_help": "How far a target may move between frames and still be treated as the same person. Too small splits one person into several tracks; too large merges two people into one.",
     "confirm_hits": "Frames before a track is published",
@@ -241,7 +241,17 @@
     "heatmap_summary": "{points} points · {bin} cm cells",
     "heatmap_truncated": "busiest cells only",
     "heatmap_failed": "Heatmap query failed",
-    "heatmap_needs_newer_backend": "The heatmap needs a newer mmwave-fusion integration"
+    "heatmap_needs_newer_backend": "The heatmap needs a newer mmwave-fusion integration",
+    "show_replay": "Replay",
+    "hide_replay": "Hide replay",
+    "window_5min": "5 min",
+    "window_6h": "6 h",
+    "replay_loading": "Reading stored tracks…",
+    "replay_empty": "Nothing was recorded in this window",
+    "replay_summary": "{tracks} tracks · {points} points",
+    "replay_thinned": "thinned to {hz} Hz",
+    "replay_failed": "Replay query failed",
+    "replay_needs_newer_backend": "Replay needs a newer mmwave-fusion integration"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "Capturing all radars synchronously…",

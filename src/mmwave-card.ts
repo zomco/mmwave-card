@@ -34,6 +34,7 @@ import {
   type FusionEvent,
   type FusionHistoryPoint,
   type FusionHeatmap,
+  type FusionReplay,
   type RadarSourceConfig,
   DEFAULT_CARD_CONFIG,
 } from './types';
@@ -144,6 +145,8 @@ export class MMWaveCard extends LitElement {
       this._selectedFusionEvent = undefined;
       this._fusionHeatmap = undefined;
       this._fusionHeatmapError = '';
+      this._fusionReplay = undefined;
+      this._fusionReplayError = '';
       this._fusionVideoUrl = '';
       this._localObservationBuffer = [];
       this._sourceSignatures.clear();
@@ -214,6 +217,9 @@ export class MMWaveCard extends LitElement {
   @state() private _fusionHeatmap?: FusionHeatmap;
   @state() private _fusionHeatmapLoading = false;
   @state() private _fusionHeatmapError: '' | 'unsupported' | 'failed' = '';
+  @state() private _fusionReplay?: FusionReplay;
+  @state() private _fusionReplayLoading = false;
+  @state() private _fusionReplayError: '' | 'unsupported' | 'failed' = '';
   private _deviceLoaded = false;
   private _syncResetTimer?: number;
   private _localFusion = new LocalFusionTracker();
@@ -516,6 +522,29 @@ export class MMWaveCard extends LitElement {
       if (code !== 'unknown_command') console.warn('MMWave Fusion heatmap query failed', error);
     } finally {
       this._fusionHeatmapLoading = false;
+    }
+  }
+
+  private async _loadFusionReplay(event: CustomEvent<{ since: number; until: number }>) {
+    if (!this._hass) return;
+    this._fusionReplayLoading = true;
+    this._fusionReplayError = '';
+    try {
+      this._fusionReplay = await this._hass.callWS<FusionReplay>({
+        type: 'mmwave_fusion/query_replay',
+        fusion_id: this._config.fusion_id || 'home',
+        since: event.detail.since,
+        until: event.detail.until,
+      });
+    } catch (error) {
+      // Same reasoning as the heatmap: an optional overlay does not get to
+      // declare a working backend outdated, so the feature reports its own
+      // requirement and the rest of the card carries on.
+      const code = (error as { code?: string } | undefined)?.code;
+      this._fusionReplayError = code === 'unknown_command' ? 'unsupported' : 'failed';
+      if (code !== 'unknown_command') console.warn('MMWave Fusion replay query failed', error);
+    } finally {
+      this._fusionReplayLoading = false;
     }
   }
 
@@ -996,6 +1025,10 @@ export class MMWaveCard extends LitElement {
             .heatmapError=${this._fusionHeatmapError}
             @fusion-event-selected=${this._selectFusionEvent}
             @fusion-heatmap-requested=${this._loadFusionHeatmap}
+            .replay=${this._fusionReplay}
+            .replayLoading=${this._fusionReplayLoading}
+            .replayError=${this._fusionReplayError}
+            @fusion-replay-requested=${this._loadFusionReplay}
           ></mmwave-fusion-panel>
           ${this._selectedFusionEvent
             ? html`

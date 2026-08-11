@@ -270,6 +270,77 @@ export function heatmapLegendColors(steps = 5): string[] {
   return Array.from({ length: steps }, (_, i) => rampColor(i / (steps - 1), 0.14 + (i / (steps - 1)) * 0.58));
 }
 
+// ── Replay ────────────────────────────────────────────────────────────────────
+
+export interface ReplayTrack {
+  track_id: string;
+  points: { ts: number; x: number; y: number }[];
+}
+
+/** How much of the past stays on screen behind a replayed target, in seconds. */
+export const REPLAY_TRAIL_S = 8;
+
+/**
+ * Draw stored tracks as they were at one moment.
+ *
+ * A track is only drawn while it has a position at or just before the playhead.
+ * The tolerance is a few sample intervals rather than a fixed number of seconds
+ * because the backend thins wide windows — at six hours the spacing can be
+ * seconds apart, and a fixed tolerance would either strobe or leave people
+ * standing around long after they left.
+ *
+ * Gaps in a track are drawn as gaps. The backend preserves them deliberately —
+ * a target that was lost and reacquired is not the same as one that walked the
+ * straight line between — so joining them here would invent the walk.
+ */
+export function drawReplay(
+  ctx: CanvasRenderingContext2D,
+  tracks: ReplayTrack[],
+  playhead: number,
+  sampleHz: number,
+  m: CanvasMetrics,
+  colorFor: (trackId: string) => string,
+): void {
+  const spacing = sampleHz > 0 ? 1 / sampleHz : 0.5;
+  const tolerance = spacing * 3;
+  const gap = spacing * 3;
+
+  for (const track of tracks) {
+    const visible = track.points.filter((point) => point.ts <= playhead && point.ts >= playhead - REPLAY_TRAIL_S);
+    if (!visible.length) continue;
+
+    const head = visible[visible.length - 1];
+    if (playhead - head.ts > tolerance) continue;
+
+    const color = colorFor(track.track_id);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2.2;
+    ctx.lineCap = 'round';
+    for (let i = 1; i < visible.length; i++) {
+      const previous = visible[i - 1];
+      const current = visible[i];
+      // A real absence, not a line to draw across.
+      if (current.ts - previous.ts > gap) continue;
+      ctx.globalAlpha = Math.max(0.08, 0.7 - ((playhead - current.ts) / REPLAY_TRAIL_S) * 0.7);
+      const from = roomToCanvas(previous.x, previous.y, m);
+      const to = roomToCanvas(current.x, current.y, m);
+      ctx.beginPath();
+      ctx.moveTo(from.cx, from.cy);
+      ctx.lineTo(to.cx, to.cy);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    const point = roomToCanvas(head.x, head.y, m);
+    drawTarget(ctx, point.cx, point.cy, true, color);
+    ctx.fillStyle = color;
+    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(track.track_id.slice(0, 6), point.cx, point.cy - 14);
+  }
+}
+
 // ── Radar FOV — annular sector(s) + icon ─────────────────────────────────────
 
 /**

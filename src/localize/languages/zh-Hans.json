@@ -168,7 +168,7 @@
     "advanced_assign_entities_manually": "高级选项：手动指定实体",
     "troubleshooting": "故障排查",
     "fusion_rate_hz": "融合频率（Hz）",
-    "fusion_rate_hz_help": "计算并存储位置的频率。越高轨迹越平滑，占用磁盘也成比例增加——双雷达 10 Hz 下约每天 50 MB。",
+    "fusion_rate_hz_help": "计算位置的频率。越高轨迹越平滑，CPU 开销也越大。它不影响存储量——决定存储量的是轨迹质量选项 persist_interval_s，默认每条轨迹每半秒存一个点。",
     "association_distance_cm": "关联距离（厘米）",
     "association_distance_cm_help": "目标在相邻帧之间移动多远仍算同一个人。过小会把一个人拆成多条轨迹，过大会把两个人并成一条。",
     "confirm_hits": "确认帧数",
@@ -241,7 +241,17 @@
     "heatmap_summary": "{points} 个点 · {bin} 厘米网格",
     "heatmap_truncated": "仅显示最密集的网格",
     "heatmap_failed": "热力图查询失败",
-    "heatmap_needs_newer_backend": "热力图需要更新版本的 mmwave-fusion 集成"
+    "heatmap_needs_newer_backend": "热力图需要更新版本的 mmwave-fusion 集成",
+    "show_replay": "回放",
+    "hide_replay": "隐藏回放",
+    "window_5min": "5 分钟",
+    "window_6h": "6 小时",
+    "replay_loading": "正在读取历史轨迹…",
+    "replay_empty": "这段时间内没有任何记录",
+    "replay_summary": "{tracks} 条轨迹 · {points} 个点",
+    "replay_thinned": "已抽稀至 {hz} Hz",
+    "replay_failed": "回放查询失败",
+    "replay_needs_newer_backend": "回放需要更新版本的 mmwave-fusion 集成"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "正在同步采集所有雷达…",
