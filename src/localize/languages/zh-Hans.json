@@ -166,7 +166,13 @@
     "automatic_detection_failed_configure_entities_manually": "自动识别失败，请展开高级选项手动配置。",
     "enter_the_room_dimensions_used_by": "填写房间实际尺寸，后续 3D 安装定位和轨迹显示会使用此比例。",
     "advanced_assign_entities_manually": "高级选项：手动指定实体",
-    "troubleshooting": "故障排查"
+    "troubleshooting": "故障排查",
+    "fusion_rate_hz": "融合频率（Hz）",
+    "fusion_rate_hz_help": "计算并存储位置的频率。越高轨迹越平滑，占用磁盘也成比例增加——双雷达 10 Hz 下约每天 50 MB。",
+    "association_distance_cm": "关联距离（厘米）",
+    "association_distance_cm_help": "目标在相邻帧之间移动多远仍算同一个人。过小会把一个人拆成多条轨迹，过大会把两个人并成一条。",
+    "confirm_hits": "确认帧数",
+    "confirm_hits_help": "调高可抑制瞬时误报，代价是首次检出变慢。"
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
