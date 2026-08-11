@@ -258,6 +258,32 @@ export interface FusionHeatmap {
   cells: { x: number; y: number; visits: number }[];
 }
 
+/**
+ * Stored tracks over a window, thinned by the backend to a point budget.
+ *
+ * `sample_hz` is measured from what came back rather than requested, and
+ * `thinned` says positions are further apart in time than they were recorded —
+ * never that the window was cut short. A viewer can say so without checking
+ * anything itself.
+ */
+export interface FusionReplayTrack {
+  track_id: string;
+  start_ts: number;
+  end_ts: number;
+  points: { ts: number; x: number; y: number; confidence: number }[];
+}
+
+export interface FusionReplay {
+  fusion_id: string;
+  since: number;
+  until: number;
+  sample_hz: number;
+  stride: number;
+  thinned: boolean;
+  total_points: number;
+  tracks: FusionReplayTrack[];
+}
+
 // ── Model capabilities ────────────────────────────────────────────────────────
 
 export interface RadarModelInfo {

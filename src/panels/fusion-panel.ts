@@ -7,6 +7,7 @@ import type {
   FusionEvent,
   FusionHeatmap,
   FusionHistoryPoint,
+  FusionReplay,
   FusionTarget,
   FusionZoneConfig,
   RadarSourceConfig,
@@ -15,6 +16,7 @@ import {
   drawBase,
   drawHeatmap,
   drawRadarFov,
+  drawReplay,
   drawTarget,
   heatmapLegendColors,
   roomToCanvas,
@@ -72,6 +74,16 @@ export class FusionPanel extends LitElement {
   @state() private showCoverage = false;
   @state() private showHeatmap = false;
   @state() private heatmapHours = 24;
+  @property({ attribute: false }) replay?: FusionReplay;
+  @property({ type: Boolean }) replayLoading = false;
+  @property({ attribute: false }) replayError: '' | 'unsupported' | 'failed' = '';
+  @state() private showReplay = false;
+  @state() private replayMinutes = 5;
+  @state() private playing = false;
+  @state() private speed = 4;
+  /** Absolute timestamp, seconds. NaN until a window has arrived. */
+  @state() private playhead = Number.NaN;
+  private lastAdvanceAt = 0;
 
   @query('#fusion-cv') private canvas?: HTMLCanvasElement;
   private trails = new Map<string, TrailPoint[]>();
@@ -88,6 +100,7 @@ export class FusionPanel extends LitElement {
   }
 
   protected willUpdate(changed: PropertyValues) {
+    if (changed.has('replay')) this.clampPlayhead();
     if (!changed.has('targets')) return;
     const now = Date.now();
     for (const target of this.targets) {
@@ -128,9 +141,17 @@ export class FusionPanel extends LitElement {
       }
       this.drawZones(context, metrics);
       this.drawRadars(context, metrics);
-      this.drawTrails(context, metrics, now);
-      this.drawHistory(context, metrics);
-      this.drawTargets(context, metrics);
+      if (this.showReplay && this.replay) {
+        // The live layer is deliberately absent here. Two sets of targets on
+        // one map, one from four minutes ago and one from now, is not a
+        // comparison anyone can read.
+        this.advancePlayhead(now);
+        drawReplay(context, this.replay.tracks, this.playhead, this.replay.sample_hz, metrics, colorForId);
+      } else {
+        this.drawTrails(context, metrics, now);
+        this.drawHistory(context, metrics);
+        this.drawTargets(context, metrics);
+      }
     }
     this.animationFrame = requestAnimationFrame(() => this.loop());
   }
@@ -263,6 +284,96 @@ export class FusionPanel extends LitElement {
     );
   }
 
+  // ── Replay ─────────────────────────────────────────────────────────────────
+
+  /**
+   * Move the playhead by however long the last frame took.
+   *
+   * Wall-clock rather than a fixed step per frame: a browser that drops to
+   * 30 fps in a background tab would otherwise replay at half speed, and the
+   * elapsed time is the thing the user chose a multiplier for.
+   */
+  /**
+   * Keep the playhead inside whatever window just arrived.
+   *
+   * Widening the window should not throw away where someone was looking, so a
+   * playhead that still falls inside the new one stays put; only one that has
+   * fallen outside snaps to the start. Doing this on the property change rather
+   * than in the draw loop matters — the loop runs while the old window is still
+   * on screen, and leaving the reset to it made the outcome depend on which
+   * arrived first.
+   */
+  private clampPlayhead() {
+    const replay = this.replay;
+    if (!replay) return;
+    if (Number.isNaN(this.playhead) || this.playhead < replay.since || this.playhead > replay.until) {
+      this.playhead = replay.since;
+    }
+  }
+
+  private advancePlayhead(now: number) {
+    const replay = this.replay;
+    if (!replay) return;
+    if (Number.isNaN(this.playhead)) this.playhead = replay.since;
+
+    const elapsed = this.lastAdvanceAt ? (now - this.lastAdvanceAt) / 1000 : 0;
+    this.lastAdvanceAt = now;
+    if (!this.playing) return;
+
+    // Capped so a stalled tab does not resume by jumping most of the window.
+    const next = this.playhead + Math.min(elapsed, 0.5) * this.speed;
+    if (next >= replay.until) {
+      this.playhead = replay.until;
+      this.playing = false;
+    } else {
+      this.playhead = next;
+    }
+    this.requestUpdate();
+  }
+
+  private requestReplay() {
+    const until = Date.now() / 1000;
+    this.dispatchEvent(
+      new CustomEvent('fusion-replay-requested', {
+        detail: { since: until - this.replayMinutes * 60, until },
+        bubbles: true,
+        composed: true,
+      }),
+    );
+  }
+
+  private toggleReplay() {
+    this.showReplay = !this.showReplay;
+    this.playing = false;
+    if (this.showReplay && !this.replay) this.requestReplay();
+  }
+
+  private setReplayMinutes(minutes: number) {
+    if (minutes === this.replayMinutes) return;
+    this.replayMinutes = minutes;
+    this.playing = false;
+    this.requestReplay();
+  }
+
+  private togglePlaying() {
+    const replay = this.replay;
+    if (!replay) return;
+    // Pressing play at the very end restarts rather than doing nothing.
+    if (!this.playing && this.playhead >= replay.until) this.playhead = replay.since;
+    this.playing = !this.playing;
+  }
+
+  private scrubTo(fraction: number) {
+    const replay = this.replay;
+    if (!replay) return;
+    this.playhead = replay.since + (replay.until - replay.since) * fraction;
+  }
+
+  private clockAt(timestamp: number): string {
+    if (Number.isNaN(timestamp)) return '--:--:--';
+    return new Date(timestamp * 1000).toLocaleTimeString();
+  }
+
   /**
    * Cell size for the requested grid.
    *
@@ -328,6 +439,94 @@ export class FusionPanel extends LitElement {
     }
     if (event.event_type === 'traverse') return this._t('fusion.key_track');
     return '';
+  }
+
+  private renderReplayBar() {
+    const replay = this.replay;
+    const windows: [number, string][] = [
+      [5, this._t('fusion.window_5min')],
+      [60, this._t('fusion.window_hour')],
+      [360, this._t('fusion.window_6h')],
+    ];
+    const span = replay ? replay.until - replay.since : 0;
+    const fraction =
+      replay && span > 0 && !Number.isNaN(this.playhead)
+        ? Math.min(1, Math.max(0, (this.playhead - replay.since) / span))
+        : 0;
+
+    return html`
+      <!--
+        data-span-s reports the window that is actually loaded, not the button
+        that is selected. The two differ for as long as a query is in flight,
+        and that gap is exactly where a test — or anything else watching — would
+        otherwise read the previous window's numbers and believe them.
+      -->
+      <div class="replay-bar" data-span-s=${replay ? Math.round(span) : 0}>
+        <div class="windows">
+          ${windows.map(
+            ([minutes, label]) => html`
+              <button
+                type="button"
+                class=${this.replayMinutes === minutes ? 'selected' : ''}
+                ?disabled=${this.replayLoading}
+                @click=${() => this.setReplayMinutes(minutes)}
+              >
+                ${label}
+              </button>
+            `,
+          )}
+        </div>
+        ${this.replayError === 'unsupported'
+          ? html`<span class="heatmap-note">${this._t('fusion.replay_needs_newer_backend')}</span>`
+          : this.replayError === 'failed'
+            ? html`<span class="heatmap-note">${this._t('fusion.replay_failed')}</span>`
+            : this.replayLoading
+              ? html`<span class="heatmap-note">${this._t('fusion.replay_loading')}</span>`
+              : !replay
+                ? ''
+                : replay.tracks.length === 0
+                  ? html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
+                  : html`
+                      <button type="button" class="play" @click=${this.togglePlaying}>
+                        ${this.playing ? '❙❙' : '▶'}
+                      </button>
+                      <div class="windows">
+                        ${[1, 4, 16].map(
+                          (speed) => html`
+                            <button
+                              type="button"
+                              class=${this.speed === speed ? 'selected' : ''}
+                              @click=${() => (this.speed = speed)}
+                            >
+                              ${speed}×
+                            </button>
+                          `,
+                        )}
+                      </div>
+                      <input
+                        class="scrub"
+                        type="range"
+                        min="0"
+                        max="1000"
+                        .value=${String(Math.round(fraction * 1000))}
+                        @input=${(event: Event) => {
+                          this.playing = false;
+                          this.scrubTo(Number((event.target as HTMLInputElement).value) / 1000);
+                        }}
+                      />
+                      <span class="clock">${this.clockAt(this.playhead)}</span>
+                      <span class="heatmap-note">
+                        ${this._t('fusion.replay_summary', {
+                          tracks: replay.tracks.length,
+                          points: replay.total_points.toLocaleString(),
+                        })}
+                        ${replay.thinned
+                          ? ` · ${this._t('fusion.replay_thinned', { hz: replay.sample_hz.toFixed(1) })}`
+                          : ''}
+                      </span>
+                    `}
+      </div>
+    `;
   }
 
   private renderHeatmapLegend() {
@@ -406,6 +605,13 @@ export class FusionPanel extends LitElement {
           <span class="overlay-actions">
             <button
               type="button"
+              class="coverage-toggle ${this.showReplay ? 'active' : ''}"
+              @click=${this.toggleReplay}
+            >
+              ${this.showReplay ? this._t('fusion.hide_replay') : this._t('fusion.show_replay')}
+            </button>
+            <button
+              type="button"
               class="coverage-toggle ${this.showHeatmap ? 'active' : ''}"
               @click=${this.toggleHeatmap}
             >
@@ -418,7 +624,7 @@ export class FusionPanel extends LitElement {
           </span>
         </div>
       </div>
-      ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
+      ${this.showReplay ? this.renderReplayBar() : ''} ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
       ${calibrationWarnings.length
         ? html`<div class="calibration-warning">
             ${this._t('fusion.calibration_warning')}:
@@ -513,6 +719,35 @@ export class FusionPanel extends LitElement {
       border-color: #0b825c;
       color: #0b825c;
       background: color-mix(in srgb, #0b825c 12%, var(--card-background-color, #fff));
+    }
+    .replay-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .play {
+      width: 26px;
+      height: 22px;
+      padding: 0;
+      border: 1px solid var(--divider-color);
+      border-radius: 999px;
+      color: var(--primary-text-color);
+      background: transparent;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .scrub {
+      flex: 1 1 120px;
+      min-width: 100px;
+      accent-color: #0b825c;
+    }
+    .clock {
+      color: var(--secondary-text-color);
+      font:
+        9px ui-monospace,
+        monospace;
     }
     .heatmap-bar {
       display: flex;
