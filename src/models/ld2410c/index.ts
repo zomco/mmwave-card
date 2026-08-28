@@ -7,7 +7,7 @@
  *   - 1-D ranging radar (outputs distance only)
  *   - Coordinate unit: cm
  *   - Position update rate: ~10 Hz (continuous)
- *   - Maximum Range: ~8m
+ *   - Maximum Range: 6 m (8 gates of 0.75 m)
  *
  * Implementation status:
  *   readFromHass() maps the measured distance to the Y-axis (forward) of
@@ -34,7 +34,7 @@ const INFO: RadarModelInfo = {
   id: 'ld2410c',
   displayName: 'Hi-Link LD2410C (24 GHz)',
   fovDegrees: 120, // ±60° horizontal coverage
-  maxRangeM: 8.0, // 8.0 cm maximum
+  maxRangeM: 6.0, // 600 cm maximum (8 gates * 0.75 m), per the LD2410C manual
   minRangeM: 0.0,
   updateRateHz: 10,
   maxTargets: 1,
