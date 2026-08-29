@@ -60,6 +60,22 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'target_3_speed_entity', labelKey: 'editor.target_3_speed', required: false, domain: 'sensor' },
 ];
 
+/**
+ * Parse a numeric entity state, or null when it does not hold a number.
+ *
+ * `parseFloat(s) || 0` must not be used here: it turns "unknown" into 0, and
+ * the component publishes x and y as two separate state updates, so there is
+ * always a moment where one of them has already gone unknown while the other
+ * still carries its last coordinate. Coerced to 0 that reads as a target on
+ * the boresight, and the marker jumps to the centre line for a frame every
+ * single time a track is lost.
+ */
+function numericState(state: { state: string } | undefined): number | null {
+  if (!state) return null;
+  const value = parseFloat(state.state);
+  return Number.isFinite(value) ? value : null;
+}
+
 // ── Adapter implementation ────────────────────────────────────────────────────
 
 export const ld2451Adapter: RadarModelAdapter = {
@@ -95,9 +111,10 @@ export const ld2451Adapter: RadarModelAdapter = {
       if (!xs || !ys) continue;
 
       // LD2451 unit is cm natively from ESPHome
-      const rawX = parseFloat(xs.state) || 0;
-      const rawY = parseFloat(ys.state) || 0;
-      if (rawX === 0 && rawY === 0) continue;
+      const rawX = numericState(xs);
+      const rawY = numericState(ys);
+      if (rawX === null || rawY === null) continue; // slot unknown/unavailable
+      if (rawX === 0 && rawY === 0) continue; // slot empty
 
       const speedState = get(`target_${i}_speed_entity`);
       const speed = speedState ? Math.abs(parseFloat(speedState.state) || 0) : undefined;

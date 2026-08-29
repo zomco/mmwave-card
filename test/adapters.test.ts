@@ -147,6 +147,49 @@ describe.each(MODEL_IDS)('%s adapter', (modelId) => {
     }
   });
 
+  // The x and y sensors are published as two separate ESPHome state updates,
+  // so every track loss passes through a moment where one has already gone
+  // unknown while the other still holds its last coordinate. `parseFloat(s) ||
+  // 0` turned that half-state into a real 0, which put the target on the
+  // boresight: the marker flicked to the centre line before disappearing,
+  // every single time a track dropped. Observed on the bench LD2453, whose
+  // recorder history is full of x-numeric/y-unknown pairs.
+  it('drops a target whose x or y went unknown while the other still holds a value', () => {
+    const schema = adapter.getEntitySchema();
+    const config = fullConfig(modelId);
+
+    for (const dropped of ['x', 'y'] as const) {
+      const kept = dropped === 'x' ? 'y' : 'x';
+      // Every sensor holds a real coordinate, and presence is on — otherwise
+      // the adapters return early and the coordinate path is never reached.
+      const hass = hassWith(modelId, '300');
+      for (const field of schema) {
+        if (field.domain !== 'binary_sensor') continue;
+        const id = config[field.key] as string;
+        (hass.states as Record<string, unknown>)[id] = { entity_id: id, state: 'on', attributes: {} };
+      }
+
+      let touched = false;
+      for (const field of schema) {
+        // Only the paired per-slot coordinate fields, e.g. target_1_x_entity.
+        if (!new RegExp(`_${dropped}_entity$`).test(field.key)) continue;
+        if (!schema.some((f) => f.key === field.key.replace(`_${dropped}_entity`, `_${kept}_entity`))) continue;
+
+        const id = config[field.key] as string;
+        (hass.states as Record<string, unknown>)[id] = { entity_id: id, state: 'unknown', attributes: {} };
+        touched = true;
+      }
+      if (!touched) continue; // model has no paired per-slot x/y entities
+
+      // Every slot just lost one coordinate, so nothing is locatable. Before
+      // the fix each slot still yielded a target pinned to the boresight.
+      expect(
+        adapter.readFromHass(hass, config).targets,
+        `${modelId} kept a target after its ${dropped} went unknown`,
+      ).toEqual([]);
+    }
+  });
+
   it('never emits non-finite coordinates', () => {
     for (const state of ['unknown', 'garbage', '1e999', '-0']) {
       const reading = adapter.readFromHass(hassWith(modelId, state), fullConfig(modelId));
