@@ -622,20 +622,37 @@ export class MMWaveCard extends LitElement {
 
   // ── Device Sync ─────────────────────────────────────────────────────────
 
+  /**
+   * Derive the device's entity prefix, e.g. `ld2453_test_device`, so the
+   * `number.<prefix>_yaw` calibration entities can be found.
+   *
+   * Both callers used to read `x_entity` alone and give up when it was unset.
+   * Only ld6002 and r60abd1 declare `x_entity`; every multi-target model uses
+   * `target_1_x_entity`, so for eleven of the sixteen models the card silently
+   * never loaded the device's calibration and fell back to the placeholder
+   * pose set in setConfig(). The `_x` branch of the single-target regex cannot
+   * be reused for those: against `sensor.dev_target_1_x` it yields
+   * `dev_target_1`.
+   */
+  private _devicePrefix(): string {
+    const xEntity = (this._config?.x_entity as string) || '';
+    if (xEntity) {
+      const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
+      if (match) return match[1];
+      const parts = xEntity.split('.')[1]?.split('_') || [];
+      return parts.slice(0, parts.length - 1).join('_');
+    }
+
+    const targetEntity = (this._config?.target_1_x_entity as string) || '';
+    const targetMatch = targetEntity.match(/^sensor\.(.+?)_target_\d+_x$/);
+    return targetMatch ? targetMatch[1] : '';
+  }
+
   private _loadFromDevice() {
     if (!this._hass || !this._config) return;
 
-    const xEntity = (this._config.x_entity as string) || '';
-    if (!xEntity) return;
-
-    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
-    let prefix = '';
-    if (match) {
-      prefix = match[1];
-    } else {
-      const parts = xEntity.split('.')[1]?.split('_') || [];
-      prefix = parts.slice(0, parts.length - 1).join('_');
-    }
+    const prefix = this._devicePrefix();
+    if (!prefix) return;
 
     const cal = { ...this._cal };
 
@@ -684,20 +701,10 @@ export class MMWaveCard extends LitElement {
   }
 
   private async _sync() {
-    const xEntity = (this._config.x_entity as string) || '';
-    if (!xEntity) {
-      alert('Error: x_entity is not configured.');
+    const prefix = this._devicePrefix();
+    if (!prefix) {
+      alert('Error: neither x_entity nor target_1_x_entity is configured.');
       return;
-    }
-
-    // Extract device prefix from x_entity (e.g., sensor.r60abd1_test_x -> r60abd1_test)
-    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
-    let prefix = '';
-    if (match) {
-      prefix = match[1];
-    } else {
-      const parts = xEntity.split('.')[1]?.split('_') || [];
-      prefix = parts.slice(0, parts.length - 1).join('_');
     }
 
     this._syncState = 'syncing';
