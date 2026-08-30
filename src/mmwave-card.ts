@@ -102,6 +102,24 @@ function sourceAvailable(hass: HomeAssistant, source: RadarSourceConfig): boolea
 
 // ── Component ────────────────────────────────────────────────────────────────
 
+/**
+ * Card config key -> the entity_id suffix the firmware publishes.
+ *
+ * These stopped being the same string when the component moved its own
+ * settings behind `Mount …` / `Zone …` prefixes, to keep them distinguishable
+ * from the radar's native ones. The config keys are the card's public schema
+ * and deliberately did not change, so the two have to be mapped rather than
+ * interpolated.
+ */
+const CALIBRATION_ENTITY_SUFFIX = {
+  radar_x: 'mount_x',
+  radar_y: 'mount_y',
+  radar_z: 'mount_z',
+  yaw: 'mount_yaw',
+  pitch: 'mount_pitch',
+  roll: 'mount_roll',
+} as const;
+
 @customElement(CARD_TAG)
 export class MMWaveCard extends LitElement {
   // ── Lovelace public API ───────────────────────────────────────────────────
@@ -657,23 +675,15 @@ export class MMWaveCard extends LitElement {
     const cal = { ...this._cal };
 
     // Read numbers
-    const params: Array<'radar_x' | 'radar_y' | 'radar_z' | 'yaw' | 'pitch' | 'roll'> = [
-      'radar_x',
-      'radar_y',
-      'radar_z',
-      'yaw',
-      'pitch',
-      'roll',
-    ];
-    for (const key of params) {
-      const stateObj = this._hass.states[`number.${prefix}_${key}`];
+    for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
+      const stateObj = this._hass.states[`number.${prefix}_${suffix}`];
       if (stateObj && stateObj.state && !isNaN(Number(stateObj.state))) {
-        cal[key] = Number(stateObj.state);
+        cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX] = Number(stateObj.state);
       }
     }
 
     // Read polygon
-    const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+    const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
     const polyObj = this._hass.states[polyEntity];
     if (polyObj && polyObj.state) {
       const s = polyObj.state;
@@ -710,17 +720,11 @@ export class MMWaveCard extends LitElement {
     this._syncState = 'syncing';
 
     try {
-      const params: Record<string, number> = {
-        radar_x: this._cal.radar_x,
-        radar_y: this._cal.radar_y,
-        radar_z: this._cal.radar_z,
-        yaw: this._cal.yaw,
-        pitch: this._cal.pitch,
-        roll: this._cal.roll,
-      };
-
-      for (const [key, val] of Object.entries(params)) {
-        const entityId = `number.${prefix}_${key}`;
+      // Same mapping as _loadFromDevice: the config key is not the entity
+      // suffix any more, so writing back has to go through it too.
+      for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
+        const val = this._cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX];
+        const entityId = `number.${prefix}_${suffix}`;
         try {
           await this._hass.callService('number', 'set_value', {
             entity_id: entityId,
@@ -732,7 +736,7 @@ export class MMWaveCard extends LitElement {
       }
 
       const polyStr = this._cal.polygon.map((p) => `${p.x},${p.y}`).join(';');
-      const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+      const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
       if (this._hass.states[polyEntity] !== undefined) {
         try {
           await this._hass.callService('text', 'set_value', {
