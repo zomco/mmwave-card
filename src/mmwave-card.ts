@@ -38,7 +38,7 @@ import {
   type RadarSourceConfig,
   DEFAULT_CARD_CONFIG,
 } from './types';
-import { CARD_TAG, EDITOR_TAG, CARD_VERSION, REQUIRED_FUSION_API_VERSION } from './const';
+import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VERSION } from './const';
 
 // Sub-elements (register them)
 import './panels/geo-panel';
@@ -63,7 +63,7 @@ import type { FusionRadarVisual } from './panels/fusion-panel';
 });
 
 console.info(
-  `%c MMWAVE-CARD %c v${CARD_VERSION} `,
+  `%c MMWAVE-CARD %c v${CARD_VERSION} (build ${CARD_BUILD}) `,
   'background:#03a9f4;color:#fff;font-weight:700',
   'background:#1c1c2e;color:#03a9f4;font-weight:700',
 );
