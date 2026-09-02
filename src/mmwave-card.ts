@@ -224,6 +224,7 @@ export class MMWaveCard extends LitElement {
   @state() private _present = false;
   @state() private _maxRangeM?: number;
   @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
+  @state() private _syncFailures: string[] = [];
   @state() private _fusionTargets: FusionTarget[] = [];
   @state() private _fusionRadars: FusionRadarVisual[] = [];
   @state() private _fusionBackendState: 'connecting' | 'online' | 'fallback' | 'missing' | 'outdated' | 'error' =
@@ -722,15 +723,28 @@ export class MMWaveCard extends LitElement {
     try {
       // Same mapping as _loadFromDevice: the config key is not the entity
       // suffix any more, so writing back has to go through it too.
+      const failures: string[] = [];
+
       for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
         const val = this._cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX];
         const entityId = `number.${prefix}_${suffix}`;
+
+        // An entity that does not exist is the failure mode that matters:
+        // set_value against an unknown entity_id does not reject, so without
+        // this check the write vanishes and the button still says "synced".
+        // That is exactly what a stale card build looks like after the
+        // component renames its entities.
+        if (this._hass.states[entityId] === undefined) {
+          failures.push(`${entityId} (no such entity)`);
+          continue;
+        }
         try {
           await this._hass.callService('number', 'set_value', {
             entity_id: entityId,
             value: val,
           });
         } catch (err) {
+          failures.push(entityId);
           console.warn(`Failed to sync ${entityId}`, err);
         }
       }
@@ -744,8 +758,13 @@ export class MMWaveCard extends LitElement {
             value: polyStr,
           });
         } catch (err) {
+          failures.push(polyEntity);
           console.warn(`Failed to sync ${polyEntity}`, err);
         }
+      } else if (this._cal.polygon.length > 0) {
+        // Silently dropping a boundary the user drew is worse than saying so.
+        // Models without a polygon entity simply have none to write.
+        failures.push(`${polyEntity} (no such entity)`);
       }
 
       // Persist the same snapshot in HA so fusion cards can import this
@@ -767,8 +786,13 @@ export class MMWaveCard extends LitElement {
         }
       }
 
-      this._syncState = 'success';
+      this._syncFailures = failures;
+      this._syncState = failures.length > 0 ? 'error' : 'success';
+      if (failures.length > 0) {
+        console.error('mmwave-card: these did not reach the device -', failures);
+      }
     } catch (e) {
+      this._syncFailures = ['unexpected error - see console'];
       this._syncState = 'error';
       console.error(e);
     } finally {
@@ -975,6 +999,7 @@ export class MMWaveCard extends LitElement {
               : html`<button
                   class="primary-button sync ${this._syncState}"
                   type="button"
+                  title=${this._syncFailures.length > 0 ? `Not written: ${this._syncFailures.join(', ')}` : nothing}
                   ?disabled=${this._syncState === 'syncing'}
                   @click=${this._sync}
                 >
