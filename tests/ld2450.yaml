@@ -1,6 +1,7 @@
 type: custom:mmwave-card
 radar_model: ld2450
 presence_entity: binary_sensor.ld2450_presence
+frame_entity: sensor.ld2450_target_frame
 target_1_x_entity: sensor.ld2450_target_1_x
 target_1_y_entity: sensor.ld2450_target_1_y
 target_1_speed_entity: sensor.ld2450_target_1_speed

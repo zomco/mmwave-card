@@ -21,6 +21,14 @@ export interface CanvasMetrics {
   roomD: number; // room depth  (cm)
 }
 
+/** Fit the room without stretching either axis. Extra canvas area remains
+ * available as view space; persisted room dimensions are never changed.
+ */
+export function fitRoomMetrics(m: CanvasMetrics): CanvasMetrics {
+  const scale = Math.min(m.W / m.roomW, m.H / m.roomD);
+  return { ...m, roomW: m.W / scale, roomD: m.H / scale };
+}
+
 // ── Coordinate helpers ────────────────────────────────────────────────────────
 
 /** Room cm → canvas CSS pixels.  Y down = positive (top-left origin). */
@@ -189,6 +197,29 @@ export function drawPolygon(ctx: CanvasRenderingContext2D, poly: Vec2[], m: Canv
   }
 }
 
+/** Shade the filtered room area without hiding out-of-bound target markers. */
+export function drawBoundaryOverlay(ctx: CanvasRenderingContext2D, poly: Vec2[], m: CanvasMetrics): void {
+  if (poly.length < 3) return;
+  const pts = poly.map((p) => roomToCanvas(p.x, p.y, m));
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, 0, m.W, m.H);
+  ctx.moveTo(pts[0].cx, pts[0].cy);
+  pts.slice(1).forEach((p) => ctx.lineTo(p.cx, p.cy));
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(100,116,139,.25)';
+  ctx.fill('evenodd');
+  ctx.beginPath();
+  ctx.moveTo(pts[0].cx, pts[0].cy);
+  pts.slice(1).forEach((p) => ctx.lineTo(p.cx, p.cy));
+  ctx.closePath();
+  ctx.strokeStyle = 'rgba(11,130,92,.95)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6, 4]);
+  ctx.stroke();
+  ctx.restore();
+}
+
 // ── Occupancy heatmap ─────────────────────────────────────────────────────────
 
 /** One binned cell from the backend, keyed by its minimum corner in cm. */
@@ -341,6 +372,80 @@ export function drawReplay(
   }
 }
 
+/** Project radar range geometry with the same X/Y scales as roomToCanvas.
+ * A circular range ring in the room becomes an ellipse on a stretched canvas.
+ * Keep strokes, labels and marker sizes in CSS pixels.
+ */
+function radarProjection(ctx: CanvasRenderingContext2D, cx: number, cy: number, m: CanvasMetrics) {
+  const sx = m.W / m.roomW;
+  const sy = m.H / m.roomD;
+  return {
+    point: (radiusCm: number, angle: number) => ({
+      x: cx + radiusCm * Math.cos(angle) * sx,
+      y: cy + radiusCm * Math.sin(angle) * sy,
+    }),
+    arc: (radiusCm: number, start: number, end: number, counterclockwise = false) => {
+      ctx.ellipse(cx, cy, radiusCm * sx, radiusCm * sy, 0, start, end, counterclockwise);
+    },
+    gradient: (innerCm: number, outerCm: number) => {
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(sx, sy);
+      const gradient = ctx.createRadialGradient(0, 0, innerCm, 0, 0, outerCm);
+      ctx.restore();
+      return gradient;
+    },
+  };
+}
+
+/** Dim excluded radial bands; the remaining green sector is the usable interval. */
+export function drawRangeFilter(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  yaw: number,
+  pitch: number,
+  fov: number,
+  minM: number,
+  maxM: number,
+  softwareMinCm: number,
+  softwareMaxCm: number,
+  m: CanvasMetrics,
+): void {
+  const projection = radarProjection(ctx, cx, cy, m);
+  const start = Math.PI / 2 - ((yaw + fov / 2) * Math.PI) / 180;
+  const end = start + (fov * Math.PI) / 180;
+  const scale = Math.max(0, Math.cos((pitch * Math.PI) / 180));
+  const low = Math.max(minM * 100, softwareMinCm);
+  const high = Math.min(maxM * 100, softwareMaxCm > 0 ? softwareMaxCm : Infinity);
+  const band = (inner: number, outer: number) => {
+    if (outer <= inner) return;
+    const p = projection.point(outer * scale, start);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    projection.arc(outer * scale, start, end);
+    projection.arc(inner * scale, end, start, true);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(180,185,190,.82)';
+    ctx.fill('evenodd');
+  };
+  ctx.save();
+  if (low >= high) band(minM * 100, maxM * 100);
+  else {
+    band(minM * 100, low);
+    band(high, maxM * 100);
+    ctx.strokeStyle = 'rgba(11,130,92,.95)';
+    ctx.lineWidth = 2;
+    for (const boundary of [low, high]) {
+      if (boundary <= minM * 100 || boundary >= maxM * 100) continue;
+      ctx.beginPath();
+      projection.arc(boundary * scale, start, end);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
 // ── Radar FOV — annular sector(s) + icon ─────────────────────────────────────
 
 /**
@@ -365,20 +470,18 @@ export function drawRadarFov(
   m: CanvasMetrics,
   vitalRangeM?: number,
 ): void {
-  // Scale: geometric mean of X and Y scale so range rings are circular
-  const scale = Math.sqrt((m.W / m.roomW) * (m.H / m.roomD)); // px/cm
-  const toPx = (rangeM: number) => Math.max(rangeM * 100 * scale, 1);
+  const projection = radarProjection(ctx, cx, cy, m);
+  const toCm = (rangeM: number) => rangeM * 100;
 
   const halfFov = (fovDeg / 2) * (Math.PI / 180);
   // yaw=0 → +Y and positive yaw → +X, matching applyTransform().
   const base = Math.PI / 2 - yawDeg * (Math.PI / 180);
 
-  // Calculate a pitch factor: 1.0 when looking straight down (pitch=0), approaches 0 when sideways (pitch=90 or -90)
-  // We use this to scale the perceived radius of the footprint on the floor.
-  const pf = Math.max(0.05, Math.cos(pitchDeg * (Math.PI / 180)));
+  // Horizontal projection of range: pitch=0 is level; +/-90 is vertical.
+  const pf = Math.max(0, Math.cos(pitchDeg * (Math.PI / 180)));
 
-  const minR = toPx(minRangeM * pf);
-  const maxR = toPx(maxRangeM * pf);
+  const minR = toCm(minRangeM * pf);
+  const maxR = toCm(maxRangeM * pf);
 
   /**
    * Draw ONE filled annular sector.
@@ -392,14 +495,13 @@ export function drawRadarFov(
     strokeW = 1.2,
   ) => {
     // Start point: outer arc's left edge
-    const startX = cx + r_outer * Math.cos(base - halfFov);
-    const startY = cy + r_outer * Math.sin(base - halfFov);
+    const start = projection.point(r_outer, base - halfFov);
 
     ctx.beginPath();
-    ctx.moveTo(startX, startY); // ← explicit start
-    ctx.arc(cx, cy, r_outer, base - halfFov, base + halfFov, false); // outer arc, CW
+    ctx.moveTo(start.x, start.y); // ← explicit start
+    projection.arc(r_outer, base - halfFov, base + halfFov, false); // outer arc, CW
     // canvas auto-draws a line from outer-right to inner-right (right radial)
-    ctx.arc(cx, cy, r_inner, base + halfFov, base - halfFov, true); // inner arc, CCW
+    projection.arc(r_inner, base + halfFov, base - halfFov, true); // inner arc, CCW
     ctx.closePath(); // left radial
 
     ctx.fillStyle = fillColor;
@@ -412,22 +514,22 @@ export function drawRadarFov(
   // ── Draw zones (outer first so inner overdraws) ────────────────────────────
 
   if (vitalRangeM != null && vitalRangeM > minRangeM && vitalRangeM < maxRangeM) {
-    const vitalR = toPx(vitalRangeM * pf);
+    const vitalR = toCm(vitalRangeM * pf);
 
     // Outer zone (presence / sleep): vitalRange → maxRange
-    const gradOuter = ctx.createRadialGradient(cx, cy, vitalR, cx, cy, maxR);
+    const gradOuter = projection.gradient(vitalR, maxR);
     gradOuter.addColorStop(0, 'rgba(11,130,92,.35)');
     gradOuter.addColorStop(1, 'rgba(11,130,92,.08)');
     drawAnnulus(vitalR, maxR, gradOuter, 'rgba(11,130,92,.60)');
 
     // Inner zone (breath / HR): minRange → vitalRange
-    const gradInner = ctx.createRadialGradient(cx, cy, minR, cx, cy, vitalR);
+    const gradInner = projection.gradient(minR, vitalR);
     gradInner.addColorStop(0, 'rgba(11,130,92,.60)');
     gradInner.addColorStop(1, 'rgba(11,130,92,.25)');
     drawAnnulus(minR, vitalR, gradInner, 'rgba(11,130,92,.90)', 1.5);
   } else {
     // Single zone circular sector (e.g. LD2450: 120°, 0.2m ~ 6m)
-    const gradSingle = ctx.createRadialGradient(cx, cy, minR, cx, cy, maxR);
+    const gradSingle = projection.gradient(minR, maxR);
     gradSingle.addColorStop(0, 'rgba(11,130,92,.50)');
     gradSingle.addColorStop(1, 'rgba(11,130,92,.12)');
     drawAnnulus(minR, maxR, gradSingle, 'rgba(11,130,92,.75)', 1.5);
@@ -444,9 +546,9 @@ export function drawRadarFov(
     else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
-      const r_px = toPx(r_m * pf);
+      const radiusCm = toCm(r_m * pf);
       ctx.beginPath();
-      ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+      projection.arc(radiusCm, base - halfFov, base + halfFov, false);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
       ctx.lineWidth = 0.8;
       ctx.setLineDash([3, 4]);
@@ -459,14 +561,12 @@ export function drawRadarFov(
     const halfFovDeg = fovDeg / 2;
     for (let deg = -halfFovDeg; deg <= halfFovDeg; deg += angStepDeg) {
       const angRad = base + deg * (Math.PI / 180);
-      const x1 = cx + minR * Math.cos(angRad);
-      const y1 = cy + minR * Math.sin(angRad);
-      const x2 = cx + maxR * Math.cos(angRad);
-      const y2 = cy + maxR * Math.sin(angRad);
+      const from = projection.point(minR, angRad);
+      const to = projection.point(maxR, angRad);
 
       ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
       ctx.strokeStyle = deg === 0 ? 'rgba(11, 200, 140, 0.5)' : 'rgba(255, 255, 255, 0.18)';
       ctx.lineWidth = deg === 0 ? 1.2 : 0.8;
       if (deg !== 0) ctx.setLineDash([3, 4]);
@@ -475,8 +575,9 @@ export function drawRadarFov(
 
       // Angle text labels at ray tips
       if (deg !== 0) {
-        const lx = cx + (maxR + 14) * Math.cos(angRad);
-        const ly = cy + (maxR + 14) * Math.sin(angRad);
+        const tip = projection.point(maxR, angRad);
+        const lx = tip.x + 14 * Math.cos(angRad);
+        const ly = tip.y + 14 * Math.sin(angRad);
         ctx.font = 'bold 9px system-ui';
         ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
         ctx.textAlign = 'center';
@@ -490,14 +591,14 @@ export function drawRadarFov(
   // ── Blind zone: dark overlay (center → minR) so it looks invalid ──────────
   ctx.beginPath();
   ctx.moveTo(cx, cy);
-  ctx.arc(cx, cy, minR, base - halfFov, base + halfFov, false);
+  projection.arc(minR, base - halfFov, base + halfFov, false);
   ctx.closePath();
   ctx.fillStyle = 'rgba(0,0,0,.50)'; // semi-transparent dark cover
   ctx.fill();
 
   // Dashed red arc = minRange boundary
   ctx.beginPath();
-  ctx.arc(cx, cy, minR, base - halfFov, base + halfFov, false);
+  projection.arc(minR, base - halfFov, base + halfFov, false);
   ctx.strokeStyle = 'rgba(244,99,99,.80)';
   ctx.lineWidth = 1.5;
   ctx.setLineDash([3, 3]);
@@ -507,8 +608,7 @@ export function drawRadarFov(
   // ── Range labels (along radar forward axis) ───────────────────────────────
 
   const drawLabel = (rangeM: number, r: number, color: string) => {
-    const tx = cx + r * Math.cos(base);
-    const ty = cy + r * Math.sin(base);
+    const { x: tx, y: ty } = projection.point(r, base);
     const txt = `${rangeM}m`;
     ctx.font = 'bold 9px system-ui';
     ctx.textAlign = 'center';
@@ -532,22 +632,20 @@ export function drawRadarFov(
     else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
-      const r_px = toPx(r_m * pf);
+      const radiusCm = toCm(r_m * pf);
       const isMax = Math.abs(r_m - maxRangeM) < 0.01;
       const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
       const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
-      drawLabel(Number(r_m.toFixed(1)), r_px, col);
+      drawLabel(Number(r_m.toFixed(1)), radiusCm, col);
     }
   } else {
     // 1-D Ranging Radar Boresight Ray & Distance Scale
-    const x1 = cx + minR * Math.cos(base);
-    const y1 = cy + minR * Math.sin(base);
-    const x2 = cx + maxR * Math.cos(base);
-    const y2 = cy + maxR * Math.sin(base);
+    const from = projection.point(minR, base);
+    const to = projection.point(maxR, base);
 
     ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
     ctx.strokeStyle = 'rgba(11, 200, 140, 0.65)';
     ctx.lineWidth = 1.5;
     ctx.setLineDash([4, 4]);
@@ -562,11 +660,11 @@ export function drawRadarFov(
     else stepM = 20.0;
     for (let r_m = stepM; r_m <= maxRangeM; r_m += stepM) {
       if (r_m <= minRangeM) continue;
-      const r_px = toPx(r_m * pf);
+      const radiusCm = toCm(r_m * pf);
       const isMax = Math.abs(r_m - maxRangeM) < 0.01;
       const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
       const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
-      drawLabel(Number(r_m.toFixed(1)), r_px, col);
+      drawLabel(Number(r_m.toFixed(1)), radiusCm, col);
     }
   }
   ctx.textBaseline = 'alphabetic';
@@ -652,10 +750,9 @@ export function drawTargetArc(
   m: CanvasMetrics,
   inBoundary: boolean,
 ): void {
-  const scale = Math.sqrt((m.W / m.roomW) * (m.H / m.roomD));
-  const toPx = (rM: number) => Math.max(rM * 100 * scale, 1);
-  const pf = Math.max(0.05, Math.cos(pitchDeg * (Math.PI / 180)));
-  const r_px = toPx(rangeM * pf);
+  const projection = radarProjection(ctx, cx, cy, m);
+  const pf = Math.max(0, Math.cos(pitchDeg * (Math.PI / 180)));
+  const radiusCm = rangeM * 100 * pf;
 
   const halfFov = (fovDeg / 2) * (Math.PI / 180);
   const base = Math.PI / 2 - yawDeg * (Math.PI / 180);
@@ -663,7 +760,7 @@ export function drawTargetArc(
   if (inBoundary) {
     // Glowing background arc across FOV
     ctx.beginPath();
-    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    projection.arc(radiusCm, base - halfFov, base + halfFov);
     ctx.strokeStyle = 'rgba(255,152,0,.35)';
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
@@ -671,15 +768,14 @@ export function drawTargetArc(
 
     // Crisp foreground arc
     ctx.beginPath();
-    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    projection.arc(radiusCm, base - halfFov, base + halfFov);
     ctx.strokeStyle = 'var(--accent-color,#ff9800)';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.stroke();
 
     // Center target dot on boresight line
-    const tx = cx + r_px * Math.cos(base);
-    const ty = cy + r_px * Math.sin(base);
+    const { x: tx, y: ty } = projection.point(radiusCm, base);
     ctx.beginPath();
     ctx.arc(tx, ty, 7, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,152,0,.3)';
@@ -695,7 +791,7 @@ export function drawTargetArc(
     // Out-of-boundary / filtered arc
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.arc(cx, cy, r_px, base - halfFov, base + halfFov, false);
+    projection.arc(radiusCm, base - halfFov, base + halfFov);
     ctx.strokeStyle = 'rgba(244,67,54,.65)';
     ctx.lineWidth = 2;
     ctx.lineCap = 'round';
@@ -703,8 +799,7 @@ export function drawTargetArc(
     ctx.setLineDash([]);
 
     // Center dot
-    const tx = cx + r_px * Math.cos(base);
-    const ty = cy + r_px * Math.sin(base);
+    const { x: tx, y: ty } = projection.point(radiusCm, base);
     ctx.beginPath();
     ctx.arc(tx, ty, 4, 0, Math.PI * 2);
     ctx.strokeStyle = 'rgba(244,67,54,.8)';

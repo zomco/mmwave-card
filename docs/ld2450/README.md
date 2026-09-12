@@ -65,3 +65,9 @@ You can search and confirm the real entity IDs of your radar device on the **"De
 - **`target_n_speed_entity`**: [Optional] Target n's speed sensor (Unit: cm/s). If provided, it assists in displaying the target's motion state in the UI.
 - **`polygon_entity`**: [Optional] Text entity representing the boundary polygon configuration. Required if you want to draw and save custom boundary polygons from the UI.
 - **`room_w` / `room_d`**: The physical width and depth of the room (Unit: cm), used for scaling during card rendering. This does not affect the calibration data itself. You can modify it according to your actual room size (e.g., `300` or `500`).
+
+## Coherent target frames and trails
+
+Set `frame_entity` to the ESPHome Target Frame text sensor (see `tests/ld2450.yaml`) to consume X/Y coordinates from the same UART frame. When configured, invalid or empty frames clear targets instead of falling back to independently updated axis sensors. Legacy configurations without this entity still use the individual sensors.
+
+Current component firmware includes original UART slots in the optional `s` array, so removing one target does not renumber the others. Slots are not permanent person identities: disappearance, gaps over one second, or displacement exceeding 100 cm plus 300 cm/s times elapsed time starts a new trail. This drawing rule does not filter or change measured positions, including distant reflections.

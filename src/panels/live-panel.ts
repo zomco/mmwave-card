@@ -1,11 +1,15 @@
+import { continuesTrail } from '../utils/trail-continuity';
+import { presenceStatus } from '../utils/presence-status';
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
 import type { CalibrationConfig, RadarTarget } from '../types';
 import type { RadarModelAdapter } from '../models';
 import {
   setupCanvas,
+  fitRoomMetrics,
   drawBase,
-  drawPolygon,
+  drawBoundaryOverlay,
+  drawRangeFilter,
   drawRadarFov,
   drawTarget,
   drawTargetArc,
@@ -107,6 +111,12 @@ export class LivePanel extends LitElement {
 
   private _setTargetGoals(targets: RadarTarget[]) {
     const now = Date.now();
+    // An observed absence ends the track even if the same slot returns before
+    // the animation TTL. It must not interpolate from the previous occupant.
+    const visibleSlots = new Set(targets.filter((target) => target.room).map((target) => target.index));
+    for (const slot of this._animatedTargets.keys()) {
+      if (!visibleSlots.has(slot)) this._animatedTargets.delete(slot);
+    }
     for (const t of targets) {
       if (!t.room) continue;
 
@@ -114,7 +124,10 @@ export class LivePanel extends LitElement {
       const goalY = t.room.roomY;
       const goalRangeM = Math.hypot(t.rawX, t.rawY) / 100;
       const animated = this._animatedTargets.get(t.index);
-      if (animated && now - animated.lastSeen <= ANIMATED_TARGET_TTL_MS) {
+      if (
+        animated &&
+        continuesTrail({ x: animated.goalX, y: animated.goalY }, { x: goalX, y: goalY }, now - animated.lastSeen)
+      ) {
         animated.goalX = goalX;
         animated.goalY = goalY;
         animated.goalRangeM = goalRangeM;
@@ -207,12 +220,12 @@ export class LivePanel extends LitElement {
   }
 
   private _m(): CanvasMetrics {
-    return {
+    return fitRoomMetrics({
       W: this._cv?.offsetWidth || 400,
       H: this._cssH(),
       roomW: this.roomW,
       roomD: this.roomD,
-    };
+    });
   }
 
   // ── rAF draw loop ──────────────────────────────────────────────────────────
@@ -229,7 +242,6 @@ export class LivePanel extends LitElement {
       this._sampleTrails(this.targets, now);
 
       drawBase(ctx, m);
-      drawPolygon(ctx, this.calibration.polygon, m);
 
       const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
       drawRadarFov(
@@ -244,6 +256,22 @@ export class LivePanel extends LitElement {
         m,
         this.adapter.info.vitalRangeM,
       );
+
+      if (!this.adapter.info.is1DRanging) drawBoundaryOverlay(ctx, this.calibration.polygon, m);
+      else
+        drawRangeFilter(
+          ctx,
+          rp.cx,
+          rp.cy,
+          this.calibration.yaw,
+          this.calibration.pitch,
+          this.adapter.info.fovDegrees,
+          this.adapter.info.minRangeM,
+          this.maxRangeM ?? this.adapter.info.maxRangeM,
+          this.calibration.distance_min ?? 0,
+          this.calibration.distance_max ?? 0,
+          m,
+        );
 
       // Time-faded trail
       for (const [targetIndex, trail] of this._trails) {
@@ -320,14 +348,13 @@ export class LivePanel extends LitElement {
   }
 
   private _badgeText() {
-    if (!this.present) return this._L('live.badge_none');
-    const inside = this.targets.filter((t) => t.room?.inBoundary).length;
-    return inside > 0 ? this._L('live.badge_present') : this._L('live.badge_filtered');
+    return this._L(`live.badge_${presenceStatus(this.present, this.targets)}`);
   }
 
   private _badgeCls() {
-    if (!this.present) return '';
-    return this.targets.some((t) => t.room?.inBoundary) ? 'on' : 'filtered';
+    const status = presenceStatus(this.present, this.targets);
+    if (status === 'none') return '';
+    return status === 'filtered' ? 'filtered' : 'on';
   }
 
   // ── render ─────────────────────────────────────────────────────────────────
@@ -353,6 +380,12 @@ export class LivePanel extends LitElement {
           ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
           : ''}
       </div>
+      ${!this.adapter.info.is1DRanging && this.calibration.polygon.length >= 3
+        ? html`<div class="boundary-legend">
+            <span><i class="boundary-line"></i>${this._t('live.polygon_boundary')}</span>
+            <span><i class="filtered-area"></i>${this._t('live.filtered_area')}</span>
+          </div>`
+        : ''}
       ${this.showStatus
         ? html`
             <div class="target-summary">
@@ -395,6 +428,28 @@ export class LivePanel extends LitElement {
     :host {
       display: block;
       position: relative;
+    }
+    .boundary-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      padding: 6px 2px 0;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+    }
+    .boundary-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .boundary-line {
+      width: 18px;
+      border-top: 2px dashed var(--mmwave-primary, #0b825c);
+    }
+    .filtered-area {
+      width: 12px;
+      height: 10px;
+      background: rgba(100, 116, 139, 0.25);
     }
     .panel-heading {
       margin-bottom: 12px;

@@ -52,7 +52,7 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
 export const ld2450aAdapter: RadarModelAdapter = {
   info: INFO,
 
-  getEntitySchema: () => ENTITY_SCHEMA,
+  getEntitySchema: () => ENTITY_SCHEMA.filter((field) => field.key !== 'polygon_entity'),
 
   validateConfig(config: MMWaveCardConfig): string[] {
     const errors: string[] = [];

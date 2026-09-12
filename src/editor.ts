@@ -4,21 +4,17 @@ import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { getModelList, getAdapter } from './models';
 import { entityAliases, localize } from './localize/localize';
 import type {
-  CalibrationConfig,
   CalibrationProfile,
   FusionSettings,
   MMWaveCardConfig,
   RadarSourceConfig,
   TrajectoryQualitySettings,
 } from './types';
-import type { RadarCalibrationSolution } from './fusion/calibration';
 import { DEFAULT_CALIBRATION, DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
 import fusionDefaults from './fusion-defaults.json';
 import { nextRadarTabId, selectedRadarIndexAfterRemoval } from './utils/radar-tabs';
 import './panels/zone-editor';
-import './panels/installation-3d';
-import './panels/fusion-calibration';
 
 /**
  * The backend's default for a fusion setting.
@@ -168,24 +164,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     this._emitConfig();
   }
 
-  private _updateRadarCalibration(index: number, key: keyof CalibrationConfig, value: number) {
-    const radar = this._config.radars?.[index];
-    if (!radar) return;
-    this._updateFusionRadar(index, {
-      calibration: { ...radar.calibration, [key]: value },
-      calibration_profile_id: undefined,
-      calibration_profile_revision: undefined,
-    });
-  }
-
-  private _fusionInstallationChanged(index: number, event: CustomEvent<CalibrationConfig>) {
-    this._updateFusionRadar(index, {
-      calibration: event.detail,
-      calibration_profile_id: undefined,
-      calibration_profile_revision: undefined,
-    });
-  }
-
   private async _selectFusionRadar(index: number, focusTab = false) {
     const count = this._config.radars?.length ?? 0;
     this._selectedFusionRadar = Math.max(0, Math.min(index, count - 1));
@@ -248,8 +226,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     const profile = this._calibrationProfiles.find((item) => item.profile_id === profileId);
     if (!profile) return;
     this._updateFusionRadar(index, {
-      device_id: profile.device_id,
-      radar_model: profile.radar_model,
       calibration: structuredClone(profile.calibration),
       calibration_profile_id: profile.profile_id,
       calibration_profile_revision: profile.revision,
@@ -315,48 +291,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _fusionZonesChanged(event: CustomEvent<MMWaveCardConfig['zones']>) {
     this._changed('zones', event.detail ?? []);
-  }
-
-  private async _fusionCalibrationApplied(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) {
-    const solutionByRadar = new Map(event.detail.solutions.map((solution) => [solution.radarId, solution]));
-    const radars = (this._config.radars ?? []).map((radar) => {
-      const solution = solutionByRadar.get(radar.id);
-      return solution ? { ...radar, calibration: solution.calibration } : radar;
-    });
-    this._config = { ...this._config, radars };
-    this._emitConfig();
-    this._profileStatus = this._t('editor.saving_device_calibration_profiles');
-    const saved = await Promise.all(
-      radars.map(async (radar) => {
-        const solution = solutionByRadar.get(radar.id);
-        if (!solution || !radar.device_id) return radar;
-        try {
-          const profile = await this.hass.callWS<CalibrationProfile>({
-            type: 'mmwave_fusion/upsert_calibration_profile',
-            profile: {
-              profile_id: `device:${radar.device_id}`,
-              device_id: radar.device_id,
-              radar_model: radar.radar_model,
-              name: this._devices.find((device) => device.id === radar.device_id)?.name_by_user || radar.id,
-              calibration: solution.calibration,
-              residual_cm: solution.residualAfterCm,
-            },
-          });
-          return {
-            ...radar,
-            calibration_profile_id: profile.profile_id,
-            calibration_profile_revision: profile.revision,
-          };
-        } catch (error) {
-          console.warn(`Failed to save calibration profile for ${radar.id}`, error);
-          return radar;
-        }
-      }),
-    );
-    this._config = { ...this._config, radars: saved };
-    this._emitConfig();
-    await this._loadCalibrationProfiles();
-    this._profileStatus = this._t('editor.all_calibrations_were_applied_and_saved');
   }
 
   private async _deviceDropdownChanged(e: Event) {
@@ -468,18 +402,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           polygon: selectedRadar.calibration?.polygon ?? [],
         }
       : undefined;
-    const peerCalibrations = radars
-      .map((radar, index) => ({
-        index,
-        id: radar.id,
-        calibration: {
-          ...DEFAULT_CALIBRATION,
-          ...(getAdapter(radar.radar_model)?.getDefaultCalibration() ?? {}),
-          ...(radar.calibration ?? {}),
-          polygon: radar.calibration?.polygon ?? [],
-        },
-      }))
-      .filter((peer) => peer.index !== selectedIndex);
     return html`
       <div class="card-config">
         <div class="editor-hero">
@@ -632,16 +554,22 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                         @change=${(event: Event) => this._profileChanged(selectedIndex, event)}
                       >
                         <option value="">${this._t('editor.manual_not_linked')}</option>
-                        ${this._calibrationProfiles.map(
-                          (profile) => html`
-                            <option
-                              value=${profile.profile_id}
-                              ?selected=${profile.profile_id === selectedRadar.calibration_profile_id}
-                            >
-                              ${profile.name} · ${profile.radar_model} · v${profile.revision}
-                            </option>
-                          `,
-                        )}
+                        ${this._calibrationProfiles
+                          .filter(
+                            (profile) =>
+                              profile.device_id === selectedRadar.device_id &&
+                              profile.radar_model === selectedRadar.radar_model,
+                          )
+                          .map(
+                            (profile) => html`
+                              <option
+                                value=${profile.profile_id}
+                                ?selected=${profile.profile_id === selectedRadar.calibration_profile_id}
+                              >
+                                ${profile.name} · ${profile.radar_model} · v${profile.revision}
+                              </option>
+                            `,
+                          )}
                       </select>
                       ${selectedRadar.calibration_profile_id
                         ? html`<small class="profile-badge">
@@ -649,26 +577,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                             v${selectedRadar.calibration_profile_revision ?? '?'}
                           </small>`
                         : nothing}
-                    </div>
-                    <div class="cal-grid">
-                      ${(['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'] as const).map(
-                        (key) => html`
-                          <div class="field compact">
-                            <label>${key}</label>
-                            <input
-                              type="number"
-                              step=${key === 'yaw' || key === 'pitch' || key === 'roll' ? '1' : '10'}
-                              .value=${String(selectedCalibration[key] ?? (key === 'radar_z' ? 220 : 0))}
-                              @change=${(event: Event) =>
-                                this._updateRadarCalibration(
-                                  selectedIndex,
-                                  key,
-                                  Number((event.target as HTMLInputElement).value),
-                                )}
-                            />
-                          </div>
-                        `,
-                      )}
                     </div>
                     ${selectedAdapter
                       ? html`
@@ -696,39 +604,17 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                         `
                       : nothing}
                   </section>
-                  <div class="installation-subsection">
-                    <strong>${this._t('editor.interactive_installation')}</strong>
-                    <span>${this._t('editor.current_tab_controls_form_and_3d')}</span>
-                  </div>
-                  <mmwave-installation-3d
-                    .adapter=${selectedAdapter}
-                    .calibration=${selectedCalibration}
-                    .peerCalibrations=${peerCalibrations}
-                    .lang=${this.hass.language}
-                    .roomW=${Number(this._config.room_w ?? 400)}
-                    .roomD=${Number(this._config.room_d ?? 600)}
-                    .maxRangeM=${selectedAdapter.info.maxRangeM}
-                    @calibration-changed=${(event: CustomEvent<CalibrationConfig>) =>
-                      this._fusionInstallationChanged(selectedIndex, event)}
-                  ></mmwave-installation-3d>
                 </div>
               `
             : nothing}
         </div>
         ${this._profileStatus ? html`<div class="profile-status">${this._profileStatus}</div>` : nothing}
 
-        <h3><span>3</span>${this._t('editor.joint_multi_radar_calibration')}</h3>
-        <p class="section-help">${this._t('editor.each_shared_reference_position_captures_every')}</p>
-        <mmwave-fusion-calibration
-          .hass=${this.hass}
-          .radars=${radars}
-          .roomW=${Number(this._config.room_w ?? 400)}
-          .roomD=${Number(this._config.room_d ?? 600)}
-          .lang=${this.hass.language}
-          @fusion-calibration-applied=${this._fusionCalibrationApplied}
-        ></mmwave-fusion-calibration>
-
-        <h3><span>4</span>${this._t('editor.fusion_and_recording_rules')}</h3>
+        <div class="test-hint">
+          <strong>${this._t('workflow.editor_calibration_title')}</strong
+          ><span>${this._t('workflow.editor_calibration_hint')}</span>
+        </div>
+        <h3><span>3</span>${this._t('editor.fusion_and_recording_rules')}</h3>
         <p class="section-help">${this._t('editor.filter_single_radar_false_alarms_and')}</p>
         <div class="rules-grid">
           <div class="field compact">
@@ -867,7 +753,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           </span>
         </div>
 
-        <h3><span>5</span>${this._t('editor.event_zones_and_cameras')}</h3>
+        <h3><span>4</span>${this._t('editor.event_zones_and_cameras')}</h3>
         <p class="section-help">${this._t('editor.draw_polygon_vertices_on_the_floor')}</p>
         <mmwave-zone-editor
           .roomW=${Number(this._config.room_w ?? 400)}

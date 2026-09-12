@@ -55,3 +55,5 @@ You can search and confirm the real entity IDs of your radar device on the **"De
 - **`distance_entity`**: [Required] Radar-measured line-of-sight distance sensor (Unit: cm). Because the RD03E is a 1-D radar, the card automatically maps this distance straight ahead. You can use the card's `Yaw` slider to adjust the radar's physical orientation in the room.
 - **`motion_state_entity`**: [Optional] Target motion state sensor. If provided, it assists in displaying the specific state of the target (e.g., stationary, micro-motion, active) in the UI.
 - **`room_w` / `room_d`**: The physical width and depth of the room (Unit: cm), used for scaling during card rendering. This does not affect the calibration data itself. You can modify it according to your actual room size (e.g., `300` or `500`).
+
+When presence is on but distance is zero or unavailable, the card shows **Present · range unavailable**, not **Outside boundary**. No target position is drawn until a valid distance arrives.

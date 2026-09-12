@@ -27,4 +27,4 @@ export const FUSION_TRAIL_MAX_MS = 15_000;
  * combination of versions can end up installed. Bump this when the card starts
  * relying on a command or field a previous backend did not have.
  */
-export const REQUIRED_FUSION_API_VERSION = 1;
+export const REQUIRED_FUSION_API_VERSION = 4;

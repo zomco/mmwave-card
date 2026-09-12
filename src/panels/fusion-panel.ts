@@ -63,6 +63,7 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) backendState:
     | 'connecting'
     | 'online'
+    | 'preview'
     | 'fallback'
     | 'missing'
     | 'outdated'
@@ -588,26 +589,34 @@ export class FusionPanel extends LitElement {
       <div class="scene-toolbar">
         <span class="status ${this.backendState}">
           <i></i>
-          ${this.backendState === 'online'
-            ? this._t('fusion.backend_fusion')
-            : this.backendState === 'missing'
-              ? this._t('fusion.integration_missing')
-              : this.backendState === 'outdated'
-                ? this._t('fusion.integration_outdated')
-                : this.backendState === 'fallback'
-                  ? this._t('fusion.local_fallback')
-                  : this.backendState === 'error'
-                    ? this._t('fusion.backend_error')
-                    : this._t('fusion.connecting')}
+          ${this.backendState === 'preview'
+            ? this._t('workflow.preview_status')
+            : this.backendState === 'online'
+              ? this._t('fusion.backend_fusion')
+              : this.backendState === 'missing'
+                ? this._t('fusion.integration_missing')
+                : this.backendState === 'outdated'
+                  ? this._t('fusion.integration_outdated')
+                  : this.backendState === 'fallback'
+                    ? this._t('fusion.local_fallback')
+                    : this.backendState === 'error'
+                      ? this._t('fusion.backend_error')
+                      : this._t('fusion.connecting')}
         </span>
         <span class="toolbar-actions">
-          <button type="button" class="coverage-toggle ${this.showReplay ? 'active' : ''}" @click=${this.toggleReplay}>
+          <button
+            ?hidden=${this.backendState === 'preview'}
+            type="button"
+            class="coverage-toggle ${this.showReplay ? 'active' : ''}"
+            @click=${this.toggleReplay}
+          >
             ${this.showReplay ? this._t('fusion.hide_replay') : this._t('fusion.show_replay')}
           </button>
           <button
             type="button"
             class="coverage-toggle ${this.showHeatmap ? 'active' : ''}"
             @click=${this.toggleHeatmap}
+            ?hidden=${this.backendState === 'preview'}
           >
             ${this.showHeatmap ? this._t('fusion.hide_heatmap') : this._t('fusion.show_heatmap')}
           </button>

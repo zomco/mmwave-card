@@ -14,6 +14,7 @@ import {
 } from '../utils/canvas';
 import { localize } from '../localize/localize';
 import './installation-3d';
+import './range-status';
 
 @customElement('mmwave-geo-panel')
 export class GeoPanel extends LitElement {
@@ -23,6 +24,8 @@ export class GeoPanel extends LitElement {
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 350;
   @property({ type: Number }) maxRangeM?: number;
+  @property({ attribute: false }) peerCalibrations: Array<{ id: string; calibration: CalibrationConfig }> = [];
+  @property({ type: Boolean }) showBoundary = true;
 
   @query('#poly-cv') private _cv?: HTMLCanvasElement;
   private _rafId = 0;
@@ -211,6 +214,7 @@ export class GeoPanel extends LitElement {
       <mmwave-installation-3d
         .adapter=${this.adapter}
         .calibration=${c}
+        .peerCalibrations=${this.peerCalibrations}
         .lang=${this.lang}
         .roomW=${roomW}
         .roomD=${roomD}
@@ -233,7 +237,22 @@ export class GeoPanel extends LitElement {
         </div>
       </details>
 
-      <section class="boundary-card">
+      ${this.adapter.info.is1DRanging
+        ? html`<section class="boundary-card">
+            <h3>${this._L('range.title')}</h3>
+            <p class="note">${this._L('range.explanation')}</p>
+            ${this._numField(this._L('range.min'), 'distance_min', c.distance_min ?? 0, 10, 0, 1000)}
+            ${this._numField(this._L('range.max'), 'distance_max', c.distance_max ?? 0, 10, 0, 1000)}
+            <p class="note">${this._L('range.zero')}</p>
+            <mmwave-range-status
+              .calibration=${c}
+              .maxRangeM=${this.maxRangeM}
+              .lang=${this.lang}
+              .model=${this.adapter.info.id}
+            ></mmwave-range-status>
+          </section>`
+        : ''}
+      <section class="boundary-card" ?hidden=${!this.showBoundary || this.adapter.info.is1DRanging}>
         <div class="section-heading">
           <div>
             <span class="eyebrow">${this._t('geo.optional_2')}</span>

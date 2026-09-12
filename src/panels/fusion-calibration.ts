@@ -60,6 +60,7 @@ export class FusionCalibrationPanel extends LitElement {
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 600;
   @property({ attribute: false }) lang = 'en';
+  @property({ attribute: false }) applyLabel = '';
 
   @state() private references: FusionCalibrationReference[] = [];
   @state() private selectedRegionId = 'region_a';
@@ -76,6 +77,7 @@ export class FusionCalibrationPanel extends LitElement {
   private captureInterval?: number;
   private captureTimer?: number;
   private drawFrame = 0;
+  private resizeObserver?: ResizeObserver;
 
   /**
    * Translate through the shared i18n system.
@@ -89,6 +91,8 @@ export class FusionCalibrationPanel extends LitElement {
   }
 
   protected firstUpdated() {
+    this.resizeObserver = new ResizeObserver(() => this.scheduleDraw());
+    if (this.canvas) this.resizeObserver.observe(this.canvas);
     this.scheduleDraw();
   }
 
@@ -109,6 +113,7 @@ export class FusionCalibrationPanel extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.clearCaptureTimers();
+    this.resizeObserver?.disconnect();
     cancelAnimationFrame(this.drawFrame);
   }
 
@@ -295,6 +300,7 @@ export class FusionCalibrationPanel extends LitElement {
 
   private beginCapture() {
     if (this.capturing) return;
+    this.dispatchEvent(new CustomEvent('calibration-capture-started', { bubbles: true, composed: true }));
     this.capturing = true;
     this.captureProgress = 0;
     this.captureMessage = this._t('fusioncal.capturing_region_p0', { p0: this.selectedRegion.label });
@@ -623,7 +629,7 @@ export class FusionCalibrationPanel extends LitElement {
                 : this._t('fusioncal.i_am_ready_capture_all')}
             </button>
             <button class="mobile-apply" type="button" @click=${this.applySolutionsAndExitMobile}>
-              ${this._t('fusioncal.apply_all_calibrations')}
+              ${this.applyLabel || this._t('fusioncal.apply_all_calibrations')}
             </button>
           </div>
           ${this.capturing
@@ -783,7 +789,9 @@ export class FusionCalibrationPanel extends LitElement {
             ${this._t('fusioncal.start_over')}
           </button>
           <button type="button" class="primary" ?disabled=${!ready} @click=${this.applySolutions}>
-            ${ready ? this._t('fusioncal.apply_all_calibrations') : this._t('fusioncal.need_3_points_120_cm_span')}
+            ${ready
+              ? this.applyLabel || this._t('fusioncal.apply_all_calibrations')
+              : this._t('fusioncal.need_3_points_120_cm_span')}
           </button>
         </div>
       </section>

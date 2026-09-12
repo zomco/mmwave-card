@@ -23,6 +23,8 @@ This card is also the **only user interface** for the project. Calibration
 happens here; the ESPHome firmware and the fusion integration ship no UI of
 their own.
 
+For range-only radars, target trails, range arcs and metre labels share the radar boresight and the room map projection. When the preview is stretched, range circles appear elliptical so they still match room coordinates.
+
 <img src="./assets/screenshot-live.gif" alt="Live view panel" width="600">
 
 _(Tab ① — Geometry & Boundary | Tab ② — Yaw Calibration | Tab ③ — Live View)_
@@ -161,3 +163,11 @@ radar markers.
 ## License
 
 MIT © zomco
+
+The radar preview outlines the configured polygon with a dashed green line and shades the area outside it. This shows the software boundary filter; targets outside remain visible for diagnosis. With fewer than three vertices, no polygon filter overlay is shown.
+
+Range-only radars use software distance limits (cm, 0 disables each bound) instead of room polygons. Sync writes the device Zone Min/Max Distance entities. The preview shows radial limits and the reported native maximum when available; unknown native minima or per-gate exclusions are not treated as verified coverage. Native detection thresholds remain untouched. No automatic boot-time reset of user calibration is performed.
+
+Compact range previews show the software interval directly: green is the retained sector and grey radial bands are excluded. Detailed range diagnostics remain in settings, not below the preview.
+
+Live previews use equal horizontal and vertical scale even when card height is capped. Unused space remains visible instead of stretching the radar fan; targets, trails, and boundaries share the same mapping.

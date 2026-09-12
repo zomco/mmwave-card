@@ -60,6 +60,7 @@
     "title": "房间俯视图",
     "badge_none": "无人",
     "badge_present": "有人",
+    "badge_unlocated": "有人 · 距离未知",
     "badge_filtered": "边界外",
     "model": "雷达型号",
     "ld2450": "HLK-LD2450 (二维 120° 8米)",
@@ -78,7 +79,9 @@
     "target": "目标",
     "inside": "有效",
     "outside": "边界外",
-    "no_target_data_yet": "当前没有目标数据"
+    "no_target_data_yet": "当前没有目标数据",
+    "polygon_boundary": "多边形边界",
+    "filtered_area": "灰色区域：已过滤"
   },
   "actions": {
     "save": "保存",
@@ -127,14 +130,14 @@
     "sync_configuration_to_the_backend_when": "管理员打开卡片时自动同步配置到后端",
     "radar_devices": "雷达设备",
     "only_radar_models_with_2_d": "只显示可输出二维或三维位置的雷达型号。每台雷达必须使用唯一 ID。",
-    "radar_devices_and_installation": "雷达设备与安装定位",
-    "configure_devices_then_place_them": "通过 TAB 切换雷达；当前页集中显示设备绑定、安装参数和交互式 3D 定位。添加雷达会创建并选中一个新 TAB，每台雷达必须使用唯一 ID。",
+    "radar_devices_and_installation": "雷达设备",
+    "configure_devices_then_place_them": "通过 TAB 添加、删除和绑定雷达设备。安装位置和方向统一在卡片右上角的校准工作区调整。",
     "radar": "雷达",
     "radar_device": "雷达设备",
     "select_device": "选择设备",
     "calibration_profile": "校准档案",
-    "manual_not_linked": "手工配置 / 未绑定",
-    "device_profile_snapshot": "设备档案快照",
+    "manual_not_linked": "自动使用设备校准档案",
+    "device_profile_snapshot": "已绑定校准档案",
     "entity_mapping": "实体映射",
     "add_radar": "添加雷达",
     "radar_installation_tabs": "雷达安装配置页",
@@ -180,9 +183,17 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": ["距离"],
-    "motion_state": ["运动状态", "目标状态"],
-    "polygon": ["多边形", "边界"]
+    "distance": [
+      "距离"
+    ],
+    "motion_state": [
+      "运动状态",
+      "目标状态"
+    ],
+    "polygon": [
+      "多边形",
+      "边界"
+    ]
   },
   "card": {
     "syncing": "正在同步…",
@@ -256,6 +267,25 @@
     "replay_thinned": "已抽稀至 {hz} Hz",
     "replay_failed": "回放查询失败",
     "replay_needs_newer_backend": "回放需要更新版本的 mmwave-fusion 集成"
+  },
+  "workflow": {
+    "editor_calibration_title": "安装与校准已移到卡片右上角",
+    "editor_calibration_hint": "保存基础配置后，返回卡片并点击右上角调节图标，完成安装定位、方向校准和现场验证。这里选择的档案仅用于绑定。",
+    "discard_confirm": "离开后将丢弃尚未应用的安装调整和采集记录。是否离开？",
+    "preview_readonly": "请先保存并退出卡片编辑器，再从卡片右上角进入安装校准。",
+    "backend_required": "请更新并连接融合后端，再进行多雷达校准。",
+    "use_results": "使用校准结果，进入验证",
+    "verify_hint": "当前使用草稿安装参数进行临时融合预览。请单人在房间内行走，检查目标是否合并和轨迹是否连续；确认后点击“应用并同步”。此预览不会保存轨迹或触发录像，运行中的后端继续使用原参数。",
+    "preview_status": "校准草稿预览",
+    "saving": "正在应用…",
+    "saved": "校准已保存到 HA，并已同步全部设备。",
+    "saved_partial": "校准已保存到 HA；以下设备参数未同步成功，可恢复连接后重试。",
+    "save_failed": "未能应用校准。请检查错误信息；如其他页面已更新校准，请退出后重新进入。",
+    "unsaved": "有未应用的安装调整",
+    "draft_hint": "确认后再应用，退出可取消本次调整",
+    "apply_sync": "应用并同步",
+    "previous": "上一步",
+    "next": "下一步"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "正在同步采集所有雷达…",
@@ -353,5 +383,21 @@
     "yaw_2": "偏航",
     "pitch_2": "俯仰",
     "roll_2": "横滚"
+  },
+  "range": {
+    "title": "距离区间过滤",
+    "explanation": "此雷达仅测距离。法线上的位置仅作示意，不支持二维多边形过滤。",
+    "min": "最小距离",
+    "max": "最大距离",
+    "zero": "0 表示不设该软件限制；点击同步到设备后下发。",
+    "software": "软件距离区间",
+    "unlimited": "不设上限",
+    "native_max": "原生最远范围（回读）",
+    "unknown": "未知或未提供",
+    "native_min_unknown": "原生最近范围及各距离门屏蔽状态未在此回读，不能据此确认全区间有效。",
+    "limited": "原生最远范围小于软件区间，超出的目标无法由软件恢复。",
+    "noise_preserved": "保留原生检测阈值；修改此区间不会重置阈值。",
+    "noise_unknown": "此型号的可调原生噪声抑制能力未确认，不覆盖噪声参数。",
+    "invalid": "最大距离必须为 0 或不小于最小距离。"
   }
 }

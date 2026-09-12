@@ -1,4 +1,6 @@
 export interface AtomicFrameTarget {
+  /** Original radar slot when supplied by the producer. */
+  slot?: number;
   x: number;
   y: number;
   z: number;
@@ -29,8 +31,20 @@ export function parseAtomicTargetFrame(value: string): AtomicTargetFrame | undef
     return undefined;
   if (!Array.isArray(frame.t) || frame.t.length > 32) return undefined;
 
+  const slots = frame.s;
+  if (
+    slots !== undefined &&
+    (!Array.isArray(slots) ||
+      slots.length !== frame.t.length ||
+      slots.some((slot) => !Number.isInteger(slot) || slot < 0 || slot > 31) ||
+      new Set(slots).size !== slots.length)
+  )
+    return undefined;
   const targets: AtomicFrameTarget[] = [];
+  let sourceIndex = 0;
   for (const raw of frame.t) {
+    const slot = Array.isArray(slots) ? (slots[sourceIndex] as number) : undefined;
+    sourceIndex++;
     let x: number | undefined;
     let y: number | undefined;
     let z = 0;
@@ -53,7 +67,13 @@ export function parseAtomicTargetFrame(value: string): AtomicTargetFrame | undef
     if (x == null || y == null || !Number.isFinite(z) || Math.max(Math.abs(x), Math.abs(y), Math.abs(z)) > 100000)
       return undefined;
     if (x === 0 && y === 0 && z === 0) continue;
-    targets.push({ x, y, z, speed: speed == null ? undefined : Math.abs(speed) });
+    targets.push({
+      ...(slot === undefined ? {} : { slot }),
+      x,
+      y,
+      z,
+      speed: speed == null ? undefined : Math.abs(speed),
+    });
   }
   return { frameId: String(frameId), sourceTimestamp, targets };
 }

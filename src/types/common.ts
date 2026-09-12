@@ -15,6 +15,9 @@ export interface Vec2 {
 // ── Calibration ───────────────────────────────────────────────────────────────
 
 export interface CalibrationConfig {
+  /** Software radial limits in cm; zero means unrestricted. */
+  distance_min?: number;
+  distance_max?: number;
   /** Room width override (cm). Falls back to card config if undefined. */
   room_w?: number;
   /** Room depth override (cm). Falls back to card config if undefined. */
@@ -187,6 +190,9 @@ export interface FusionUpdate {
 
 export interface FusionRadarHealth {
   id: string;
+  calibration?: CalibrationConfig;
+  calibration_profile_id?: string;
+  calibration_profile_revision?: number;
   available: boolean;
   last_updated?: number;
   age_s?: number;

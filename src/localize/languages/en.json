@@ -60,6 +60,7 @@
     "title": "Room Top-Down View",
     "badge_none": "No presence",
     "badge_present": "Present",
+    "badge_unlocated": "Present · range unavailable",
     "badge_filtered": "Outside boundary",
     "model": "Model",
     "ld2450": "HLK-LD2450 (2-D 120° 8m)",
@@ -78,7 +79,9 @@
     "target": "Target",
     "inside": "Inside",
     "outside": "Outside",
-    "no_target_data_yet": "No target data yet"
+    "no_target_data_yet": "No target data yet",
+    "polygon_boundary": "Polygon boundary",
+    "filtered_area": "Shaded: filtered out"
   },
   "actions": {
     "save": "Save",
@@ -127,14 +130,14 @@
     "sync_configuration_to_the_backend_when": "Sync configuration to the backend when an administrator opens the card",
     "radar_devices": "Radar devices",
     "only_radar_models_with_2_d": "Only radar models with 2-D or 3-D positions are shown. Every radar needs a unique ID.",
-    "radar_devices_and_installation": "Radar devices and installation",
-    "configure_devices_then_place_them": "Switch radars with tabs. The active page combines device binding, installation values and interactive 3-D placement. Adding a radar creates and selects a new tab; every radar needs a unique ID.",
+    "radar_devices_and_installation": "Radar devices",
+    "configure_devices_then_place_them": "Use tabs to add, remove and bind radar devices. Adjust installation and direction from the card’s top-right calibration workspace.",
     "radar": "Radar",
     "radar_device": "Radar device",
     "select_device": "Select device",
     "calibration_profile": "Calibration profile",
-    "manual_not_linked": "Manual / not linked",
-    "device_profile_snapshot": "Device profile snapshot",
+    "manual_not_linked": "Automatic device calibration profile",
+    "device_profile_snapshot": "Linked calibration profile",
     "entity_mapping": "Entity mapping",
     "add_radar": "Add radar",
     "radar_installation_tabs": "Radar installation tabs",
@@ -180,9 +183,19 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": ["distance"],
-    "motion_state": ["motion state", "motion_state", "target state", "target_state"],
-    "polygon": ["polygon", "boundary"]
+    "distance": [
+      "distance"
+    ],
+    "motion_state": [
+      "motion state",
+      "motion_state",
+      "target state",
+      "target_state"
+    ],
+    "polygon": [
+      "polygon",
+      "boundary"
+    ]
   },
   "card": {
     "syncing": "Syncing…",
@@ -256,6 +269,25 @@
     "replay_thinned": "thinned to {hz} Hz",
     "replay_failed": "Replay query failed",
     "replay_needs_newer_backend": "Replay needs a newer mmwave-fusion integration"
+  },
+  "workflow": {
+    "editor_calibration_title": "Installation and calibration are on the card",
+    "editor_calibration_hint": "Save the basic configuration, return to the card and open its top-right calibration control for placement, direction and live verification. Selecting a profile here only binds it.",
+    "discard_confirm": "Leave and discard unapplied installation changes and capture samples?",
+    "preview_readonly": "Save and exit the card editor, then open calibration from the card’s top-right control.",
+    "backend_required": "Update and connect the fusion backend before calibrating multiple radars.",
+    "use_results": "Use results and verify",
+    "verify_hint": "This temporary fusion preview uses your draft installation. Walk through the room alone and check target merging and continuity, then apply and sync. This preview stores no tracks or recordings; the running backend continues using its saved settings.",
+    "preview_status": "Calibration draft",
+    "saving": "Applying…",
+    "saved": "Calibration saved in HA and synced to all devices.",
+    "saved_partial": "Calibration saved in HA. Some device parameters could not be synced; reconnect and retry.",
+    "save_failed": "Calibration could not be applied. Check the error; if another page updated calibration, exit and reopen this workspace.",
+    "unsaved": "Unapplied installation changes",
+    "draft_hint": "Apply after verification; exit to discard changes",
+    "apply_sync": "Apply and sync",
+    "previous": "Previous",
+    "next": "Next"
   },
   "fusioncal": {
     "capturing_all_radars_synchronously": "Capturing all radars synchronously…",
@@ -353,5 +385,21 @@
     "yaw_2": "Yaw",
     "pitch_2": "Pitch",
     "roll_2": "Roll"
+  },
+  "range": {
+    "title": "Distance filter",
+    "explanation": "This radar measures range only. Position on the centre line is illustrative; polygon filtering is unavailable.",
+    "min": "Minimum distance",
+    "max": "Maximum distance",
+    "zero": "0 disables that software limit. Changes are sent with Sync to device.",
+    "software": "Software interval",
+    "unlimited": "No upper limit",
+    "native_max": "Reported native maximum",
+    "unknown": "Unknown / not exposed",
+    "native_min_unknown": "Native minimum and per-gate exclusions are not reported here; full coverage is not verified.",
+    "limited": "Native maximum is smaller than the software interval; targets beyond it cannot be recovered.",
+    "noise_preserved": "Native detection thresholds are preserved; changing this interval does not reset them.",
+    "noise_unknown": "Adjustable native noise rejection is not confirmed for this model; no noise parameters are overwritten.",
+    "invalid": "Maximum distance must be zero or at least the minimum distance."
   }
 }

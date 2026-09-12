@@ -1,3 +1,4 @@
+import { rangeContains } from './utils/range-filter';
 /**
  * MMWave Radar HA Card  —  main orchestrator
  *
@@ -36,6 +37,7 @@ import {
   type FusionHeatmap,
   type FusionReplay,
   type RadarSourceConfig,
+  type CalibrationProfile,
   DEFAULT_CARD_CONFIG,
 } from './types';
 import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VERSION } from './const';
@@ -45,6 +47,7 @@ import './panels/geo-panel';
 import './panels/yaw-panel';
 import './panels/live-panel';
 import './panels/fusion-panel';
+import './panels/fusion-workflow';
 import type { YawPanel } from './panels/yaw-panel';
 import type { LivePanel } from './panels/live-panel';
 import type { FusionRadarVisual } from './panels/fusion-panel';
@@ -126,6 +129,9 @@ export class MMWaveCard extends LitElement {
 
   public setConfig(config: MMWaveCardConfig): void {
     this._disconnectFusionBackend();
+    this._deviceLoaded = false;
+    this._singleProfile = undefined;
+    this._singleProfileRevision = undefined;
     if (config.radars?.length) {
       this._config = { ...DEFAULT_CARD_CONFIG, ...config } as MMWaveCardConfig;
       const roomW = this._config.room_w as number;
@@ -219,6 +225,12 @@ export class MMWaveCard extends LitElement {
   @state() private _cal!: CalibrationConfig;
   @state() private _tab = TAB_GEO;
   @state() private _isCalibrating = false;
+  @state() private _fusionCalibrationConfig?: MMWaveCardConfig;
+  @state() private _calibrationLoading = false;
+  @state() private _calibrationError = '';
+  private _originalCalibration?: CalibrationConfig;
+  private _singleProfileRevision?: number;
+  private _singleProfile?: CalibrationProfile;
 
   @state() private _targets: RadarTarget[] = [];
   @state() private _present = false;
@@ -270,6 +282,7 @@ export class MMWaveCard extends LitElement {
     if (!this._deviceLoaded) {
       this._deviceLoaded = true;
       this._loadFromDevice();
+      void this._loadSingleProfile();
     }
 
     const reading = this._adapter.readFromHass(hass, this._config);
@@ -279,7 +292,12 @@ export class MMWaveCard extends LitElement {
     // Apply transform to every target
     this._targets = reading.targets.map((t) => ({
       ...t,
-      room: applyTransform(t.rawX, t.rawY, t.rawZ, this._cal),
+      room: {
+        ...applyTransform(t.rawX, t.rawY, t.rawZ, this._cal),
+        ...(this._adapter.info.is1DRanging
+          ? { inBoundary: rangeContains(Math.hypot(t.rawX, t.rawY, t.rawZ), this._cal) }
+          : {}),
+      },
     }));
 
     // Trigger Lit update naturally
@@ -402,7 +420,7 @@ export class MMWaveCard extends LitElement {
     this._fusionConnecting = true;
     const fusionId = this._config.fusion_id || 'home';
     try {
-      if (this._config.sync_backend !== false) {
+      if (this._config.sync_backend !== false && !this._isEditorPreview()) {
         try {
           await this._hass.callWS({
             type: 'mmwave_fusion/configure',
@@ -446,6 +464,15 @@ export class MMWaveCard extends LitElement {
           const health = new Map(update.radars.map((radar) => [radar.id, radar]));
           this._fusionRadars = this._fusionRadars.map((radar) => ({
             ...radar,
+            calibration: health.get(radar.config.id)?.calibration ?? radar.calibration,
+            config: {
+              ...radar.config,
+              calibration: health.get(radar.config.id)?.calibration ?? radar.calibration,
+              calibration_profile_id:
+                health.get(radar.config.id)?.calibration_profile_id ?? radar.config.calibration_profile_id,
+              calibration_profile_revision:
+                health.get(radar.config.id)?.calibration_profile_revision ?? radar.config.calibration_profile_revision,
+            },
             available: health.get(radar.config.id)?.available ?? radar.available,
             observations: health.get(radar.config.id)?.observations,
             inRoomRatio: health.get(radar.config.id)?.in_room_ratio,
@@ -479,6 +506,76 @@ export class MMWaveCard extends LitElement {
     this._fusionUnsubscribe?.();
     this._fusionUnsubscribe = undefined;
     this._fusionConnecting = false;
+  }
+
+  private _isEditorPreview() {
+    let node: Node | null = this.parentNode ?? this.getRootNode();
+    while (node) {
+      if (node instanceof HTMLElement && ['HUI-CARD-PREVIEW', 'HUI-DIALOG-EDIT-CARD'].includes(node.tagName))
+        return true;
+      node = node.parentNode ?? (node instanceof ShadowRoot ? node.host : null);
+    }
+    return false;
+  }
+
+  private async _openCalibration() {
+    if (this._calibrationLoading || !this._hass.user?.is_admin) return;
+    if (this._isEditorPreview()) {
+      this._calibrationError = this._t('workflow.preview_readonly');
+      return;
+    }
+    this._calibrationLoading = true;
+    this._calibrationError = '';
+    try {
+      if (this._config.radars?.length) {
+        const result = await this._hass.callWS<{ api_version: number; config: MMWaveCardConfig | null }>({
+          type: 'mmwave_fusion/get_config',
+          fusion_id: this._config.fusion_id || 'home',
+        });
+        if (result.api_version < REQUIRED_FUSION_API_VERSION || !result.config)
+          throw new Error(this._t('workflow.backend_required'));
+        this._fusionCalibrationConfig = { ...this._config, ...result.config };
+      } else {
+        this._loadFromDevice();
+        await this._loadSingleProfile();
+        this._originalCalibration = structuredClone(this._cal);
+        this._isCalibrating = true;
+        this._tab = TAB_GEO;
+      }
+    } catch (error) {
+      this._calibrationError = String((error as { message?: string }).message ?? error);
+    } finally {
+      this._calibrationLoading = false;
+    }
+  }
+
+  private _closeCalibration() {
+    if (this._syncState === 'syncing') return;
+    if (this._originalCalibration && JSON.stringify(this._cal) !== JSON.stringify(this._originalCalibration)) {
+      if (!confirm(this._t('workflow.discard_confirm'))) return;
+      this._cal = structuredClone(this._originalCalibration);
+    }
+    this._isCalibrating = false;
+  }
+
+  private async _loadSingleProfile() {
+    if (!this._hass.user?.is_admin || !this._config.device_id || this._adapter.info.is1DRanging) return;
+    const deviceId = this._config.device_id;
+    try {
+      const profiles = await this._hass.callWS<CalibrationProfile[]>({
+        type: 'mmwave_fusion/list_calibration_profiles',
+      });
+      if (this._config.device_id !== deviceId || this._isCalibrating) return;
+      const profile = profiles.find(
+        (item) => item.profile_id === `device:${deviceId}` && item.radar_model === this._config.radar_model,
+      );
+      this._singleProfileRevision = profile?.revision ?? 0;
+      this._singleProfile = profile;
+      if (profile) this._cal = structuredClone(profile.calibration);
+    } catch {
+      this._singleProfileRevision = undefined;
+      this._singleProfile = undefined;
+    }
   }
 
   private async _loadFusionEvents() {
@@ -629,7 +726,8 @@ export class MMWaveCard extends LitElement {
     if (cal.radar_x > roomW) cal = { ...cal, radar_x: roomW };
     if (cal.radar_y > roomD) cal = { ...cal, radar_y: roomD };
 
-    this._cal = cal;
+    this._cal = this._adapter.info.is1DRanging ? { ...cal, polygon: [] } : cal;
+    if (this._hass) this.hass = this._hass;
     this.requestUpdate();
   }
 
@@ -654,6 +752,11 @@ export class MMWaveCard extends LitElement {
    * `dev_target_1`.
    */
   private _devicePrefix(): string {
+    if (this._adapter.info.is1DRanging) {
+      const entity = this._config.presence_entity as string | undefined;
+      const match = entity?.match(/^binary_sensor\.(.+)_presence$/);
+      if (match) return match[1];
+    }
     const xEntity = (this._config?.x_entity as string) || '';
     if (xEntity) {
       const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
@@ -683,9 +786,18 @@ export class MMWaveCard extends LitElement {
       }
     }
 
+    if (this._adapter.info.is1DRanging) {
+      for (const key of ['distance_min', 'distance_max'] as const) {
+        const value = Number(
+          this._hass.states[`number.${prefix}_zone_${key === 'distance_min' ? 'min' : 'max'}_distance`]?.state,
+        );
+        if (Number.isFinite(value) && value >= 0) cal[key] = value;
+      }
+      cal.polygon = [];
+    }
     // Read polygon
     const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
-    const polyObj = this._hass.states[polyEntity];
+    const polyObj = this._adapter.info.is1DRanging ? undefined : this._hass.states[polyEntity];
     if (polyObj && polyObj.state) {
       const s = polyObj.state;
       const pts = s
@@ -708,19 +820,46 @@ export class MMWaveCard extends LitElement {
     if (cal.radar_y > roomD) cal.radar_y = roomD;
 
     this._cal = cal;
+    if (this._singleProfile) this._cal = structuredClone(this._singleProfile.calibration);
     this.requestUpdate();
   }
 
   private async _sync() {
+    if (!this._hass.user?.is_admin) return;
     const prefix = this._devicePrefix();
     if (!prefix) {
       alert('Error: neither x_entity nor target_1_x_entity is configured.');
       return;
     }
 
+    if (
+      this._adapter.info.is1DRanging &&
+      (this._cal.distance_max ?? 0) > 0 &&
+      (this._cal.distance_min ?? 0) > this._cal.distance_max!
+    ) {
+      this._syncFailures = [this._t('range.invalid')];
+      this._syncState = 'error';
+      return;
+    }
     this._syncState = 'syncing';
 
     try {
+      if (this._singleProfileRevision !== undefined && this._config.device_id) {
+        const profile = await this._hass.callWS<CalibrationProfile>({
+          type: 'mmwave_fusion/upsert_calibration_profile',
+          profile: {
+            profile_id: `device:${this._config.device_id}`,
+            device_id: this._config.device_id,
+            radar_model: this._config.radar_model,
+            name: this._adapter.info.displayName,
+            calibration: this._cal,
+            expected_revision: this._singleProfileRevision,
+          },
+        });
+        this._singleProfileRevision = profile.revision;
+        this._singleProfile = profile;
+        this._originalCalibration = structuredClone(this._cal);
+      }
       // Same mapping as _loadFromDevice: the config key is not the entity
       // suffix any more, so writing back has to go through it too.
       const failures: string[] = [];
@@ -749,9 +888,26 @@ export class MMWaveCard extends LitElement {
         }
       }
 
+      if (this._adapter.info.is1DRanging) {
+        for (const [key, suffix] of [
+          ['distance_min', 'zone_min_distance'],
+          ['distance_max', 'zone_max_distance'],
+        ] as const) {
+          const entity = `number.${prefix}_${suffix}`;
+          if (!this._hass.states[entity]) {
+            failures.push(`${entity} (no such entity)`);
+            continue;
+          }
+          try {
+            await this._hass.callService('number', 'set_value', { entity_id: entity, value: this._cal[key] ?? 0 });
+          } catch {
+            failures.push(entity);
+          }
+        }
+      }
       const polyStr = this._cal.polygon.map((p) => `${p.x},${p.y}`).join(';');
       const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
-      if (this._hass.states[polyEntity] !== undefined) {
+      if (!this._adapter.info.is1DRanging && this._hass.states[polyEntity] !== undefined) {
         try {
           await this._hass.callService('text', 'set_value', {
             entity_id: polyEntity,
@@ -761,38 +917,20 @@ export class MMWaveCard extends LitElement {
           failures.push(polyEntity);
           console.warn(`Failed to sync ${polyEntity}`, err);
         }
-      } else if (this._cal.polygon.length > 0) {
+      } else if (!this._adapter.info.is1DRanging && this._cal.polygon.length > 0) {
         // Silently dropping a boundary the user drew is worse than saying so.
         // Models without a polygon entity simply have none to write.
         failures.push(`${polyEntity} (no such entity)`);
       }
 
-      // Persist the same snapshot in HA so fusion cards can import this
-      // device's calibration without depending on another Lovelace card.
-      if (this._config.device_id && this._config.radar_model) {
-        try {
-          await this._hass.callWS({
-            type: 'mmwave_fusion/upsert_calibration_profile',
-            profile: {
-              profile_id: `device:${this._config.device_id}`,
-              device_id: this._config.device_id,
-              radar_model: this._config.radar_model,
-              name: this._adapter.info.displayName,
-              calibration: this._cal,
-            },
-          });
-        } catch (error) {
-          console.info('Shared calibration profile is not available', error);
-        }
-      }
-
       this._syncFailures = failures;
       this._syncState = failures.length > 0 ? 'error' : 'success';
+      if (!failures.length) this._originalCalibration = structuredClone(this._cal);
       if (failures.length > 0) {
         console.error('mmwave-card: these did not reach the device -', failures);
       }
     } catch (e) {
-      this._syncFailures = ['unexpected error - see console'];
+      this._syncFailures = [String((e as { message?: string }).message ?? e)];
       this._syncState = 'error';
       console.error(e);
     } finally {
@@ -867,15 +1005,14 @@ export class MMWaveCard extends LitElement {
                 type="button"
                 title=${this._t('card.open_calibration')}
                 aria-label=${this._t('card.open_calibration_2')}
-                @click=${() => {
-                  this._isCalibrating = true;
-                  this._tab = TAB_GEO;
-                }}
+                ?disabled=${!this._hass.user?.is_admin || this._calibrationLoading}
+                @click=${this._openCalibration}
               >
                 <ha-icon icon="mdi:tune-variant"></ha-icon>
               </button>
             </div>
           </header>
+          ${this._calibrationError ? html`<p role="alert">${this._calibrationError}</p>` : nothing}
           <div class="live-body">
             <mmwave-live-panel
               .adapter=${this._adapter}
@@ -902,7 +1039,7 @@ export class MMWaveCard extends LitElement {
             type="button"
             title=${this._t('card.back_to_radar_view')}
             aria-label=${this._t('card.back_to_radar_view_2')}
-            @click=${() => (this._isCalibrating = false)}
+            @click=${this._closeCalibration}
           >
             <ha-icon icon="mdi:arrow-left"></ha-icon>
           </button>
@@ -978,6 +1115,7 @@ export class MMWaveCard extends LitElement {
         </div>
 
         <footer class="workflow-footer">
+          ${this._syncState === 'error' ? html`<p role="alert">${this._syncFailures.join('; ')}</p>` : nothing}
           <div class="footer-tools">
             <button class="text-button" type="button" @click=${this._loadFromDevice}>
               <ha-icon icon="mdi:backup-restore"></ha-icon><span>${this._t('card.revert')}</span>
@@ -1019,6 +1157,22 @@ export class MMWaveCard extends LitElement {
   }
 
   private _renderFusionMode() {
+    if (this._fusionCalibrationConfig)
+      return html`<ha-card>
+        <mmwave-fusion-workflow
+          .hass=${this._hass}
+          .config=${this._fusionCalibrationConfig}
+          @calibration-closed=${() => (this._fusionCalibrationConfig = undefined)}
+          @calibration-saved=${(event: CustomEvent<MMWaveCardConfig>) => {
+            this._fusionRadars = this._fusionRadars.map((radar) => {
+              const saved = event.detail.radars?.find((item) => item.id === radar.config.id);
+              return saved
+                ? { ...radar, config: saved, calibration: { ...radar.calibration, ...saved.calibration } }
+                : radar;
+            });
+          }}
+        ></mmwave-fusion-workflow
+      ></ha-card>`;
     const lang = this._hass?.language ?? 'en';
     const online = this._fusionRadars.filter((radar) => radar.available).length;
     return html`
@@ -1037,13 +1191,26 @@ export class MMWaveCard extends LitElement {
               </div>
             </div>
           </div>
-          <span class="presence-chip ${this._fusionTargets.length ? 'active' : ''}">
-            <i></i>
-            ${this._fusionTargets.length
-              ? this._t('card.p0_targets', { p0: this._fusionTargets.length })
-              : this._t('card.clear_2')}
-          </span>
+          <div class="header-actions">
+            <span class="presence-chip ${this._fusionTargets.length ? 'active' : ''}">
+              <i></i>
+              ${this._fusionTargets.length
+                ? this._t('card.p0_targets', { p0: this._fusionTargets.length })
+                : this._t('card.clear_2')}
+            </span>
+            <button
+              class="icon-button"
+              type="button"
+              title=${this._t('card.open_calibration')}
+              aria-label=${this._t('card.open_calibration_2')}
+              ?disabled=${!this._hass.user?.is_admin || this._calibrationLoading}
+              @click=${this._openCalibration}
+            >
+              <ha-icon icon="mdi:tune-variant"></ha-icon>
+            </button>
+          </div>
         </header>
+        ${this._calibrationError ? html`<p role="alert">${this._calibrationError}</p>` : nothing}
         <div class="live-body">
           <mmwave-fusion-panel
             .roomW=${this._config.room_w}

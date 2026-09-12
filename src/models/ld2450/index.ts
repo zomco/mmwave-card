@@ -27,6 +27,7 @@ import type {
   CalibrationConfig,
 } from '../../types';
 import { DEFAULT_CALIBRATION } from '../../types';
+import { parseAtomicTargetFrame } from '../../fusion/frame';
 
 // ── Model info ────────────────────────────────────────────────────────────────
 
@@ -109,6 +110,23 @@ export const ld2450Adapter: RadarModelAdapter = {
     }
     const present = pres.state === 'on';
     if (!present) return { present: false, targets: [] };
+
+    // Never mix separate X/Y updates when an atomic source is configured.
+    // Empty/invalid frames must not fall back to stale per-axis entities.
+    if (config.frame_entity) {
+      const frame = parseAtomicTargetFrame(get('frame_entity')?.state ?? '');
+      return {
+        present,
+        targets:
+          frame?.targets.map((target, index) => ({
+            index: target.slot ?? index,
+            rawX: target.x,
+            rawY: target.y,
+            rawZ: target.z,
+            speed: target.speed,
+          })) ?? [],
+      };
+    }
 
     const targets: RadarTarget[] = [];
 
