@@ -44,11 +44,11 @@ import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VER
 
 // Sub-elements (register them)
 import './panels/geo-panel';
-import './panels/yaw-panel';
+import './panels/fusion-calibration';
+import type { RadarCalibrationSolution } from './fusion/calibration';
 import './panels/live-panel';
 import './panels/fusion-panel';
 import './panels/fusion-workflow';
-import type { YawPanel } from './panels/yaw-panel';
 import type { LivePanel } from './panels/live-panel';
 import type { FusionRadarVisual } from './panels/fusion-panel';
 
@@ -261,7 +261,6 @@ export class MMWaveCard extends LitElement {
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
 
-  @query('mmwave-yaw-panel') private _yawPanel?: YawPanel;
   @query('mmwave-live-panel') private _livePanel?: LivePanel;
 
   // ── Hass ─────────────────────────────────────────────────────────────────
@@ -304,10 +303,6 @@ export class MMWaveCard extends LitElement {
     this.requestUpdate();
 
     // Yaw panel: if it's waiting for a capture reading, offer it
-    if (this._tab === TAB_YAW && this._yawPanel) {
-      const first = reading.targets[0];
-      if (first) this._yawPanel.offerReading(first.rawX, first.rawY);
-    }
   }
 
   // ── Localisation helper ──────────────────────────────────────────────────
@@ -1088,15 +1083,24 @@ export class MMWaveCard extends LitElement {
               </mmwave-geo-panel>`
             : nothing}
           ${this._tab === TAB_YAW
-            ? html` <mmwave-yaw-panel
-                .adapter=${this._adapter}
-                .calibration=${this._cal}
-                .lang=${lang}
-                .roomW=${roomW}
-                .roomD=${roomD}
-                .maxRangeM=${this._maxRangeM}
-              >
-              </mmwave-yaw-panel>`
+            ? this._adapter.info.is1DRanging
+              ? html`<p>${this._t('fusioncal.range_only')}</p>`
+              : html`<mmwave-fusion-calibration
+                  .hass=${this._hass}
+                  .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
+                  .lang=${lang}
+                  .roomW=${roomW}
+                  .roomD=${roomD}
+                  .applyLabel=${this._t('workflow.use_results')}
+                  @fusion-calibration-applied=${(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) => {
+                    const solution = event.detail.solutions[0];
+                    if (!solution) return;
+                    this._onCalibrationChanged(
+                      new CustomEvent('calibration-changed', { detail: solution.calibration }),
+                    );
+                    this._gotoTab(TAB_LIVE);
+                  }}
+                ></mmwave-fusion-calibration>`
             : nothing}
           ${this._tab === TAB_LIVE
             ? html` <mmwave-live-panel

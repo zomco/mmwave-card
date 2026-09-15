@@ -15,6 +15,7 @@ import {
 import { applyTransform } from '../utils/transform';
 import {
   canvasToRoom,
+  fitRoomMetrics,
   drawBase,
   drawRadarFov,
   eventToCanvasCssPt,
@@ -38,8 +39,8 @@ interface GuidedRegion {
 const CAPTURE_MS = 3000;
 const MIN_CAPTURE_SAMPLES = 3;
 const MIN_REFERENCE_SPAN_CM = 120;
-const ACCEPTABLE_RESIDUAL_CM = 40;
-const COLORS = ['#03a9f4', '#9c27b0', '#ff9800', '#e91e63', '#4caf50', '#795548'];
+const ACCEPTABLE_RESIDUAL_CM = 60;
+const COLORS = ['#408564', '#9c27b0', '#ff9800', '#e91e63', '#4caf50', '#795548'];
 
 const median = (values: number[]) => {
   const sorted = [...values].sort((left, right) => left - right);
@@ -64,6 +65,7 @@ export class FusionCalibrationPanel extends LitElement {
 
   @state() private references: FusionCalibrationReference[] = [];
   @state() private selectedRegionId = 'region_a';
+  @state() private regionOverrides: Record<string, Vec2> = {};
   @state() private capturing = false;
   @state() private captureProgress = 0;
   @state() private captureMessage = '';
@@ -104,7 +106,8 @@ export class FusionCalibrationPanel extends LitElement {
       changed.has('references') ||
       changed.has('selectedRegionId') ||
       changed.has('captureCounts') ||
-      changed.has('mobileFocus')
+      changed.has('mobileFocus') ||
+      changed.has('regionOverrides')
     ) {
       this.scheduleDraw();
     }
@@ -131,12 +134,12 @@ export class FusionCalibrationPanel extends LitElement {
 
   private metrics(): CanvasMetrics {
     const width = this.canvas?.offsetWidth || 520;
-    return {
+    return fitRoomMetrics({
       W: width,
       H: Math.max(240, Math.min(420, Math.round((width * this.roomD) / this.roomW))),
       roomW: this.roomW,
       roomD: this.roomD,
-    };
+    });
   }
 
   private scheduleDraw() {
@@ -145,10 +148,56 @@ export class FusionCalibrationPanel extends LitElement {
   }
 
   private get guidedRegions(): GuidedRegion[] {
+    const visible: Vec2[] = [];
+    if (this.radars.length === 1) {
+      const radar = this.radars[0];
+      const cal = completeCalibration(radar);
+      const info = getAdapter(radar.radar_model)?.info;
+      const yaw = (cal.yaw * Math.PI) / 180;
+      for (let x = 1; x <= 9; x++)
+        for (let y = 1; y <= 9; y++) {
+          const room = { x: (this.roomW * x) / 10, y: (this.roomD * y) / 10 };
+          const dx = room.x - cal.radar_x,
+            dy = room.y - cal.radar_y;
+          const localX = dx * Math.cos(yaw) - dy * Math.sin(yaw);
+          const localY = dx * Math.sin(yaw) + dy * Math.cos(yaw);
+          const distance = Math.hypot(dx, dy);
+          if (
+            info &&
+            localY > 0 &&
+            distance >= Math.max(60, info.minRangeM * 100) &&
+            distance < info.maxRangeM * 100 &&
+            Math.abs(Math.atan2(localX, localY)) < ((info.fovDegrees * Math.PI) / 360) * 0.85
+          )
+            visible.push(room);
+        }
+    }
+    const recommended: Vec2[] = [];
+    if (visible.length >= 3) {
+      let span = 0;
+      for (const a of visible)
+        for (const b of visible) {
+          const distance = Math.hypot(a.x - b.x, a.y - b.y);
+          if (distance > span) {
+            span = distance;
+            recommended.splice(0, 2, a, b);
+          }
+        }
+      while (recommended.length < 7 && recommended.length < visible.length) {
+        const candidates = visible.filter((p) => !recommended.includes(p));
+        const separation = (p: Vec2) => Math.min(...recommended.map((q) => Math.hypot(p.x - q.x, p.y - q.y)));
+        candidates.sort((a, b) => separation(b) - separation(a));
+        recommended.push(candidates[0]);
+      }
+    }
     const point = (id: string, label: string, xRatio: number, yRatio: number): GuidedRegion => ({
       id,
       label,
-      room: { x: Math.round(this.roomW * xRatio), y: Math.round(this.roomD * yRatio) },
+      room: this.regionOverrides[id] ??
+        recommended[label.charCodeAt(0) - 65] ?? {
+          x: Math.round(this.roomW * xRatio),
+          y: Math.round(this.roomD * yRatio),
+        },
     });
     // The first three recommendations deliberately form a wide triangle so
     // calibration reaches a useful baseline without asking users to plan it.
@@ -205,7 +254,7 @@ export class FusionCalibrationPanel extends LitElement {
     context.strokeStyle = complete
       ? '#0b825c'
       : region.id === this.selectedRegionId
-        ? '#0284c7'
+        ? '#408564'
         : 'rgba(100, 116, 139, 0.45)';
     context.lineWidth = region.id === this.selectedRegionId ? 3 : 1.5;
     context.setLineDash(region.id === this.selectedRegionId && !complete ? [5, 4] : []);
@@ -217,7 +266,7 @@ export class FusionCalibrationPanel extends LitElement {
     context.beginPath();
     context.arc(point.cx, point.cy, 9, 0, Math.PI * 2);
     context.fill();
-    context.fillStyle = complete ? '#0b825c' : region.id === this.selectedRegionId ? '#0284c7' : '#64748b';
+    context.fillStyle = complete ? '#0b825c' : region.id === this.selectedRegionId ? '#408564' : '#64748b';
     context.font = 'bold 10px system-ui';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
@@ -238,7 +287,7 @@ export class FusionCalibrationPanel extends LitElement {
       const calibration = completeCalibration(radar);
       const point = roomToCanvas(calibration.radar_x, calibration.radar_y, metrics);
       context.save();
-      context.globalAlpha = 0.045;
+      context.globalAlpha = this.radars.length === 1 ? 1 : 0.35;
       drawRadarFov(
         context,
         point.cx,
@@ -291,7 +340,13 @@ export class FusionCalibrationPanel extends LitElement {
       .map((region) => ({ region, distance: Math.hypot(region.room.x - room.x, region.room.y - room.y) }))
       .sort((left, right) => left.distance - right.distance)[0];
     if (!nearest || nearest.distance > this.regionRadiusCm * 1.55) {
-      this.captureMessage = this._t('fusioncal.tap_a_guided_region');
+      if (room.x < 0 || room.y < 0 || room.x > this.roomW || room.y > this.roomD) return;
+      if (this.references.some((reference) => reference.id === this.selectedRegionId)) {
+        this.captureMessage = this._t('fusioncal.remove_before_moving');
+        return;
+      }
+      this.regionOverrides = { ...this.regionOverrides, [this.selectedRegionId]: room };
+      this.captureMessage = this._t('fusioncal.move_to_region_p0', { p0: this.selectedRegion.label });
       return;
     }
     this.selectedRegionId = nearest.region.id;
@@ -322,7 +377,7 @@ export class FusionCalibrationPanel extends LitElement {
     let changed = false;
     for (const radar of this.radars) {
       const reading = this.readRadarTargets(radar);
-      if (!reading || reading.signature === this.signatures.get(radar.id) || !reading.targets.length) continue;
+      if (!reading || reading.signature === this.signatures.get(radar.id) || reading.targets.length !== 1) continue;
       this.signatures.set(radar.id, reading.signature);
       const calibration = completeCalibration(radar);
       const closest = reading.targets
@@ -352,6 +407,8 @@ export class FusionCalibrationPanel extends LitElement {
   private readRadarTargets(radar: RadarSourceConfig): { signature: string; targets: RadarTarget[] } | undefined {
     const frameState = radar.frame_entity ? this.hass.states[radar.frame_entity] : undefined;
     const frame = frameState ? parseAtomicTargetFrame(frameState.state) : undefined;
+    if (radar.frame_entity && (!frame || !frameState || Date.now() - Date.parse(frameState.last_updated) > 5000))
+      return undefined;
     if (frame) {
       const scale = Number(radar.frame_coordinate_scale ?? 1);
       return {
@@ -395,6 +452,10 @@ export class FusionCalibrationPanel extends LitElement {
       const rawY = median(samples.map((sample) => sample.y));
       const rawZ = median(samples.map((sample) => sample.z));
       const spreadCm = median(samples.map((sample) => Math.hypot(sample.x - rawX, sample.y - rawY)));
+      const stable = samples.filter((sample) => Math.hypot(sample.x - rawX, sample.y - rawY) <= 60);
+      if (spreadCm > 30 || stable.length < MIN_CAPTURE_SAMPLES || stable.length < samples.length * 0.8) continue;
+      // Keep a completed radar while filling missing readings at this station.
+      if (readings[radar.id]) continue;
       readings[radar.id] = {
         rawX: Math.round(rawX * 10) / 10,
         rawY: Math.round(rawY * 10) / 10,
@@ -458,6 +519,7 @@ export class FusionCalibrationPanel extends LitElement {
   private reset() {
     if (this.capturing) return;
     this.references = [];
+    this.regionOverrides = {};
     this.selectedRegionId = this.guidedRegions[0].id;
     this.captureCounts = {};
     this.captureMessage = '';
@@ -465,9 +527,8 @@ export class FusionCalibrationPanel extends LitElement {
   }
 
   private applySolutions() {
-    const solutions = this.solutions;
-    const ready = this.solutionsReady(solutions);
-    if (!ready) return;
+    const solutions = this.solutions.filter((solution) => this.solutionMeetsQuality(solution));
+    if (this.capturing || !this.solutionsReady(solutions)) return;
     this.dispatchEvent(
       new CustomEvent<{ solutions: RadarCalibrationSolution[] }>('fusion-calibration-applied', {
         detail: { solutions },
@@ -503,6 +564,7 @@ export class FusionCalibrationPanel extends LitElement {
       solution.pointCount >= 3 &&
       solution.referenceSpanCm >= MIN_REFERENCE_SPAN_CM &&
       solution.residualAfterCm <= ACCEPTABLE_RESIDUAL_CM &&
+      solution.maxResidualCm <= 90 &&
       solution.calibration.radar_x >= -50 &&
       solution.calibration.radar_x <= this.roomW + 50 &&
       solution.calibration.radar_y >= -50 &&
@@ -517,6 +579,7 @@ export class FusionCalibrationPanel extends LitElement {
     if (solution.referenceSpanCm < MIN_REFERENCE_SPAN_CM) {
       return this._t('fusioncal.quality_span_too_small', { p0: solution.referenceSpanCm });
     }
+    if (solution.maxResidualCm > 90) return this._t('fusioncal.outlier_remaining');
     if (solution.residualAfterCm > ACCEPTABLE_RESIDUAL_CM) {
       return this._t('fusioncal.quality_residual_too_high', {
         p0: solution.residualAfterCm,
@@ -531,6 +594,7 @@ export class FusionCalibrationPanel extends LitElement {
     ) {
       return this._t('fusioncal.quality_reference_outside_room');
     }
+    if (solution.retainedCurrent) return this._t('fusioncal.retained_current');
     return this._t('fusioncal.quality_reference_accepted', { p0: solution.residualAfterCm });
   }
 
@@ -547,8 +611,8 @@ export class FusionCalibrationPanel extends LitElement {
     return (
       this.references.length >= 3 &&
       this.referenceSpanCm >= MIN_REFERENCE_SPAN_CM &&
-      solutions.length === this.radars.length &&
-      solutions.every((solution) => this.solutionMeetsQuality(solution))
+      !this.capturing &&
+      solutions.some((solution) => this.solutionMeetsQuality(solution))
     );
   }
 
@@ -620,6 +684,24 @@ export class FusionCalibrationPanel extends LitElement {
           aria-label=${this._t('fusioncal.guided_capture_floor_plan')}
           @click=${this.onCanvasClick}
         ></canvas>
+        ${ready
+          ? html`<div class="message" role="status">
+              ${this._t('fusioncal.ready_summary', {
+                p0: calibratedRadars,
+                p1: this.radars.length - calibratedRadars,
+              })}
+            </div>`
+          : nothing}
+        ${ready && solutions.some((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
+          ? html`<div class="message">
+              ${this._t('fusioncal.retained_names', {
+                p0: solutions
+                  .filter((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
+                  .map((solution) => solution.radarId)
+                  .join(', '),
+              })}
+            </div>`
+          : nothing}
         <div class=${`capture-dock ${ready ? 'ready' : ''} ${this.capturing ? 'capturing' : ''}`}>
           <div class="capture-bar">
             <span>${this._t('fusioncal.tap_another_region_or_follow_recommendation')}</span>
@@ -628,7 +710,7 @@ export class FusionCalibrationPanel extends LitElement {
                 ? this._t('fusioncal.capturing_p0_percent', { p0: Math.round(this.captureProgress * 100) })
                 : this._t('fusioncal.i_am_ready_capture_all')}
             </button>
-            <button class="mobile-apply" type="button" @click=${this.applySolutionsAndExitMobile}>
+            <button class="mobile-apply" type="button" ?disabled=${!ready} @click=${this.applySolutionsAndExitMobile}>
               ${this.applyLabel || this._t('fusioncal.apply_all_calibrations')}
             </button>
           </div>
@@ -800,6 +882,7 @@ export class FusionCalibrationPanel extends LitElement {
 
   static styles = css`
     :host {
+      --primary-color: var(--mmwave-primary, #0b825c);
       display: block;
       min-width: 0;
     }
@@ -841,10 +924,10 @@ export class FusionCalibrationPanel extends LitElement {
       gap: 9px;
       margin: 0 11px 9px;
       padding: 9px 10px;
-      border: 1px solid color-mix(in srgb, #0284c7 38%, var(--divider-color, transparent));
+      border: 1px solid color-mix(in srgb, #408564 38%, var(--divider-color, transparent));
       border-radius: 10px;
       color: var(--primary-text-color);
-      background: color-mix(in srgb, #0284c7 8%, transparent);
+      background: color-mix(in srgb, #408564 8%, transparent);
     }
     .guide-card > b {
       width: 30px;
@@ -854,7 +937,7 @@ export class FusionCalibrationPanel extends LitElement {
       place-items: center;
       border-radius: 50%;
       color: #fff;
-      background: #0284c7;
+      background: #408564;
       font-size: 14px;
     }
     .guide-card span {
@@ -1231,7 +1314,7 @@ export class FusionCalibrationPanel extends LitElement {
         border-right: 0;
         border-left: 0;
         border-radius: 0;
-        background: color-mix(in srgb, #0284c7 11%, var(--card-background-color, #fff));
+        background: color-mix(in srgb, #408564 11%, var(--card-background-color, #fff));
         box-shadow: 0 5px 13px rgba(15, 23, 42, 0.07);
       }
       .mobile-focus .guide-card > b {

@@ -183,19 +183,9 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": [
-      "distance"
-    ],
-    "motion_state": [
-      "motion state",
-      "motion_state",
-      "target state",
-      "target_state"
-    ],
-    "polygon": [
-      "polygon",
-      "boundary"
-    ]
+    "distance": ["distance"],
+    "motion_state": ["motion state", "motion_state", "target state", "target_state"],
+    "polygon": ["polygon", "boundary"]
   },
   "card": {
     "syncing": "Syncing…",
@@ -205,7 +195,7 @@
     "installation": "Installation",
     "place_the_radar_in_the_3d": "Place the radar in the 3D room",
     "direction": "Direction",
-    "calibrate_yaw_with_two_reference_points": "Calibrate yaw with two reference points",
+    "calibrate_yaw_with_two_reference_points": "Calibrate direction with samples from several areas",
     "live_test": "Live test",
     "verify_targets_boundary_and_trails": "Verify targets, boundary and trails",
     "presence_radar": "Presence radar",
@@ -293,9 +283,9 @@
     "capturing_all_radars_synchronously": "Capturing all radars synchronously…",
     "no_radar_produced_enough_stable_samples": "No radar produced enough stable samples. Try again.",
     "captured_p0_p1_radars": "Captured {p0}/{p1} radars.",
-    "joint_direction_calibration": "Joint direction calibration",
-    "calibrate_every_radar_from_shared_positions": "Calibrate every radar from shared positions",
-    "keep_only_one_test_person_in": "Keep only one test person in the room and follow the blue recommended areas. Gray is uncollected; each colored segment means that radar has captured the area.",
+    "joint_direction_calibration": "Direction calibration",
+    "calibrate_every_radar_from_shared_positions": "Pause in three guided areas",
+    "keep_only_one_test_person_in": "Keep one person in the room. Follow the green areas and stand still to capture; centimetre accuracy is unnecessary.",
     "mobile_calibration": "Mobile calibration",
     "mobile_calibration_hint": "Use the focused view to keep guidance and capture controls visible.",
     "enter_mobile_calibration": "Start",
@@ -304,9 +294,9 @@
     "pending_x_p0_y_p1_cm": "Pending: X {p0} / Y {p1} cm",
     "click_the_floor_plan_to_choose": "Click the floor plan to choose the next reference position",
     "tap_a_guided_region": "Tap one of the guided capture areas.",
-    "move_to_region_p0": "Move to blue area {p0}",
-    "stand_near_center_then_hold_still": "Stand near its center (X {p0} / Y {p1} cm) and hold still. This area has {p2}/{p3} radars captured.",
-    "tap_another_region_or_follow_recommendation": "Tap another circle or continue with the blue recommendation",
+    "move_to_region_p0": "Move to green area {p0}",
+    "stand_near_center_then_hold_still": "Stand approximately near the center, within about one small step. Captured: {p2}/{p3} radars.",
+    "tap_another_region_or_follow_recommendation": "Follow the green guide; tap empty space to move the current uncaptured area.",
     "capturing_region_p0": "Capturing area {p0} from all radars…",
     "region_p0_captured_p1_p2_radars": "Area {p0} captured {p1}/{p2} radars. The next area is now recommended.",
     "p0_p1_samples": "{p0}/{p1} samples",
@@ -324,7 +314,7 @@
     "not_enough_references": "Not enough references",
     "span_p0_cm": "span {p0} cm",
     "review_installation_parameters": "Review the indicated radar installations",
-    "review_p0_radars_before_retrying": "{p0} did not pass calibration. Compare the current values, fitted reference and suggested adjustment below, then correct them manually under Radar devices and installation before capturing again.",
+    "review_p0_radars_before_retrying": "{p0} need more valid samples. Capture another visible area; completed readings are retained.",
     "xy_yaw_only_manual_note": "Joint calibration estimates only X, Y and yaw. Confirm radar_z, pitch and roll from the physical installation. A rejected fit is diagnostic only and is never written to the configuration.",
     "calibration_reference_accepted": "Reference accepted",
     "installation_needs_review": "Review installation",
@@ -336,10 +326,17 @@
     "quality_residual_too_high": "The fitted residual of {p0} cm exceeds {p1} cm. Check the installation and outlier captures first; do not copy this reference directly.",
     "quality_reference_outside_room": "The fitted installation is outside the room. Check the coordinate origin, direction and physical installation.",
     "quality_reference_accepted": "The fitted residual is {p0} cm; this reference can be reviewed or applied.",
-    "p0_p1_radars_ready": "{p0}/{p1} radars meet the 3-point, span and residual requirements",
+    "p0_p1_radars_ready": "{p0}/{p1} radars ready to verify",
     "start_over": "Start over",
-    "apply_all_calibrations": "Apply all calibrations",
-    "need_3_points_120_cm_span": "Each radar needs 3 points, 120 cm span and residual ≤ 40 cm"
+    "apply_all_calibrations": "Use accepted results and verify",
+    "need_3_points_120_cm_span": "Capture at least three separated areas",
+    "retained_current": "Existing parameters passed this check; no adjustment needed.",
+    "ready_summary": "Capture complete: {p0} ready to verify; {p1} need more samples and will keep their existing settings.",
+    "range_only": "Range-only radar cannot determine direction. Set its orientation in Installation.",
+    "remove_before_moving": "Remove this captured area in details before moving it.",
+    "outlier_remaining": "A large mismatch remains. Capture another area.",
+    "retained_names": "{p0}: existing parameters passed this check; no adjustment needed.",
+    "pending_names": "{p0} still need calibration. Their existing settings are retained; capture more areas later."
   },
   "zone": {
     "zone_p0": "Zone {p0}",

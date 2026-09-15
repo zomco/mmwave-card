@@ -86,11 +86,64 @@ describe('calculateCalibrationAdjustment', () => {
   });
 
   it('normalizes a positive wraparound to a small negative yaw correction', () => {
-    const adjustment = calculateCalibrationAdjustment(
-      calibration({ yaw: -175 }),
-      calibration({ yaw: 170 }),
-    );
+    const adjustment = calculateCalibrationAdjustment(calibration({ yaw: -175 }), calibration({ yaw: 170 }));
 
     expect(adjustment.yaw).toBe(-15);
   });
+});
+
+const referencesFor = (truth: CalibrationConfig): FusionCalibrationReference[] =>
+  [
+    [0, 100],
+    [0, 400],
+    [250, 100],
+    [250, 400],
+  ].map(([x, y], i) => {
+    const t = applyTransform(x, y, 15, truth);
+    return {
+      id: String(i),
+      room: { x: t.roomX, y: t.roomY },
+      readings: { radar: { rawX: x, rawY: y, rawZ: 15, samples: 20, spreadCm: 5 } },
+    };
+  });
+
+it('preserves pitch and roll when fitting yaw and translation', () => {
+  const truth = calibration({ yaw: 35, pitch: 20, roll: -15, radar_x: 90, radar_y: 50 });
+  const result = solveRadarCalibration('radar', calibration({ pitch: 20, roll: -15 }), referencesFor(truth));
+  expect(result?.calibration).toEqual(truth);
+  expect(result?.residualAfterCm).toBeLessThan(0.1);
+});
+it('retains accepted parameters across repeat captures with decimetre station errors', () => {
+  const truth = calibration({ yaw: 35, radar_x: 90, radar_y: 50 });
+  for (const direction of [-1, 1]) {
+    const refs = referencesFor(truth);
+    refs.forEach((ref, i) => {
+      ref.room.x += direction * (i % 2 ? 20 : -20);
+      ref.room.y += 10;
+    });
+    const result = solveRadarCalibration('radar', truth, refs);
+    expect(result?.retainedCurrent).toBe(true);
+    expect(result?.calibration).toEqual(truth);
+  }
+});
+it('uses a three-station consensus without fitting a gross outlier', () => {
+  const truth = calibration({ yaw: 35, radar_x: 90, radar_y: 50 });
+  const refs = referencesFor(truth);
+  refs[3].readings.radar.rawX += 400;
+  const result = solveRadarCalibration('radar', calibration(), refs);
+  expect(result?.excludedPointCount).toBe(1);
+  expect(result?.pointCount).toBe(3);
+  expect(result?.calibration).toEqual(truth);
+});
+it('rejects unstable or non-finite readings', () => {
+  const refs = referencesFor(calibration());
+  refs.forEach((ref) => {
+    ref.readings.radar.spreadCm = 80;
+  });
+  expect(solveRadarCalibration('radar', calibration(), refs)).toBeUndefined();
+  refs.forEach((ref) => {
+    ref.readings.radar.spreadCm = 1;
+    ref.readings.radar.rawX = NaN;
+  });
+  expect(solveRadarCalibration('radar', calibration(), refs)).toBeUndefined();
 });

@@ -54,7 +54,7 @@ coordinates mean anything, and the step people skip:
 | Tab                   | What you do                                                                | Why                                                                                    |
 | --------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
 | ① Geometry & Boundary | Enter where the radar is (cm from a room corner) and drag the room outline | Targets outside the outline stop driving presence — this is the through-wall ghost fix |
-| ② Yaw Calibration     | Stand at two known points a couple of metres apart                         | Solves which way the radar faces                                                       |
+| ② Yaw Calibration     | Pause in at least three guided areas, roughly near each center                         | Solves which way the radar faces                                                       |
 | ③ Live View           | Walk around and watch the dot                                              | Verifies the other two                                                                 |
 
 A mirrored dot means yaw is 180° out; a dot moving at right angles to you means
@@ -119,11 +119,23 @@ The visual editor keeps radar binding, exact installation values, and the
 shared 3-D placement scene in one setup step organized as one tab per radar.
 Only the active radar's form and synchronized 3-D model are shown; adding a
 radar creates and selects a new tab. Joint direction calibration then
-guides the tester through fixed areas on the floor plan: gray areas are still
-uncollected, colored segments show which radars captured a stable sample, and
-the blue outline recommends the next well-spaced position. Calibration can be
-applied only after every radar has at least three reference points spanning
-120 cm with a residual no greater than 40 cm.
+uses the same green, undistorted floor plan as single-radar calibration. Pause in
+at least three widely separated areas and capture three seconds of readings at each.
+Positions are approximate (about a small step from the center); tap empty floor space
+to relocate an uncaptured area when the recommendation is inaccessible. Keep one
+person visible; ambiguous multi-target frames and unstable captures are skipped.
+Each radar needs three accepted stations spanning 120 cm, RMS residual at most
+60 cm and maximum residual at most 90 cm. A weighted fit includes a 30 cm station
+uncertainty and preserves pitch/roll. With four or more stations, gross outliers
+can be discarded only with at least three stations and 75% consensus.
+Existing parameters are retained when their RMS residual is within 40 cm, maximum
+error within 60 cm, and a new fit improves RMS by less than 15 cm. This avoids
+chasing measurement noise; it does not claim a unique physical optimum.
+Accepted radars can proceed to verification independently; unfinished radars keep
+their settings and remain identified. Good readings are kept while filling missing
+radars at a station; remove a station in details to recapture it completely.
+Results remain a draft until Apply and sync succeeds. Walk to other positions in
+Live test to check alignment before saving; device sync failures are shown separately.
 On phone-sized screens the calibration panel also offers a focused mobile mode:
 the current region guide stays at the top, the large capture action stays above
 the bottom safe area, live progress is announced in place, and captured-point

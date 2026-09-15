@@ -30,6 +30,7 @@ export class FusionWorkflow extends LitElement {
   @state() private failures: string[] = [];
   @state() private targets: FusionTarget[] = [];
   @state() private hasCapture = false;
+  @state() private pendingRadars: string[] = [];
   private saved: RadarSourceConfig[] = [];
   private revision = 0;
   private tracker = new LocalFusionTracker();
@@ -75,6 +76,9 @@ export class FusionWorkflow extends LitElement {
 
   private useSolutions(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) {
     event.stopPropagation();
+    this.pendingRadars = this.draft
+      .filter((radar) => !event.detail.solutions.some((solution) => solution.radarId === radar.id))
+      .map((radar) => radar.id);
     this.draft = this.draft.map((radar) => {
       const solution = event.detail.solutions.find((item) => item.radarId === radar.id);
       return solution ? { ...radar, calibration: solution.calibration, residual_cm: solution.residualAfterCm } : radar;
@@ -266,6 +270,11 @@ export class FusionWorkflow extends LitElement {
         </section>
         <section ?hidden=${this.step !== 2}>
           <p>${this.t('workflow.verify_hint')}</p>
+          ${this.pendingRadars.length
+            ? html`<p class="pending-calibration">
+                ${this.t('fusioncal.pending_names', { p0: this.pendingRadars.join(', ') })}
+              </p>`
+            : nothing}
           <mmwave-fusion-panel
             .roomW=${Number(this.config.room_w)}
             .roomD=${Number(this.config.room_d)}
@@ -301,6 +310,7 @@ export class FusionWorkflow extends LitElement {
 
   static styles = css`
     :host {
+      --primary-color: var(--mmwave-primary, #0b825c);
       display: block;
       color: var(--primary-text-color);
       background: var(--card-background-color, #fff);

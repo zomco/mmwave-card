@@ -183,17 +183,9 @@
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": [
-      "距离"
-    ],
-    "motion_state": [
-      "运动状态",
-      "目标状态"
-    ],
-    "polygon": [
-      "多边形",
-      "边界"
-    ]
+    "distance": ["距离"],
+    "motion_state": ["运动状态", "目标状态"],
+    "polygon": ["多边形", "边界"]
   },
   "card": {
     "syncing": "正在同步…",
@@ -203,7 +195,7 @@
     "installation": "安装定位",
     "place_the_radar_in_the_3d": "在 3D 房间中放置雷达",
     "direction": "方向校准",
-    "calibrate_yaw_with_two_reference_points": "通过两个参考点校准偏航",
+    "calibrate_yaw_with_two_reference_points": "通过多个区域连续采样校准方向",
     "live_test": "实时验证",
     "verify_targets_boundary_and_trails": "检查目标、边界和运动轨迹",
     "presence_radar": "人体存在雷达",
@@ -291,9 +283,9 @@
     "capturing_all_radars_synchronously": "正在同步采集所有雷达…",
     "no_radar_produced_enough_stable_samples": "没有雷达获得足够的稳定样本，请重试。",
     "captured_p0_p1_radars": "已采集 {p0}/{p1} 台雷达。",
-    "joint_direction_calibration": "联合方向校准",
-    "calibrate_every_radar_from_shared_positions": "用多个位置同时校准全部雷达",
-    "keep_only_one_test_person_in": "保持空间内只有一名测试人员。按蓝色推荐区域依次采集；灰色代表未采集，彩色分段代表对应雷达已采集。",
+    "joint_direction_calibration": "方向校准",
+    "calibrate_every_radar_from_shared_positions": "按引导在三个区域停留",
+    "keep_only_one_test_person_in": "房间内只留一人。依次走到绿色提示区域，站稳后采集；无需精确到厘米。",
     "mobile_calibration": "移动校准",
     "mobile_calibration_hint": "进入专注界面后，区域指引和采集按钮会始终可见。",
     "enter_mobile_calibration": "开始",
@@ -302,9 +294,9 @@
     "pending_x_p0_y_p1_cm": "待采集：X {p0} / Y {p1} cm",
     "click_the_floor_plan_to_choose": "点击户型图选择下一个参考位置",
     "tap_a_guided_region": "请点击一个引导采集区域。",
-    "move_to_region_p0": "请移动到蓝色区域 {p0}",
-    "stand_near_center_then_hold_still": "站到圆心附近（X {p0} / Y {p1} cm），保持静止；该区域已采集 {p2}/{p3} 台雷达。",
-    "tap_another_region_or_follow_recommendation": "可点击其他圆形区域，或按当前蓝色推荐继续",
+    "move_to_region_p0": "请走到绿色区域 {p0}",
+    "stand_near_center_then_hold_still": "站在区域中心附近即可，尽量在约一步以内。已采集 {p2}/{p3} 台。",
+    "tap_another_region_or_follow_recommendation": "按绿色提示采集；空白处可调整当前未采集区域。",
     "capturing_region_p0": "正在同步采集区域 {p0}…",
     "region_p0_captured_p1_p2_radars": "区域 {p0} 已采集 {p1}/{p2} 台雷达，已自动推荐下一区域。",
     "p0_p1_samples": "{p0}/{p1} 样本",
@@ -322,7 +314,7 @@
     "not_enough_references": "参考点不足",
     "span_p0_cm": "跨度 {p0} cm",
     "review_installation_parameters": "请核对指定雷达的安装参数",
-    "review_p0_radars_before_retrying": "{p0} 未通过校准。请比较下方当前值、拟合参考和建议调整量，在上方“雷达设备与安装定位”中手动修正后重新采集。",
+    "review_p0_radars_before_retrying": "{p0} 需要更多有效采样。请在可检测到的位置补采，已完成的数据会保留。",
     "xy_yaw_only_manual_note": "联合校准只能估算 X、Y 和 yaw；radar_z、pitch、roll 仍需按实际安装手动确认。拟合未通过时，参考值仅用于排查，不会自动写入配置。",
     "calibration_reference_accepted": "参考可信",
     "installation_needs_review": "需核对安装",
@@ -334,10 +326,17 @@
     "quality_residual_too_high": "拟合残差 {p0} cm 超过 {p1} cm；请先核对安装参数和异常采集点，不要直接套用参考值。",
     "quality_reference_outside_room": "拟合安装位置超出户型边界，参考可信度低；请核对坐标原点、方向和安装位置。",
     "quality_reference_accepted": "拟合残差 {p0} cm，参考值可用于核对或应用。",
-    "p0_p1_radars_ready": "{p0}/{p1} 台雷达达到 3 点、跨度和残差要求",
+    "p0_p1_radars_ready": "{p0}/{p1} 台雷达可进入验证",
     "start_over": "重新采集",
-    "apply_all_calibrations": "应用全部校准",
-    "need_3_points_120_cm_span": "每台雷达需 3 点、跨度 120 cm 且残差 ≤ 40 cm"
+    "apply_all_calibrations": "使用合格结果并验证",
+    "need_3_points_120_cm_span": "请在至少三个分散区域完成采集",
+    "retained_current": "原参数已通过本次检查，无需调整。",
+    "ready_summary": "采集完成：{p0} 台可进入验证；{p1} 台待补采，将保留原配置。",
+    "range_only": "仅测距雷达无法自动校准方向，请在安装定位中设置朝向。",
+    "remove_before_moving": "该区域已有数据，请先在详情中移除再调整位置。",
+    "outlier_remaining": "仍有明显偏差，请补采其他区域。",
+    "retained_names": "{p0}：原参数已通过检查，无需调整。",
+    "pending_names": "{p0} 尚未完成校准，本次保留原配置，可稍后补采。"
   },
   "zone": {
     "zone_p0": "区域 {p0}",

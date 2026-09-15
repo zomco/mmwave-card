@@ -17,6 +17,8 @@ export interface FusionCalibrationReference {
 
 export interface RadarCalibrationSolution {
   radarId: string;
+  retainedCurrent: boolean;
+  excludedPointCount: number;
   calibration: CalibrationConfig;
   pointCount: number;
   sampleCount: number;
@@ -62,64 +64,105 @@ export function solveRadarCalibration(
   current: CalibrationConfig,
   references: FusionCalibrationReference[],
 ): RadarCalibrationSolution | undefined {
-  const points = references
-    .map((reference) => ({ room: reference.room, reading: reference.readings[radarId] }))
-    .filter((point): point is { room: Vec2; reading: CapturedRadarReading } => Boolean(point.reading));
+  const points = references.flatMap((reference) => {
+    const reading = reference.readings[radarId];
+    if (
+      !reading ||
+      reading.samples < 3 ||
+      reading.spreadCm > 30 ||
+      ![reading.rawX, reading.rawY, reading.rawZ, reading.spreadCm, reference.room.x, reference.room.y].every(
+        Number.isFinite,
+      )
+    )
+      return [];
+    const projected = applyTransform(reading.rawX, reading.rawY, reading.rawZ, {
+      ...current,
+      yaw: 0,
+      radar_x: 0,
+      radar_y: 0,
+    });
+    return [
+      {
+        room: reference.room,
+        reading,
+        x: projected.roomX,
+        y: projected.roomY,
+        weight: 1 / (900 + reading.spreadCm ** 2),
+      },
+    ];
+  });
   if (points.length < 2) return undefined;
-
-  const rawCenter = {
-    x: points.reduce((sum, point) => sum + point.reading.rawX, 0) / points.length,
-    y: points.reduce((sum, point) => sum + point.reading.rawY, 0) / points.length,
-  };
-  const roomCenter = {
-    x: points.reduce((sum, point) => sum + point.room.x, 0) / points.length,
-    y: points.reduce((sum, point) => sum + point.room.y, 0) / points.length,
-  };
-  let dot = 0;
-  let cross = 0;
-  for (const point of points) {
-    const px = point.reading.rawX - rawCenter.x;
-    const py = point.reading.rawY - rawCenter.y;
-    const qx = point.room.x - roomCenter.x;
-    const qy = point.room.y - roomCenter.y;
-    dot += px * qx + py * qy;
-    cross += px * qy - py * qx;
-  }
-  if (Math.hypot(dot, cross) < 1) return undefined;
-  const standardRotation = Math.atan2(cross, dot);
-  const yaw = normalizeDegrees((-standardRotation * 180) / Math.PI);
-  const cos = Math.cos(standardRotation);
-  const sin = Math.sin(standardRotation);
-  const radarX = roomCenter.x - (cos * rawCenter.x - sin * rawCenter.y);
-  const radarY = roomCenter.y - (sin * rawCenter.x + cos * rawCenter.y);
-  const calibration: CalibrationConfig = {
-    ...current,
-    radar_x: roundOne(radarX),
-    radar_y: roundOne(radarY),
-    yaw: roundOne(yaw),
-  };
-  const before = points.map((point) => {
-    const transformed = applyTransform(point.reading.rawX, point.reading.rawY, point.reading.rawZ, current);
-    return Math.hypot(transformed.roomX - point.room.x, transformed.roomY - point.room.y);
-  });
-  const after = points.map((point) => {
-    const transformed = applyTransform(point.reading.rawX, point.reading.rawY, point.reading.rawZ, calibration);
-    return Math.hypot(transformed.roomX - point.room.x, transformed.roomY - point.room.y);
-  });
-  let referenceSpanCm = 0;
-  for (let left = 0; left < points.length; left += 1) {
-    for (let right = left + 1; right < points.length; right += 1) {
-      referenceSpanCm = Math.max(
-        referenceSpanCm,
-        Math.hypot(points[left].room.x - points[right].room.x, points[left].room.y - points[right].room.y),
-      );
+  type Point = (typeof points)[number];
+  const fit = (selected: Point[]): CalibrationConfig | undefined => {
+    const weight = selected.reduce((sum, p) => sum + p.weight, 0);
+    const mean = (f: (p: Point) => number) => selected.reduce((sum, p) => sum + f(p) * p.weight, 0) / weight;
+    const x = mean((p) => p.x),
+      y = mean((p) => p.y);
+    const qx = mean((p) => p.room.x),
+      qy = mean((p) => p.room.y);
+    let dot = 0,
+      cross = 0;
+    for (const p of selected) {
+      dot += p.weight * ((p.x - x) * (p.room.x - qx) + (p.y - y) * (p.room.y - qy));
+      cross += p.weight * ((p.x - x) * (p.room.y - qy) - (p.y - y) * (p.room.x - qx));
     }
+    if (Math.hypot(dot, cross) < 0.001) return undefined;
+    const angle = Math.atan2(cross, dot),
+      cos = Math.cos(angle),
+      sin = Math.sin(angle);
+    return {
+      ...current,
+      yaw: roundOne(normalizeDegrees((-angle * 180) / Math.PI)),
+      radar_x: roundOne(qx - cos * x + sin * y),
+      radar_y: roundOne(qy - sin * x - cos * y),
+    };
+  };
+  const error = (p: Point, cal: CalibrationConfig) => {
+    const t = applyTransform(p.reading.rawX, p.reading.rawY, p.reading.rawZ, cal);
+    return Math.hypot(t.roomX - p.room.x, t.roomY - p.room.y);
+  };
+  let selected = points;
+  let candidate = fit(points);
+  if (!candidate) return undefined;
+  // A station is approximate (about 30 cm). Reject gross outliers only when
+  // at least three stations and a 75% consensus independently support a fit.
+  if (points.length >= 4) {
+    let bestScore = Infinity;
+    for (let a = 0; a < points.length; a++)
+      for (let b = a + 1; b < points.length; b++) {
+        const proposal = fit([points[a], points[b]]);
+        if (!proposal) continue;
+        const inliers = points.filter((p) => error(p, proposal) <= 60);
+        if (inliers.length < Math.max(3, Math.ceil(points.length * 0.75))) continue;
+        const refined = fit(inliers);
+        if (!refined) continue;
+        const score =
+          (points.length - inliers.length) * 3600 + inliers.reduce((sum, p) => sum + error(p, refined) ** 2, 0);
+        if (score < bestScore) {
+          bestScore = score;
+          selected = inliers;
+          candidate = refined;
+        }
+      }
   }
+  const before = selected.map((p) => error(p, current));
+  const proposed = selected.map((p) => error(p, candidate));
+  // Do not chase ordinary radar / standing-position noise on repeat calibration.
+  const retainedCurrent = rms(before) <= 40 && rms(before) - rms(proposed) < 15 && Math.max(...before) <= 60;
+  const calibration = retainedCurrent ? { ...current } : candidate;
+  const after = selected.map((p) => error(p, calibration));
+  let referenceSpanCm = 0;
+  for (const a of selected)
+    for (const b of selected) {
+      referenceSpanCm = Math.max(referenceSpanCm, Math.hypot(a.room.x - b.room.x, a.room.y - b.room.y));
+    }
   return {
     radarId,
     calibration,
-    pointCount: points.length,
-    sampleCount: points.reduce((sum, point) => sum + point.reading.samples, 0),
+    retainedCurrent,
+    excludedPointCount: points.length - selected.length,
+    pointCount: selected.length,
+    sampleCount: selected.reduce((sum, p) => sum + p.reading.samples, 0),
     referenceSpanCm: roundOne(referenceSpanCm),
     residualBeforeCm: roundOne(rms(before)),
     residualAfterCm: roundOne(rms(after)),
