@@ -15,6 +15,7 @@ import type { RadarCalibrationSolution } from './fusion/calibration';
 import { DEFAULT_CALIBRATION, DEFAULT_CARD_CONFIG } from './types';
 import { EDITOR_TAG } from './const';
 import fusionDefaults from './fusion-defaults.json';
+import { nextRadarTabId, selectedRadarIndexAfterRemoval } from './utils/radar-tabs';
 import './panels/zone-editor';
 import './panels/installation-3d';
 import './panels/fusion-calibration';
@@ -185,16 +186,37 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     });
   }
 
+  private async _selectFusionRadar(index: number, focusTab = false) {
+    const count = this._config.radars?.length ?? 0;
+    this._selectedFusionRadar = Math.max(0, Math.min(index, count - 1));
+    if (!focusTab) return;
+    await this.updateComplete;
+    this.renderRoot.querySelector<HTMLElement>(`[data-radar-tab="${this._selectedFusionRadar}"]`)?.focus();
+  }
+
+  private _fusionRadarTabKeyDown(index: number, event: KeyboardEvent) {
+    const count = this._config.radars?.length ?? 0;
+    if (!count) return;
+    let nextIndex: number | undefined;
+    if (event.key === 'ArrowRight') nextIndex = (index + 1) % count;
+    else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + count) % count;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = count - 1;
+    if (nextIndex === undefined) return;
+    event.preventDefault();
+    void this._selectFusionRadar(nextIndex, true);
+  }
+
   private _addFusionRadar() {
     const radars = [...(this._config.radars ?? [])];
-    const index = radars.length + 1;
+    const positionIndex = radars.length + 1;
     radars.push({
-      id: `radar_${index}`,
+      id: nextRadarTabId(radars),
       radar_model: 'ld2450',
       device_id: '',
       calibration: {
-        radar_x: Math.round((Number(this._config.room_w) * index) / (index + 1)),
-        radar_y: Math.round(Number(this._config.room_d) * 0.2),
+        radar_x: Math.round((Number(this._config.room_w ?? 400) * positionIndex) / (positionIndex + 1)),
+        radar_y: Math.round(Number(this._config.room_d ?? 600) * 0.2),
         radar_z: 220,
         yaw: 0,
         pitch: 0,
@@ -202,6 +224,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         polygon: [],
       },
     });
+    this._selectedFusionRadar = radars.length - 1;
     this._config = { ...this._config, radars };
     this._emitConfig();
   }
@@ -209,7 +232,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   private _removeFusionRadar(index: number) {
     const radars = (this._config.radars ?? []).filter((_, itemIndex) => itemIndex !== index);
     this._config = { ...this._config, radars };
-    this._selectedFusionRadar = Math.max(0, Math.min(this._selectedFusionRadar, radars.length - 1));
+    this._selectedFusionRadar = selectedRadarIndexAfterRemoval(this._selectedFusionRadar, index, radars.length);
     this._emitConfig();
   }
 
@@ -516,172 +539,185 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           <span>${this._t('editor.sync_configuration_to_the_backend_when')}</span>
         </label>
 
-        <h3><span>2</span>${this._t('editor.radar_devices')}</h3>
-        <p class="section-help">${this._t('editor.only_radar_models_with_2_d')}</p>
-        <div class="radar-list">
-          ${(this._config.radars ?? []).map((radar, index) => {
-            const adapter = getAdapter(radar.radar_model);
-            const calibration = radar.calibration ?? {};
-            return html`
-              <section class="radar-editor">
-                <header>
-                  <strong>${this._t('editor.radar')} ${index + 1}</strong>
-                  <button
-                    type="button"
-                    class="remove-button"
-                    ?disabled=${(this._config.radars?.length ?? 0) <= 1}
-                    @click=${() => this._removeFusionRadar(index)}
-                  >
-                    ×
-                  </button>
-                </header>
-                <div class="two-col">
-                  <div class="field compact">
-                    <label>ID</label>
-                    <input
-                      type="text"
-                      .value=${radar.id}
-                      @change=${(event: Event) =>
-                        this._updateFusionRadar(index, { id: (event.target as HTMLInputElement).value })}
-                    />
-                  </div>
-                  <div class="field compact">
-                    <label>${this._L('editor.model')}</label>
-                    <select
-                      .value=${radar.radar_model}
-                      @change=${(event: Event) =>
-                        this._updateFusionRadar(index, { radar_model: (event.target as HTMLSelectElement).value })}
-                    >
-                      ${spatialModels.map(
-                        (model) =>
-                          html`<option value=${model.id} ?selected=${model.id === radar.radar_model}>
-                            ${model.label}
-                          </option>`,
-                      )}
-                    </select>
-                  </div>
-                </div>
-                <div class="field">
-                  <label>${this._t('editor.radar_device')}</label>
-                  <select
-                    .value=${radar.device_id ?? ''}
-                    @change=${(event: Event) => this._fusionDeviceChanged(index, event)}
-                  >
-                    <option value="">-- ${this._t('editor.select_device')} --</option>
-                    ${this._devices.map(
-                      (device) =>
-                        html`<option value=${device.id} ?selected=${device.id === radar.device_id}>
-                          ${device.name_by_user || device.name || 'Unknown device'}
-                        </option>`,
-                    )}
-                  </select>
-                </div>
-                <div class="field profile-field">
-                  <label>${this._t('editor.calibration_profile')}</label>
-                  <select
-                    .value=${radar.calibration_profile_id ?? ''}
-                    @change=${(event: Event) => this._profileChanged(index, event)}
-                  >
-                    <option value="">${this._t('editor.manual_not_linked')}</option>
-                    ${this._calibrationProfiles.map(
-                      (profile) => html`
-                        <option
-                          value=${profile.profile_id}
-                          ?selected=${profile.profile_id === radar.calibration_profile_id}
-                        >
-                          ${profile.name} · ${profile.radar_model} · v${profile.revision}
-                        </option>
-                      `,
-                    )}
-                  </select>
-                  ${radar.calibration_profile_id
-                    ? html`<small class="profile-badge">
-                        ${this._t('editor.device_profile_snapshot')} · v${radar.calibration_profile_revision ?? '?'}
-                      </small>`
-                    : nothing}
-                </div>
-                <div class="cal-grid">
-                  ${(['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'] as const).map(
-                    (key) => html`
+        <h3><span>2</span>${this._t('editor.radar_devices_and_installation')}</h3>
+        <p class="section-help">${this._t('editor.configure_devices_then_place_them')}</p>
+        <div class="radar-workspace">
+          <div class="radar-tabs" role="tablist" aria-label=${this._t('editor.radar_installation_tabs')}>
+            ${radars.map(
+              (radar, index) => html`
+                <button
+                  id=${`radar-tab-${index}`}
+                  data-radar-tab=${index}
+                  type="button"
+                  role="tab"
+                  aria-selected=${index === selectedIndex ? 'true' : 'false'}
+                  tabindex=${index === selectedIndex ? '0' : '-1'}
+                  class=${index === selectedIndex ? 'active' : ''}
+                  @click=${() => this._selectFusionRadar(index)}
+                  @keydown=${(event: KeyboardEvent) => this._fusionRadarTabKeyDown(index, event)}
+                >
+                  ${radar.id}<small>${radar.radar_model}</small>
+                </button>
+              `,
+            )}
+            <button class="add-radar-tab" type="button" @click=${this._addFusionRadar}>
+              <b>＋</b><span>${this._t('editor.add_radar')}</span>
+            </button>
+          </div>
+          ${selectedRadar && selectedAdapter && selectedCalibration
+            ? html`
+                <div class="radar-tab-panel" role="tabpanel" aria-labelledby=${`radar-tab-${selectedIndex}`}>
+                  <section class="radar-editor">
+                    <header>
+                      <span>
+                        <strong>${this._t('editor.radar')} ${selectedIndex + 1}</strong>
+                        <small>${selectedRadar.id} · ${selectedAdapter.info.displayName}</small>
+                      </span>
+                      <button
+                        type="button"
+                        class="remove-button"
+                        ?disabled=${radars.length <= 1}
+                        @click=${() => this._removeFusionRadar(selectedIndex)}
+                      >
+                        ×
+                      </button>
+                    </header>
+                    <div class="two-col">
                       <div class="field compact">
-                        <label>${key}</label>
+                        <label>ID</label>
                         <input
-                          type="number"
-                          step=${key === 'yaw' || key === 'pitch' || key === 'roll' ? '1' : '10'}
-                          .value=${String(calibration[key] ?? (key === 'radar_z' ? 220 : 0))}
+                          type="text"
+                          .value=${selectedRadar.id}
                           @change=${(event: Event) =>
-                            this._updateRadarCalibration(index, key, Number((event.target as HTMLInputElement).value))}
+                            this._updateFusionRadar(selectedIndex, { id: (event.target as HTMLInputElement).value })}
                         />
                       </div>
-                    `,
-                  )}
-                </div>
-                ${adapter
-                  ? html`
-                      <details class="advanced">
-                        <summary>${this._t('editor.entity_mapping')}</summary>
-                        <div class="advanced-fields">
-                          ${adapter.getEntitySchema().map(
-                            (field) => html`
-                              <div class="field">
-                                <label>${this._L(field.labelKey)}${field.required ? '' : ' *'}</label>
-                                <input
-                                  type="text"
-                                  list="entities-list"
-                                  .value=${String(radar[field.key] ?? '')}
-                                  @change=${(event: Event) =>
-                                    this._updateFusionRadar(index, {
-                                      [field.key]: (event.target as HTMLInputElement).value,
-                                    })}
-                                />
-                              </div>
-                            `,
+                      <div class="field compact">
+                        <label>${this._L('editor.model')}</label>
+                        <select
+                          .value=${selectedRadar.radar_model}
+                          @change=${(event: Event) =>
+                            this._updateFusionRadar(selectedIndex, {
+                              radar_model: (event.target as HTMLSelectElement).value,
+                            })}
+                        >
+                          ${spatialModels.map(
+                            (model) =>
+                              html`<option value=${model.id} ?selected=${model.id === selectedRadar.radar_model}>
+                                ${model.label}
+                              </option>`,
                           )}
-                        </div>
-                      </details>
-                    `
-                  : nothing}
-              </section>
-            `;
-          })}
+                        </select>
+                      </div>
+                    </div>
+                    <div class="field">
+                      <label>${this._t('editor.radar_device')}</label>
+                      <select
+                        .value=${selectedRadar.device_id ?? ''}
+                        @change=${(event: Event) => this._fusionDeviceChanged(selectedIndex, event)}
+                      >
+                        <option value="">-- ${this._t('editor.select_device')} --</option>
+                        ${this._devices.map(
+                          (device) =>
+                            html`<option value=${device.id} ?selected=${device.id === selectedRadar.device_id}>
+                              ${device.name_by_user || device.name || 'Unknown device'}
+                            </option>`,
+                        )}
+                      </select>
+                    </div>
+                    <div class="field profile-field">
+                      <label>${this._t('editor.calibration_profile')}</label>
+                      <select
+                        .value=${selectedRadar.calibration_profile_id ?? ''}
+                        @change=${(event: Event) => this._profileChanged(selectedIndex, event)}
+                      >
+                        <option value="">${this._t('editor.manual_not_linked')}</option>
+                        ${this._calibrationProfiles.map(
+                          (profile) => html`
+                            <option
+                              value=${profile.profile_id}
+                              ?selected=${profile.profile_id === selectedRadar.calibration_profile_id}
+                            >
+                              ${profile.name} · ${profile.radar_model} · v${profile.revision}
+                            </option>
+                          `,
+                        )}
+                      </select>
+                      ${selectedRadar.calibration_profile_id
+                        ? html`<small class="profile-badge">
+                            ${this._t('editor.device_profile_snapshot')} ·
+                            v${selectedRadar.calibration_profile_revision ?? '?'}
+                          </small>`
+                        : nothing}
+                    </div>
+                    <div class="cal-grid">
+                      ${(['radar_x', 'radar_y', 'radar_z', 'yaw', 'pitch', 'roll'] as const).map(
+                        (key) => html`
+                          <div class="field compact">
+                            <label>${key}</label>
+                            <input
+                              type="number"
+                              step=${key === 'yaw' || key === 'pitch' || key === 'roll' ? '1' : '10'}
+                              .value=${String(selectedCalibration[key] ?? (key === 'radar_z' ? 220 : 0))}
+                              @change=${(event: Event) =>
+                                this._updateRadarCalibration(
+                                  selectedIndex,
+                                  key,
+                                  Number((event.target as HTMLInputElement).value),
+                                )}
+                            />
+                          </div>
+                        `,
+                      )}
+                    </div>
+                    ${selectedAdapter
+                      ? html`
+                          <details class="advanced">
+                            <summary>${this._t('editor.entity_mapping')}</summary>
+                            <div class="advanced-fields">
+                              ${selectedAdapter.getEntitySchema().map(
+                                (field) => html`
+                                  <div class="field">
+                                    <label>${this._L(field.labelKey)}${field.required ? '' : ' *'}</label>
+                                    <input
+                                      type="text"
+                                      list="entities-list"
+                                      .value=${String(selectedRadar[field.key] ?? '')}
+                                      @change=${(event: Event) =>
+                                        this._updateFusionRadar(selectedIndex, {
+                                          [field.key]: (event.target as HTMLInputElement).value,
+                                        })}
+                                    />
+                                  </div>
+                                `,
+                              )}
+                            </div>
+                          </details>
+                        `
+                      : nothing}
+                  </section>
+                  <div class="installation-subsection">
+                    <strong>${this._t('editor.interactive_installation')}</strong>
+                    <span>${this._t('editor.current_tab_controls_form_and_3d')}</span>
+                  </div>
+                  <mmwave-installation-3d
+                    .adapter=${selectedAdapter}
+                    .calibration=${selectedCalibration}
+                    .peerCalibrations=${peerCalibrations}
+                    .lang=${this.hass.language}
+                    .roomW=${Number(this._config.room_w ?? 400)}
+                    .roomD=${Number(this._config.room_d ?? 600)}
+                    .maxRangeM=${selectedAdapter.info.maxRangeM}
+                    @calibration-changed=${(event: CustomEvent<CalibrationConfig>) =>
+                      this._fusionInstallationChanged(selectedIndex, event)}
+                  ></mmwave-installation-3d>
+                </div>
+              `
+            : nothing}
         </div>
-        <button class="add-button" type="button" @click=${this._addFusionRadar}>
-          ＋ ${this._t('editor.add_radar')}
-        </button>
         ${this._profileStatus ? html`<div class="profile-status">${this._profileStatus}</div>` : nothing}
 
-        <h3><span>3</span>${this._t('editor.interactive_installation')}</h3>
-        <p class="section-help">${this._t('editor.select_a_radar_in_the_shared')}</p>
-        <div class="radar-selector">
-          ${radars.map(
-            (radar, index) => html`
-              <button
-                type="button"
-                class=${index === selectedIndex ? 'active' : ''}
-                @click=${() => (this._selectedFusionRadar = index)}
-              >
-                ${radar.id}<small>${radar.radar_model}</small>
-              </button>
-            `,
-          )}
-        </div>
-        ${selectedRadar && selectedAdapter && selectedCalibration
-          ? html`
-              <mmwave-installation-3d
-                .adapter=${selectedAdapter}
-                .calibration=${selectedCalibration}
-                .peerCalibrations=${peerCalibrations}
-                .lang=${this.hass.language}
-                .roomW=${Number(this._config.room_w ?? 400)}
-                .roomD=${Number(this._config.room_d ?? 600)}
-                .maxRangeM=${selectedAdapter.info.maxRangeM}
-                @calibration-changed=${(event: CustomEvent<CalibrationConfig>) =>
-                  this._fusionInstallationChanged(selectedIndex, event)}
-              ></mmwave-installation-3d>
-            `
-          : nothing}
-
-        <h3><span>4</span>${this._t('editor.joint_multi_radar_calibration')}</h3>
+        <h3><span>3</span>${this._t('editor.joint_multi_radar_calibration')}</h3>
         <p class="section-help">${this._t('editor.each_shared_reference_position_captures_every')}</p>
         <mmwave-fusion-calibration
           .hass=${this.hass}
@@ -692,7 +728,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           @fusion-calibration-applied=${this._fusionCalibrationApplied}
         ></mmwave-fusion-calibration>
 
-        <h3><span>5</span>${this._t('editor.fusion_and_recording_rules')}</h3>
+        <h3><span>4</span>${this._t('editor.fusion_and_recording_rules')}</h3>
         <p class="section-help">${this._t('editor.filter_single_radar_false_alarms_and')}</p>
         <div class="rules-grid">
           <div class="field compact">
@@ -831,7 +867,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           </span>
         </div>
 
-        <h3><span>6</span>${this._t('editor.event_zones_and_cameras')}</h3>
+        <h3><span>5</span>${this._t('editor.event_zones_and_cameras')}</h3>
         <p class="section-help">${this._t('editor.draw_polygon_vertices_on_the_floor')}</p>
         <mmwave-zone-editor
           .roomW=${Number(this._config.room_w ?? 400)}
@@ -1043,10 +1079,53 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     .check-row input {
       accent-color: var(--mmwave-primary);
     }
-    .radar-list {
-      display: grid;
-      gap: 10px;
+    .radar-workspace,
+    .radar-tab-panel {
       min-width: 0;
+    }
+    .radar-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .radar-tabs button {
+      display: grid;
+      flex: 0 0 auto;
+      gap: 1px;
+      min-width: 78px;
+      padding: 7px 10px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 9px;
+      color: var(--primary-text-color);
+      background: rgba(128, 128, 128, 0.035);
+      font: inherit;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .radar-tabs button.active {
+      border-color: rgba(11, 130, 92, 0.5);
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.08);
+      box-shadow: inset 0 -2px 0 var(--mmwave-primary);
+    }
+    .radar-tabs small {
+      color: var(--secondary-text-color);
+      font-size: 8px;
+      font-weight: 500;
+    }
+    .radar-tabs .add-radar-tab {
+      grid-auto-flow: column;
+      place-content: center;
+      align-items: center;
+      min-width: max-content;
+      border-style: dashed;
+      color: var(--mmwave-primary);
+      background: rgba(11, 130, 92, 0.05);
+    }
+    .add-radar-tab b {
+      font-size: 14px;
     }
     .radar-editor {
       box-sizing: border-box;
@@ -1065,6 +1144,19 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       margin-bottom: 8px;
       color: var(--primary-text-color);
       font-size: 11px;
+    }
+    .radar-editor > header > span {
+      display: grid;
+      gap: 2px;
+      min-width: 0;
+    }
+    .radar-editor > header small {
+      overflow: hidden;
+      color: var(--secondary-text-color);
+      font-size: 8px;
+      font-weight: 500;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
     .remove-button {
       width: 24px;
@@ -1103,15 +1195,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       font-size: 8px;
       white-space: nowrap;
     }
-    .add-button {
-      width: 100%;
-      margin-top: 9px;
-      padding: 9px;
-      border: 1px dashed rgba(11, 130, 92, 0.4);
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.05);
-      font-weight: 700;
-    }
     .profile-status {
       margin-top: 7px;
       padding: 8px 10px;
@@ -1120,36 +1203,21 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       background: rgba(11, 130, 92, 0.07);
       font-size: 10px;
     }
-    .radar-selector {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 8px;
-      overflow-x: auto;
-      scrollbar-width: thin;
-    }
-    .radar-selector button {
+    .installation-subsection {
       display: grid;
-      gap: 1px;
-      min-width: 78px;
-      padding: 7px 10px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 9px;
+      gap: 3px;
+      margin: 14px 0 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--mmwave-line);
+    }
+    .installation-subsection strong {
       color: var(--primary-text-color);
-      background: rgba(128, 128, 128, 0.035);
-      font: inherit;
-      font-size: 10px;
-      font-weight: 700;
-      cursor: pointer;
+      font-size: 12px;
     }
-    .radar-selector button.active {
-      border-color: rgba(11, 130, 92, 0.5);
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.08);
-    }
-    .radar-selector small {
+    .installation-subsection span {
       color: var(--secondary-text-color);
-      font-size: 8px;
-      font-weight: 500;
+      font-size: 10px;
+      line-height: 1.5;
     }
     mmwave-installation-3d,
     mmwave-fusion-calibration {

@@ -585,44 +585,40 @@ export class FusionPanel extends LitElement {
     );
     const recentEvents = scoredEvents.length ? scoredEvents : this.events;
     return html`
+      <div class="scene-toolbar">
+        <span class="status ${this.backendState}">
+          <i></i>
+          ${this.backendState === 'online'
+            ? this._t('fusion.backend_fusion')
+            : this.backendState === 'missing'
+              ? this._t('fusion.integration_missing')
+              : this.backendState === 'outdated'
+                ? this._t('fusion.integration_outdated')
+                : this.backendState === 'fallback'
+                  ? this._t('fusion.local_fallback')
+                  : this.backendState === 'error'
+                    ? this._t('fusion.backend_error')
+                    : this._t('fusion.connecting')}
+        </span>
+        <span class="toolbar-actions">
+          <button type="button" class="coverage-toggle ${this.showReplay ? 'active' : ''}" @click=${this.toggleReplay}>
+            ${this.showReplay ? this._t('fusion.hide_replay') : this._t('fusion.show_replay')}
+          </button>
+          <button
+            type="button"
+            class="coverage-toggle ${this.showHeatmap ? 'active' : ''}"
+            @click=${this.toggleHeatmap}
+          >
+            ${this.showHeatmap ? this._t('fusion.hide_heatmap') : this._t('fusion.show_heatmap')}
+          </button>
+          <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>
+            ${this.showCoverage ? this._t('fusion.hide_coverage') : this._t('fusion.show_coverage')}
+          </button>
+          <span class="radar-count">${onlineRadars}/${this.radars.length} ${this._t('fusion.radars_online')}</span>
+        </span>
+      </div>
       <div class="scene">
         <canvas id="fusion-cv"></canvas>
-        <div class="overlay">
-          <span class="status ${this.backendState}">
-            <i></i>
-            ${this.backendState === 'online'
-              ? this._t('fusion.backend_fusion')
-              : this.backendState === 'missing'
-                ? this._t('fusion.integration_missing')
-                : this.backendState === 'outdated'
-                  ? this._t('fusion.integration_outdated')
-                  : this.backendState === 'fallback'
-                    ? this._t('fusion.local_fallback')
-                    : this.backendState === 'error'
-                      ? this._t('fusion.backend_error')
-                      : this._t('fusion.connecting')}
-          </span>
-          <span class="overlay-actions">
-            <button
-              type="button"
-              class="coverage-toggle ${this.showReplay ? 'active' : ''}"
-              @click=${this.toggleReplay}
-            >
-              ${this.showReplay ? this._t('fusion.hide_replay') : this._t('fusion.show_replay')}
-            </button>
-            <button
-              type="button"
-              class="coverage-toggle ${this.showHeatmap ? 'active' : ''}"
-              @click=${this.toggleHeatmap}
-            >
-              ${this.showHeatmap ? this._t('fusion.hide_heatmap') : this._t('fusion.show_heatmap')}
-            </button>
-            <button type="button" class="coverage-toggle" @click=${() => (this.showCoverage = !this.showCoverage)}>
-              ${this.showCoverage ? this._t('fusion.hide_coverage') : this._t('fusion.show_coverage')}
-            </button>
-            <span class="radar-count">${onlineRadars}/${this.radars.length} ${this._t('fusion.radars_online')}</span>
-          </span>
-        </div>
       </div>
       ${this.showReplay ? this.renderReplayBar() : ''} ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
       ${calibrationWarnings.length
@@ -690,21 +686,24 @@ export class FusionPanel extends LitElement {
       display: block;
       width: 100%;
     }
-    .overlay {
-      position: absolute;
-      inset: 8px 8px auto;
+    .scene-toolbar {
       display: flex;
+      flex-wrap: wrap;
+      align-items: center;
       justify-content: space-between;
       gap: 8px;
-      pointer-events: none;
+      margin-bottom: 7px;
+      padding: 0 2px;
     }
-    .overlay-actions {
+    .toolbar-actions {
       display: flex;
+      flex: 1 1 auto;
+      flex-wrap: wrap;
       align-items: center;
+      justify-content: flex-end;
       gap: 5px;
     }
     .coverage-toggle {
-      pointer-events: auto;
       padding: 4px 8px;
       border: 1px solid var(--divider-color);
       border-radius: 999px;
@@ -713,7 +712,6 @@ export class FusionPanel extends LitElement {
       font: inherit;
       font-size: 9px;
       cursor: pointer;
-      backdrop-filter: blur(6px);
     }
     .coverage-toggle.active {
       border-color: #0b825c;
