@@ -20,9 +20,16 @@ export interface RadarCalibrationSolution {
   calibration: CalibrationConfig;
   pointCount: number;
   sampleCount: number;
+  referenceSpanCm: number;
   residualBeforeCm: number;
   residualAfterCm: number;
   maxResidualCm: number;
+}
+
+export interface RadarCalibrationAdjustment {
+  radarX: number;
+  radarY: number;
+  yaw: number;
 }
 
 const normalizeDegrees = (value: number) => {
@@ -31,6 +38,20 @@ const normalizeDegrees = (value: number) => {
   while (normalized < -180) normalized += 360;
   return normalized;
 };
+
+const roundOne = (value: number) => Math.round(value * 10) / 10;
+
+/** Describe the shortest manual X/Y/yaw adjustment from one installation to another. */
+export function calculateCalibrationAdjustment(
+  current: CalibrationConfig,
+  reference: CalibrationConfig,
+): RadarCalibrationAdjustment {
+  return {
+    radarX: roundOne(reference.radar_x - current.radar_x),
+    radarY: roundOne(reference.radar_y - current.radar_y),
+    yaw: roundOne(normalizeDegrees(reference.yaw - current.yaw)),
+  };
+}
 
 const rms = (values: number[]) =>
   values.length ? Math.sqrt(values.reduce((sum, value) => sum + value * value, 0) / values.length) : Infinity;
@@ -73,9 +94,9 @@ export function solveRadarCalibration(
   const radarY = roomCenter.y - (sin * rawCenter.x + cos * rawCenter.y);
   const calibration: CalibrationConfig = {
     ...current,
-    radar_x: Math.round(radarX * 10) / 10,
-    radar_y: Math.round(radarY * 10) / 10,
-    yaw: Math.round(yaw * 10) / 10,
+    radar_x: roundOne(radarX),
+    radar_y: roundOne(radarY),
+    yaw: roundOne(yaw),
   };
   const before = points.map((point) => {
     const transformed = applyTransform(point.reading.rawX, point.reading.rawY, point.reading.rawZ, current);
@@ -85,13 +106,23 @@ export function solveRadarCalibration(
     const transformed = applyTransform(point.reading.rawX, point.reading.rawY, point.reading.rawZ, calibration);
     return Math.hypot(transformed.roomX - point.room.x, transformed.roomY - point.room.y);
   });
+  let referenceSpanCm = 0;
+  for (let left = 0; left < points.length; left += 1) {
+    for (let right = left + 1; right < points.length; right += 1) {
+      referenceSpanCm = Math.max(
+        referenceSpanCm,
+        Math.hypot(points[left].room.x - points[right].room.x, points[left].room.y - points[right].room.y),
+      );
+    }
+  }
   return {
     radarId,
     calibration,
     pointCount: points.length,
     sampleCount: points.reduce((sum, point) => sum + point.reading.samples, 0),
-    residualBeforeCm: Math.round(rms(before) * 10) / 10,
-    residualAfterCm: Math.round(rms(after) * 10) / 10,
-    maxResidualCm: Math.round(Math.max(...after) * 10) / 10,
+    referenceSpanCm: roundOne(referenceSpanCm),
+    residualBeforeCm: roundOne(rms(before)),
+    residualAfterCm: roundOne(rms(after)),
+    maxResidualCm: roundOne(Math.max(...after)),
   };
 }

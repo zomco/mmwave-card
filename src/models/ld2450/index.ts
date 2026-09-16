@@ -64,8 +64,19 @@ const ENTITY_SCHEMA: EntitySchemaField[] = [
   { key: 'polygon_entity', labelKey: 'editor.polygon_entity', required: false, domain: 'text' },
 ];
 
-function centimetres(state: { state: string; attributes: Record<string, unknown> }): number {
-  const value = parseFloat(state.state) || 0;
+/**
+ * Convert an entity state to centimetres, or null when it does not hold a
+ * number.
+ *
+ * The null case matters: `parseFloat(s) || 0` turned "unknown" into 0, and the
+ * component publishes x and y as two separate state updates, so there is
+ * always a moment where one has gone unknown while the other still carries its
+ * last coordinate. Coerced to 0 that reads as a target on the boresight, and
+ * the marker jumps to the centre line for a frame every time a track is lost.
+ */
+function centimetres(state: { state: string; attributes: Record<string, unknown> }): number | null {
+  const value = parseFloat(state.state);
+  if (!Number.isFinite(value)) return null;
   const unit = String(state.attributes.unit_of_measurement ?? '').toLowerCase();
   if (unit === 'cm') return value;
   if (unit === 'm') return value * 100;
@@ -111,7 +122,8 @@ export const ld2450Adapter: RadarModelAdapter = {
       // publish mm. Respect the HA unit attribute and default to legacy mm.
       const rawX = centimetres(xs);
       const rawY = centimetres(ys);
-      if (rawX === 0 && rawY === 0) continue;
+      if (rawX === null || rawY === null) continue; // slot unknown/unavailable
+      if (rawX === 0 && rawY === 0) continue; // slot empty
 
       const speedState = get(`target_${i}_speed_entity`);
       const speed = speedState ? Math.abs(parseFloat(speedState.state) || 0) : undefined;

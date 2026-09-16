@@ -38,7 +38,7 @@ import {
   type RadarSourceConfig,
   DEFAULT_CARD_CONFIG,
 } from './types';
-import { CARD_TAG, EDITOR_TAG, CARD_VERSION, REQUIRED_FUSION_API_VERSION } from './const';
+import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VERSION } from './const';
 
 // Sub-elements (register them)
 import './panels/geo-panel';
@@ -63,7 +63,7 @@ import type { FusionRadarVisual } from './panels/fusion-panel';
 });
 
 console.info(
-  `%c MMWAVE-CARD %c v${CARD_VERSION} `,
+  `%c MMWAVE-CARD %c v${CARD_VERSION} (build ${CARD_BUILD}) `,
   'background:#03a9f4;color:#fff;font-weight:700',
   'background:#1c1c2e;color:#03a9f4;font-weight:700',
 );
@@ -101,6 +101,24 @@ function sourceAvailable(hass: HomeAssistant, source: RadarSourceConfig): boolea
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
+
+/**
+ * Card config key -> the entity_id suffix the firmware publishes.
+ *
+ * These stopped being the same string when the component moved its own
+ * settings behind `Mount …` / `Zone …` prefixes, to keep them distinguishable
+ * from the radar's native ones. The config keys are the card's public schema
+ * and deliberately did not change, so the two have to be mapped rather than
+ * interpolated.
+ */
+const CALIBRATION_ENTITY_SUFFIX = {
+  radar_x: 'mount_x',
+  radar_y: 'mount_y',
+  radar_z: 'mount_z',
+  yaw: 'mount_yaw',
+  pitch: 'mount_pitch',
+  roll: 'mount_roll',
+} as const;
 
 @customElement(CARD_TAG)
 export class MMWaveCard extends LitElement {
@@ -206,6 +224,7 @@ export class MMWaveCard extends LitElement {
   @state() private _present = false;
   @state() private _maxRangeM?: number;
   @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
+  @state() private _syncFailures: string[] = [];
   @state() private _fusionTargets: FusionTarget[] = [];
   @state() private _fusionRadars: FusionRadarVisual[] = [];
   @state() private _fusionBackendState: 'connecting' | 'online' | 'fallback' | 'missing' | 'outdated' | 'error' =
@@ -622,41 +641,50 @@ export class MMWaveCard extends LitElement {
 
   // ── Device Sync ─────────────────────────────────────────────────────────
 
+  /**
+   * Derive the device's entity prefix, e.g. `ld2453_test_device`, so the
+   * `number.<prefix>_yaw` calibration entities can be found.
+   *
+   * Both callers used to read `x_entity` alone and give up when it was unset.
+   * Only ld6002 and r60abd1 declare `x_entity`; every multi-target model uses
+   * `target_1_x_entity`, so for eleven of the sixteen models the card silently
+   * never loaded the device's calibration and fell back to the placeholder
+   * pose set in setConfig(). The `_x` branch of the single-target regex cannot
+   * be reused for those: against `sensor.dev_target_1_x` it yields
+   * `dev_target_1`.
+   */
+  private _devicePrefix(): string {
+    const xEntity = (this._config?.x_entity as string) || '';
+    if (xEntity) {
+      const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
+      if (match) return match[1];
+      const parts = xEntity.split('.')[1]?.split('_') || [];
+      return parts.slice(0, parts.length - 1).join('_');
+    }
+
+    const targetEntity = (this._config?.target_1_x_entity as string) || '';
+    const targetMatch = targetEntity.match(/^sensor\.(.+?)_target_\d+_x$/);
+    return targetMatch ? targetMatch[1] : '';
+  }
+
   private _loadFromDevice() {
     if (!this._hass || !this._config) return;
 
-    const xEntity = (this._config.x_entity as string) || '';
-    if (!xEntity) return;
-
-    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
-    let prefix = '';
-    if (match) {
-      prefix = match[1];
-    } else {
-      const parts = xEntity.split('.')[1]?.split('_') || [];
-      prefix = parts.slice(0, parts.length - 1).join('_');
-    }
+    const prefix = this._devicePrefix();
+    if (!prefix) return;
 
     const cal = { ...this._cal };
 
     // Read numbers
-    const params: Array<'radar_x' | 'radar_y' | 'radar_z' | 'yaw' | 'pitch' | 'roll'> = [
-      'radar_x',
-      'radar_y',
-      'radar_z',
-      'yaw',
-      'pitch',
-      'roll',
-    ];
-    for (const key of params) {
-      const stateObj = this._hass.states[`number.${prefix}_${key}`];
+    for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
+      const stateObj = this._hass.states[`number.${prefix}_${suffix}`];
       if (stateObj && stateObj.state && !isNaN(Number(stateObj.state))) {
-        cal[key] = Number(stateObj.state);
+        cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX] = Number(stateObj.state);
       }
     }
 
     // Read polygon
-    const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+    const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
     const polyObj = this._hass.states[polyEntity];
     if (polyObj && polyObj.state) {
       const s = polyObj.state;
@@ -684,48 +712,45 @@ export class MMWaveCard extends LitElement {
   }
 
   private async _sync() {
-    const xEntity = (this._config.x_entity as string) || '';
-    if (!xEntity) {
-      alert('Error: x_entity is not configured.');
+    const prefix = this._devicePrefix();
+    if (!prefix) {
+      alert('Error: neither x_entity nor target_1_x_entity is configured.');
       return;
-    }
-
-    // Extract device prefix from x_entity (e.g., sensor.r60abd1_test_x -> r60abd1_test)
-    const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
-    let prefix = '';
-    if (match) {
-      prefix = match[1];
-    } else {
-      const parts = xEntity.split('.')[1]?.split('_') || [];
-      prefix = parts.slice(0, parts.length - 1).join('_');
     }
 
     this._syncState = 'syncing';
 
     try {
-      const params: Record<string, number> = {
-        radar_x: this._cal.radar_x,
-        radar_y: this._cal.radar_y,
-        radar_z: this._cal.radar_z,
-        yaw: this._cal.yaw,
-        pitch: this._cal.pitch,
-        roll: this._cal.roll,
-      };
+      // Same mapping as _loadFromDevice: the config key is not the entity
+      // suffix any more, so writing back has to go through it too.
+      const failures: string[] = [];
 
-      for (const [key, val] of Object.entries(params)) {
-        const entityId = `number.${prefix}_${key}`;
+      for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
+        const val = this._cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX];
+        const entityId = `number.${prefix}_${suffix}`;
+
+        // An entity that does not exist is the failure mode that matters:
+        // set_value against an unknown entity_id does not reject, so without
+        // this check the write vanishes and the button still says "synced".
+        // That is exactly what a stale card build looks like after the
+        // component renames its entities.
+        if (this._hass.states[entityId] === undefined) {
+          failures.push(`${entityId} (no such entity)`);
+          continue;
+        }
         try {
           await this._hass.callService('number', 'set_value', {
             entity_id: entityId,
             value: val,
           });
         } catch (err) {
+          failures.push(entityId);
           console.warn(`Failed to sync ${entityId}`, err);
         }
       }
 
       const polyStr = this._cal.polygon.map((p) => `${p.x},${p.y}`).join(';');
-      const polyEntity = this._config.polygon_entity || `text.${prefix}_polygon_config`;
+      const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
       if (this._hass.states[polyEntity] !== undefined) {
         try {
           await this._hass.callService('text', 'set_value', {
@@ -733,8 +758,13 @@ export class MMWaveCard extends LitElement {
             value: polyStr,
           });
         } catch (err) {
+          failures.push(polyEntity);
           console.warn(`Failed to sync ${polyEntity}`, err);
         }
+      } else if (this._cal.polygon.length > 0) {
+        // Silently dropping a boundary the user drew is worse than saying so.
+        // Models without a polygon entity simply have none to write.
+        failures.push(`${polyEntity} (no such entity)`);
       }
 
       // Persist the same snapshot in HA so fusion cards can import this
@@ -756,8 +786,13 @@ export class MMWaveCard extends LitElement {
         }
       }
 
-      this._syncState = 'success';
+      this._syncFailures = failures;
+      this._syncState = failures.length > 0 ? 'error' : 'success';
+      if (failures.length > 0) {
+        console.error('mmwave-card: these did not reach the device -', failures);
+      }
     } catch (e) {
+      this._syncFailures = ['unexpected error - see console'];
       this._syncState = 'error';
       console.error(e);
     } finally {
@@ -964,6 +999,7 @@ export class MMWaveCard extends LitElement {
               : html`<button
                   class="primary-button sync ${this._syncState}"
                   type="button"
+                  title=${this._syncFailures.length > 0 ? `Not written: ${this._syncFailures.join(', ')}` : nothing}
                   ?disabled=${this._syncState === 'syncing'}
                   @click=${this._sync}
                 >
