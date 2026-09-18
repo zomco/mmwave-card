@@ -352,6 +352,17 @@ export interface EntitySchemaField {
 
 // ── Card-level Lovelace config ────────────────────────────────────────────────
 
+export interface FloorplanConfig {
+  url: string;
+  width_cm?: number;
+  offset_x_cm?: number;
+  offset_y_cm?: number;
+  rotation?: number;
+  opacity?: number;
+  visible?: boolean;
+  locked?: boolean;
+}
+
 export interface MMWaveCardConfig extends LovelaceCardConfig {
   /**
    * Radar model identifier.
@@ -366,6 +377,7 @@ export interface MMWaveCardConfig extends LovelaceCardConfig {
   room_w: number;
   /** Room depth for canvas scaling (cm). */
   room_d: number;
+  floorplan?: FloorplanConfig;
   /** Stable backend system id. Presence of radars[] enables fusion mode. */
   fusion_id?: string;
   radars?: RadarSourceConfig[];

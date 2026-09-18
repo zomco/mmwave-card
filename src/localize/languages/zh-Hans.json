@@ -179,13 +179,22 @@
     "association_distance_cm": "关联距离（厘米）",
     "association_distance_cm_help": "目标在相邻帧之间移动多远仍算同一个人。过小会把一个人拆成多条轨迹，过大会把两个人并成一条。",
     "confirm_hits": "确认帧数",
-    "confirm_hits_help": "调高可抑制瞬时误报，代价是首次检出变慢。"
+    "confirm_hits_help": "调高可抑制瞬时误报，代价是首次检出变慢。",
+    "gesture_entity": "手势传感器"
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": ["距离"],
-    "motion_state": ["运动状态", "目标状态"],
-    "polygon": ["多边形", "边界"]
+    "distance": [
+      "距离"
+    ],
+    "motion_state": [
+      "运动状态",
+      "目标状态"
+    ],
+    "polygon": [
+      "多边形",
+      "边界"
+    ]
   },
   "card": {
     "syncing": "正在同步…",
@@ -336,7 +345,10 @@
     "remove_before_moving": "该区域已有数据，请先在详情中移除再调整位置。",
     "outlier_remaining": "仍有明显偏差，请补采其他区域。",
     "retained_names": "{p0}：原参数已通过检查，无需调整。",
-    "pending_names": "{p0} 尚未完成校准，本次保留原配置，可稍后补采。"
+    "pending_names": "{p0} 尚未完成校准，本次保留原配置，可稍后补采。",
+    "standing_area_outside": "请选择边界内且远离墙边的停留位置。",
+    "no_standing_area": "没有可用的停留区域，请检查房间边界、尺寸和雷达安装位置。",
+    "few_standing_areas": "可用空间不足以安排三个分开的停留区域，请检查边界和雷达安装位置。"
   },
   "zone": {
     "zone_p0": "区域 {p0}",
@@ -398,5 +410,45 @@
     "noise_preserved": "保留原生检测阈值；修改此区间不会重置阈值。",
     "noise_unknown": "此型号的可调原生噪声抑制能力未确认，不覆盖噪声参数。",
     "invalid": "最大距离必须为 0 或不小于最小距离。"
+  },
+  "floorplan": {
+    "title": "户型背景",
+    "url": "图片地址",
+    "source_hint": "支持 PNG、JPG、WebP。可填写 HA 本地图片地址，例如 /local/floorplans/room.png。",
+    "visible": "显示背景",
+    "locked": "锁定位置",
+    "loading": "图片加载中…",
+    "error": "图片无法加载，请检查地址。",
+    "preview": "户型背景定位预览",
+    "unlock_hint": "取消锁定后可调整图片位置和比例。",
+    "drag_hint": "拖动图片对齐房间；绿色边框代表房间范围。",
+    "scale_hint": "在图片上依次点选已知墙段的两端，输入实际长度。",
+    "origin_hint": "点击图片中对应房间原点的位置。",
+    "scale": "标定比例",
+    "origin": "设置原点",
+    "move": "拖动定位",
+    "length": "实际长度（cm）",
+    "apply_scale": "应用比例",
+    "width": "图片宽度（cm）",
+    "x": "水平偏移（cm）",
+    "y": "垂直偏移（cm）",
+    "rotation": "顺时针旋转（°）",
+    "opacity": "不透明度",
+    "upload": "上传户型图",
+    "uploading": "正在上传…",
+    "upload_error": "上传失败，请选择小于 9 MB 的 PNG、JPEG 或 GIF 图片，并检查 HA 连接。",
+    "trace": "沿墙吸附",
+    "trace_hint": "依次点击墙角附近描边，可撤销重选。",
+    "trace_snapped": "已吸附到图中轮廓",
+    "trace_unavailable": "请上传图片以使用吸附；仍可手动描边。"
+  },
+  "metrics": {
+    "heart": "心率",
+    "breath": "呼吸",
+    "gesture": "手势",
+    "per_minute": "次/分",
+    "none": "无手势",
+    "right": "向右挥手",
+    "left": "向左挥手"
   }
 }

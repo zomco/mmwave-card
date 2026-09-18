@@ -1,3 +1,5 @@
+import { drawFloorplan } from './floorplan';
+import type { FloorplanConfig } from '../types';
 /**
  * canvas.ts — shared drawing utilities
  *
@@ -101,8 +103,14 @@ export function setupCanvas(cv: HTMLCanvasElement, cssH: number): CanvasRenderin
  *   Y↓  label at left edge (bottom side)
  *   "0" at top-left corner
  */
-export function drawBase(ctx: CanvasRenderingContext2D, m: CanvasMetrics): void {
+export function drawBase(
+  ctx: CanvasRenderingContext2D,
+  m: CanvasMetrics,
+  floorplan?: FloorplanConfig,
+  onReady?: () => void,
+): void {
   ctx.clearRect(0, 0, m.W, m.H);
+  drawFloorplan(ctx, m, floorplan, onReady);
 
   // Grid
   ctx.strokeStyle = 'rgba(128,128,128,.06)';

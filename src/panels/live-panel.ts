@@ -1,3 +1,7 @@
+import type { HomeAssistant } from 'custom-card-helpers';
+import type { MMWaveCardConfig } from '../types';
+import { readSceneMetrics } from '../utils/scene-metrics';
+import type { FloorplanConfig } from '../types';
 import { continuesTrail } from '../utils/trail-continuity';
 import { presenceStatus } from '../utils/presence-status';
 import { LitElement, html, css, PropertyValues } from 'lit';
@@ -76,6 +80,9 @@ function smoothDamp(
 
 @customElement('mmwave-live-panel')
 export class LivePanel extends LitElement {
+  @property({ attribute: false }) hass?: HomeAssistant;
+  @property({ attribute: false }) config?: MMWaveCardConfig;
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
   @property({ attribute: false }) adapter!: RadarModelAdapter;
   @property({ attribute: false }) calibration!: CalibrationConfig;
   @property({ attribute: false }) lang = 'en';
@@ -241,7 +248,11 @@ export class LivePanel extends LitElement {
       this._advanceTargets(now);
       this._sampleTrails(this.targets, now);
 
-      drawBase(ctx, m);
+      drawBase(
+        ctx,
+        m,
+        this.floorplan ? { ...this.floorplan, width_cm: this.floorplan.width_cm ?? this.roomW } : undefined,
+      );
 
       const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
       drawRadarFov(
@@ -376,6 +387,16 @@ export class LivePanel extends LitElement {
             ? html`<button type="button" @click=${this.clearTrail}>${this._t('live.clear_trails')}</button>`
             : ''}
         </div>
+        <div class="scene-metrics">
+          ${readSceneMetrics(this.hass, this.config, this.adapter, this.lang).map(
+            (metric) =>
+              html` <div class="scene-metric" data-metric=${metric.key}>
+                <ha-icon .icon=${metric.icon}></ha-icon>
+                <span class="metric-label">${metric.label}</span>
+                <strong>${metric.value}</strong><small>${metric.unit}</small>
+              </div>`,
+          )}
+        </div>
         ${!this.present
           ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
           : ''}
@@ -425,6 +446,49 @@ export class LivePanel extends LitElement {
   }
 
   static styles = css`
+    .scene-metrics {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      max-width: calc(100% - 20px);
+      display: grid;
+      gap: 5px;
+      pointer-events: none;
+    }
+    .scene-metric {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      padding: 6px 9px;
+      border-radius: 10px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color);
+      border: 1px solid var(--divider-color, #ddd);
+      box-shadow: 0 1px 5px #0001;
+      font-size: 12px;
+    }
+    .scene-metric ha-icon {
+      --mdc-icon-size: 17px;
+      color: var(--mmwave-primary, #408564);
+      flex-shrink: 0;
+    }
+    .metric-label {
+      color: var(--secondary-text-color);
+      white-space: nowrap;
+    }
+    .scene-metric strong {
+      font-size: 16px;
+      overflow-wrap: anywhere;
+      min-width: 0;
+      margin-left: auto;
+    }
+    .scene-metric small {
+      font-size: 10px;
+      white-space: nowrap;
+      color: var(--secondary-text-color);
+    }
+
     :host {
       display: block;
       position: relative;

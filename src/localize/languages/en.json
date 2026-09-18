@@ -179,13 +179,24 @@
     "association_distance_cm": "Association distance (cm)",
     "association_distance_cm_help": "How far a target may move between frames and still be treated as the same person. Too small splits one person into several tracks; too large merges two people into one.",
     "confirm_hits": "Frames before a track is published",
-    "confirm_hits_help": "Raising this suppresses brief false targets at the cost of a slower first detection."
+    "confirm_hits_help": "Raising this suppresses brief false targets at the cost of a slower first detection.",
+    "gesture_entity": "Gesture sensor"
   },
   "model.ld2452": "HLK-LD2452 (2D 120° 6m)",
   "entity_aliases": {
-    "distance": ["distance"],
-    "motion_state": ["motion state", "motion_state", "target state", "target_state"],
-    "polygon": ["polygon", "boundary"]
+    "distance": [
+      "distance"
+    ],
+    "motion_state": [
+      "motion state",
+      "motion_state",
+      "target state",
+      "target_state"
+    ],
+    "polygon": [
+      "polygon",
+      "boundary"
+    ]
   },
   "card": {
     "syncing": "Syncing…",
@@ -336,7 +347,10 @@
     "remove_before_moving": "Remove this captured area in details before moving it.",
     "outlier_remaining": "A large mismatch remains. Capture another area.",
     "retained_names": "{p0}: existing parameters passed this check; no adjustment needed.",
-    "pending_names": "{p0} still need calibration. Their existing settings are retained; capture more areas later."
+    "pending_names": "{p0} still need calibration. Their existing settings are retained; capture more areas later.",
+    "standing_area_outside": "Choose a standing area inside the boundary and away from walls.",
+    "no_standing_area": "No usable standing area. Check the room boundary, dimensions and radar placement.",
+    "few_standing_areas": "Too little space for three separate standing areas. Check the boundary and radar placement."
   },
   "zone": {
     "zone_p0": "Zone {p0}",
@@ -398,5 +412,45 @@
     "noise_preserved": "Native detection thresholds are preserved; changing this interval does not reset them.",
     "noise_unknown": "Adjustable native noise rejection is not confirmed for this model; no noise parameters are overwritten.",
     "invalid": "Maximum distance must be zero or at least the minimum distance."
+  },
+  "floorplan": {
+    "title": "Floor plan background",
+    "url": "Image URL",
+    "source_hint": "Use a PNG, JPG or WebP image, for example /local/floorplans/room.png in HA.",
+    "visible": "Show background",
+    "locked": "Lock placement",
+    "loading": "Loading image…",
+    "error": "Unable to load image. Check the URL.",
+    "preview": "Floor plan placement preview",
+    "unlock_hint": "Unlock to adjust image placement and scale.",
+    "drag_hint": "Drag the image to align it. The green outline is the room.",
+    "scale_hint": "Tap both ends of a known wall segment, then enter its actual length.",
+    "origin_hint": "Tap the image point that should be the room origin.",
+    "scale": "Calibrate scale",
+    "origin": "Set origin",
+    "move": "Move image",
+    "length": "Actual length (cm)",
+    "apply_scale": "Apply scale",
+    "width": "Image width (cm)",
+    "x": "Horizontal offset (cm)",
+    "y": "Vertical offset (cm)",
+    "rotation": "Clockwise rotation (°)",
+    "opacity": "Opacity",
+    "upload": "Upload image",
+    "uploading": "Uploading image…",
+    "upload_error": "Upload failed. Choose a PNG, JPEG or GIF under 9 MB and check the HA connection.",
+    "trace": "Snap to walls",
+    "trace_hint": "Tap near wall corners to trace; undo to correct a point.",
+    "trace_snapped": "Snapped to image edge",
+    "trace_unavailable": "Use an uploaded image for snapping; manual tracing is still available."
+  },
+  "metrics": {
+    "heart": "Heart rate",
+    "breath": "Breathing",
+    "gesture": "Gesture",
+    "per_minute": "/min",
+    "none": "None",
+    "right": "Wave right",
+    "left": "Wave left"
   }
 }

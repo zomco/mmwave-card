@@ -43,6 +43,7 @@ const INFO: RadarModelInfo = {
 // ── Entity schema ─────────────────────────────────────────────────────────────
 
 const ENTITY_SCHEMA: EntitySchemaField[] = [
+  { key: 'gesture_entity', labelKey: 'editor.gesture_entity', required: false, domain: 'sensor' },
   { key: 'presence_entity', labelKey: 'editor.presence_entity', required: true, domain: 'binary_sensor' },
   { key: 'distance_entity', labelKey: 'editor.distance_entity', required: true, domain: 'sensor' },
 ];

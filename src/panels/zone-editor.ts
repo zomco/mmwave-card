@@ -1,4 +1,7 @@
-import { LitElement, css, html, nothing } from 'lit';
+import { tracePoint } from '../utils/floorplan-trace';
+import type { FloorplanConfig } from '../types';
+import { floorplanImage, floorplanValues } from '../utils/floorplan';
+import { LitElement, css, html, svg, nothing } from 'lit';
 import { localize } from '../localize/localize';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { FusionZoneConfig, RadarSourceConfig, Vec2 } from '../types';
@@ -7,6 +10,12 @@ const COLORS = ['#0b825c', '#03a9f4', '#e91e63', '#ff9800', '#8bc34a', '#9c27b0'
 
 @customElement('mmwave-zone-editor')
 export class ZoneEditor extends LitElement {
+  @state() private trace = true;
+  @state() private traceStatus = '';
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
+  private floorplanLoaded = () => {
+    if (this.isConnected) this.requestUpdate();
+  };
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 600;
   @property({ attribute: false }) zones: FusionZoneConfig[] = [];
@@ -49,10 +58,16 @@ export class ZoneEditor extends LitElement {
   private addPoint(event: MouseEvent) {
     if (!this.draft) return;
     const rect = (event.currentTarget as SVGSVGElement).getBoundingClientRect();
-    const point: Vec2 = {
+    let point: Vec2 = {
       x: Math.round(Math.min(Math.max(((event.clientX - rect.left) / rect.width) * this.roomW, 0), this.roomW)),
       y: Math.round(Math.min(Math.max(((event.clientY - rect.top) / rect.height) * this.roomD, 0), this.roomD)),
     };
+    if (this.trace) {
+      const result = tracePoint(point, this.floorplan, this.roomW, (12 * this.roomW) / rect.width);
+      if (result.point.x >= 0 && result.point.x <= this.roomW && result.point.y >= 0 && result.point.y <= this.roomD)
+        point = result.point;
+      this.traceStatus = result.unavailable ? 'trace_unavailable' : result.snapped ? 'trace_snapped' : 'trace_hint';
+    }
     this.patch({ polygon: [...this.draft.polygon, point] });
   }
 
@@ -93,6 +108,11 @@ export class ZoneEditor extends LitElement {
   }
 
   protected render() {
+    const background =
+      this.floorplan?.visible !== false && this.floorplan
+        ? floorplanImage(this.floorplan.url, this.floorplanLoaded)
+        : undefined;
+    const placement = floorplanValues(this.floorplan ?? { url: '' }, this.roomW);
     const visibleZones = this.draft
       ? [...this.zones.filter((zone) => zone.id !== this.originalId), this.draft]
       : this.zones;
@@ -113,6 +133,21 @@ export class ZoneEditor extends LitElement {
         </div>
         <button type="button" class="new" @click=${this.beginNew}>＋ ${this._t('zone.new_zone')}</button>
       </div>
+      ${this.floorplan?.url && this.floorplan.visible !== false
+        ? html`<div class="trace-controls">
+            <label
+              ><input
+                type="checkbox"
+                .checked=${this.trace}
+                @change=${(e: Event) => {
+                  this.trace = (e.target as HTMLInputElement).checked;
+                  this.traceStatus = '';
+                }}
+              />${this._t('floorplan.trace')}</label
+            >
+            <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
+          </div>`
+        : ''}
       <svg
         class=${this.draft ? 'floor active' : 'floor'}
         viewBox=${`0 0 ${this.roomW} ${this.roomD}`}
@@ -126,6 +161,16 @@ export class ZoneEditor extends LitElement {
             <path d="M 50 0 L 0 0 0 50" fill="none" stroke="currentColor" stroke-opacity=".08" stroke-width="1" />
           </pattern>
         </defs>
+        ${background?.status === 'ready'
+          ? svg`<image
+              href=${background.image.src}
+              width=${placement.width}
+              height=${(placement.width * background.image.naturalHeight) / background.image.naturalWidth}
+              opacity=${placement.opacity}
+              transform=${`translate(${placement.x} ${placement.y}) rotate(${(placement.angle * 180) / Math.PI})`}
+              pointer-events="none"
+            />`
+          : nothing}
         <rect width="100%" height="100%" class="background" />
         ${visibleZones.map((zone, index) => {
           const selected = this.draft === zone;
@@ -220,6 +265,27 @@ export class ZoneEditor extends LitElement {
   }
 
   static styles = css`
+    .trace-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+    .trace-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trace-controls input {
+      width: auto;
+      accent-color: var(--mmwave-primary, #408564);
+    }
+    .trace-controls small {
+      color: var(--secondary-text-color);
+    }
+
     :host {
       display: block;
     }

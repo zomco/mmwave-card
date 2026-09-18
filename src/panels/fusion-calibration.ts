@@ -1,3 +1,5 @@
+import { standingAreaFits } from '../utils/guided-regions';
+import type { FloorplanConfig } from '../types';
 import { LitElement, css, html, nothing, type PropertyValues } from 'lit';
 import { localize } from '../localize/localize';
 import { customElement, property, query, state } from 'lit/decorators.js';
@@ -56,6 +58,7 @@ const completeCalibration = (radar: RadarSourceConfig): CalibrationConfig => ({
 
 @customElement('mmwave-fusion-calibration')
 export class FusionCalibrationPanel extends LitElement {
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ attribute: false }) radars: RadarSourceConfig[] = [];
   @property({ type: Number }) roomW = 400;
@@ -100,6 +103,7 @@ export class FusionCalibrationPanel extends LitElement {
 
   protected updated(changed: PropertyValues) {
     if (
+      changed.has('floorplan') ||
       changed.has('radars') ||
       changed.has('roomW') ||
       changed.has('roomD') ||
@@ -147,69 +151,78 @@ export class FusionCalibrationPanel extends LitElement {
     this.drawFrame = requestAnimationFrame(() => this.draw());
   }
 
+  private validStandingArea(room: Vec2): boolean {
+    return standingAreaFits(
+      room,
+      this.regionRadiusCm,
+      this.roomW,
+      this.roomD,
+      this.radars.map((radar) => radar.calibration?.polygon ?? []),
+    );
+  }
+
+  private regionCacheKey = '';
+  private regionCache: GuidedRegion[] = [];
   private get guidedRegions(): GuidedRegion[] {
+    const key = JSON.stringify([
+      this.roomW,
+      this.roomD,
+      this.radars.map((r) => [r.radar_model, r.calibration]),
+      this.regionOverrides,
+    ]);
+    if (key !== this.regionCacheKey) {
+      this.regionCacheKey = key;
+      this.regionCache = this.buildGuidedRegions();
+    }
+    return this.regionCache;
+  }
+
+  private buildGuidedRegions(): GuidedRegion[] {
     const visible: Vec2[] = [];
-    if (this.radars.length === 1) {
-      const radar = this.radars[0];
-      const cal = completeCalibration(radar);
-      const info = getAdapter(radar.radar_model)?.info;
-      const yaw = (cal.yaw * Math.PI) / 180;
-      for (let x = 1; x <= 9; x++)
-        for (let y = 1; y <= 9; y++) {
-          const room = { x: (this.roomW * x) / 10, y: (this.roomD * y) / 10 };
+    for (let x = 1; x < 40; x++)
+      for (let y = 1; y < 40; y++) {
+        const room = { x: (this.roomW * x) / 40, y: (this.roomD * y) / 40 };
+        if (!this.validStandingArea(room)) continue;
+        if (this.radars.length === 1) {
+          const radar = this.radars[0],
+            cal = completeCalibration(radar),
+            info = getAdapter(radar.radar_model)?.info;
+          const yaw = (cal.yaw * Math.PI) / 180;
           const dx = room.x - cal.radar_x,
             dy = room.y - cal.radar_y;
           const localX = dx * Math.cos(yaw) - dy * Math.sin(yaw);
           const localY = dx * Math.sin(yaw) + dy * Math.cos(yaw);
           const distance = Math.hypot(dx, dy);
           if (
-            info &&
-            localY > 0 &&
-            distance >= Math.max(60, info.minRangeM * 100) &&
-            distance < info.maxRangeM * 100 &&
-            Math.abs(Math.atan2(localX, localY)) < ((info.fovDegrees * Math.PI) / 360) * 0.85
+            !info ||
+            localY <= 0 ||
+            distance < Math.max(60, info.minRangeM * 100) ||
+            distance >= info.maxRangeM * 100 ||
+            Math.abs(Math.atan2(localX, localY)) >= ((info.fovDegrees * Math.PI) / 360) * 0.85
           )
-            visible.push(room);
+            continue;
         }
-    }
-    const recommended: Vec2[] = [];
-    if (visible.length >= 3) {
-      let span = 0;
-      for (const a of visible)
-        for (const b of visible) {
-          const distance = Math.hypot(a.x - b.x, a.y - b.y);
-          if (distance > span) {
-            span = distance;
-            recommended.splice(0, 2, a, b);
-          }
-        }
-      while (recommended.length < 7 && recommended.length < visible.length) {
-        const candidates = visible.filter((p) => !recommended.includes(p));
-        const separation = (p: Vec2) => Math.min(...recommended.map((q) => Math.hypot(p.x - q.x, p.y - q.y)));
-        candidates.sort((a, b) => separation(b) - separation(a));
-        recommended.push(candidates[0]);
+        visible.push(room);
       }
+    if (!visible.length) return [];
+    // Spread stations over the usable space, without filling missing slots outside it.
+    const farthest = (from: Vec2) =>
+      visible.reduce((a, b) =>
+        Math.hypot(b.x - from.x, b.y - from.y) > Math.hypot(a.x - from.x, a.y - from.y) ? b : a,
+      );
+    const recommended = [farthest(farthest(visible[0]))];
+    while (recommended.length < 7) {
+      const separation = (p: Vec2) => Math.min(...recommended.map((q) => Math.hypot(p.x - q.x, p.y - q.y)));
+      const next = visible.reduce((a, b) => (separation(b) > separation(a) ? b : a));
+      if (separation(next) < this.regionRadiusCm * 2) break;
+      recommended.push(next);
     }
-    const point = (id: string, label: string, xRatio: number, yRatio: number): GuidedRegion => ({
-      id,
-      label,
-      room: this.regionOverrides[id] ??
-        recommended[label.charCodeAt(0) - 65] ?? {
-          x: Math.round(this.roomW * xRatio),
-          y: Math.round(this.roomD * yRatio),
-        },
+    return recommended.map((room, i) => {
+      const label = String.fromCharCode(65 + i),
+        id = 'region_' + label.toLowerCase();
+      const override = this.regionOverrides[id];
+      return { id, label, room: override && this.validStandingArea(override) ? override : room };
     });
-    // The first three recommendations deliberately form a wide triangle so
-    // calibration reaches a useful baseline without asking users to plan it.
-    return [
-      point('region_a', 'A', 0.23, 0.22),
-      point('region_b', 'B', 0.77, 0.78),
-      point('region_c', 'C', 0.77, 0.22),
-      point('region_d', 'D', 0.23, 0.78),
-      point('region_e', 'E', 0.5, 0.5),
-      point('region_f', 'F', 0.23, 0.5),
-      point('region_g', 'G', 0.77, 0.5),
-    ];
   }
 
   private get selectedRegion(): GuidedRegion {
@@ -223,7 +236,7 @@ export class FusionCalibrationPanel extends LitElement {
   private drawGuidedRegion(context: CanvasRenderingContext2D, metrics: CanvasMetrics, region: GuidedRegion) {
     const point = roomToCanvas(region.room.x, region.room.y, metrics);
     const edge = roomToCanvas(region.room.x + this.regionRadiusCm, region.room.y, metrics);
-    const radius = Math.max(18, Math.min(34, Math.abs(edge.cx - point.cx)));
+    const radius = Math.abs(edge.cx - point.cx);
     const reference = this.references.find((item) => item.id === region.id);
     const captured = new Set(Object.keys(reference?.readings ?? {}));
     if (this.capturing && region.id === this.selectedRegionId) {
@@ -274,12 +287,21 @@ export class FusionCalibrationPanel extends LitElement {
     context.restore();
   }
 
+  private floorplanLoaded = () => {
+    if (this.isConnected) this.scheduleDraw();
+  };
+
   private draw() {
     const canvas = this.canvas;
     if (!canvas || !canvas.offsetWidth) return;
     const metrics = this.metrics();
     const context = setupCanvas(canvas, metrics.H);
-    drawBase(context, metrics);
+    drawBase(
+      context,
+      metrics,
+      this.floorplan ? { ...this.floorplan, width_cm: this.floorplan.width_cm ?? this.roomW } : undefined,
+      this.floorplanLoaded,
+    );
     const solutions = new Map(this.solutions.map((solution) => [solution.radarId, solution]));
     this.radars.forEach((radar) => {
       const adapter = getAdapter(radar.radar_model);
@@ -340,7 +362,10 @@ export class FusionCalibrationPanel extends LitElement {
       .map((region) => ({ region, distance: Math.hypot(region.room.x - room.x, region.room.y - room.y) }))
       .sort((left, right) => left.distance - right.distance)[0];
     if (!nearest || nearest.distance > this.regionRadiusCm * 1.55) {
-      if (room.x < 0 || room.y < 0 || room.x > this.roomW || room.y > this.roomD) return;
+      if (!this.validStandingArea(room)) {
+        this.captureMessage = this._t('fusioncal.standing_area_outside');
+        return;
+      }
       if (this.references.some((reference) => reference.id === this.selectedRegionId)) {
         this.captureMessage = this._t('fusioncal.remove_before_moving');
         return;
@@ -354,7 +379,8 @@ export class FusionCalibrationPanel extends LitElement {
   }
 
   private beginCapture() {
-    if (this.capturing) return;
+    if (this.capturing || !this.selectedRegion) return;
+    this.selectedRegionId = this.selectedRegion.id;
     this.dispatchEvent(new CustomEvent('calibration-capture-started', { bubbles: true, composed: true }));
     this.capturing = true;
     this.captureProgress = 0;
@@ -520,7 +546,7 @@ export class FusionCalibrationPanel extends LitElement {
     if (this.capturing) return;
     this.references = [];
     this.regionOverrides = {};
-    this.selectedRegionId = this.guidedRegions[0].id;
+    this.selectedRegionId = this.guidedRegions[0]?.id ?? 'region_a';
     this.captureCounts = {};
     this.captureMessage = '';
     this.detailsExpanded = false;
@@ -620,6 +646,7 @@ export class FusionCalibrationPanel extends LitElement {
     const solutions = this.solutions;
     const ready = this.solutionsReady(solutions);
     const selectedRegion = this.selectedRegion;
+    if (!selectedRegion) return html`<p role="status">${this._t('fusioncal.no_standing_area')}</p>`;
     const selectedReference = this.references.find((reference) => reference.id === selectedRegion.id);
     const selectedCaptured = Object.keys(selectedReference?.readings ?? {}).length;
     const calibratedRadars = solutions.filter((solution) => this.solutionMeetsQuality(solution)).length;
@@ -659,6 +686,9 @@ export class FusionCalibrationPanel extends LitElement {
           <strong>${this._t('fusioncal.calibrate_every_radar_from_shared_positions')}</strong>
           <p>${this._t('fusioncal.keep_only_one_test_person_in')}</p>
         </div>
+        ${this.guidedRegions.length < 3
+          ? html`<p role="status">${this._t('fusioncal.few_standing_areas')}</p>`
+          : nothing}
         <div class="guide-card" role="status" aria-live="polite">
           <b>${selectedRegion.label}</b>
           <span>

@@ -1,10 +1,13 @@
+import { tracePoint } from '../utils/floorplan-trace';
+import type { FloorplanConfig } from '../types';
 import { LitElement, html, css } from 'lit';
-import { customElement, property, query } from 'lit/decorators.js';
+import { customElement, property, query, state } from 'lit/decorators.js';
 import type { CalibrationConfig } from '../types';
 import type { RadarModelAdapter } from '../models';
 import {
   setupCanvas,
   drawBase,
+  fitRoomMetrics,
   drawPolygon,
   drawRadarFov,
   roomToCanvas,
@@ -18,6 +21,9 @@ import './range-status';
 
 @customElement('mmwave-geo-panel')
 export class GeoPanel extends LitElement {
+  @state() private trace = true;
+  @state() private traceStatus = '';
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
   @property({ attribute: false }) adapter!: RadarModelAdapter;
   @property({ attribute: false }) calibration!: CalibrationConfig;
   @property({ attribute: false }) lang = 'en';
@@ -66,12 +72,12 @@ export class GeoPanel extends LitElement {
   // ── metrics (CSS-pixel space) ──────────────────────────────────────────────
 
   private _m(): CanvasMetrics {
-    return {
+    return fitRoomMetrics({
       W: this._cv?.offsetWidth || 400,
       H: this._cssH(),
       roomW: this.roomW,
       roomD: this.roomD,
-    };
+    });
   }
 
   // ── event handlers ─────────────────────────────────────────────────────────
@@ -80,7 +86,12 @@ export class GeoPanel extends LitElement {
     const cv = this._cv;
     if (!cv) return;
     const cssPt = eventToCanvasCssPt(e, cv);
-    const roomPt = canvasToRoom(cssPt.x, cssPt.y, this._m());
+    let roomPt = canvasToRoom(cssPt.x, cssPt.y, this._m());
+    if (this.trace) {
+      const result = tracePoint(roomPt, this.floorplan, this.roomW, (12 * this._m().roomW) / this._m().W);
+      roomPt = result.point;
+      this.traceStatus = result.unavailable ? 'trace_unavailable' : result.snapped ? 'trace_snapped' : 'trace_hint';
+    }
     this._emit({ polygon: [...this.calibration.polygon, roomPt] });
   }
 
@@ -111,7 +122,11 @@ export class GeoPanel extends LitElement {
       const cssH = this._cssH();
       const ctx = setupCanvas(cv, cssH);
       const m = this._m();
-      drawBase(ctx, m);
+      drawBase(
+        ctx,
+        m,
+        this.floorplan ? { ...this.floorplan, width_cm: this.floorplan.width_cm ?? this.roomW } : undefined,
+      );
       // Draw radar FOV first (underneath polygon)
       if (this.adapter) {
         const rp = roomToCanvas(this.calibration.radar_x, this.calibration.radar_y, m);
@@ -212,6 +227,7 @@ export class GeoPanel extends LitElement {
       </div>
 
       <mmwave-installation-3d
+        .floorplan=${this.floorplan}
         .adapter=${this.adapter}
         .calibration=${c}
         .peerCalibrations=${this.peerCalibrations}
@@ -274,6 +290,21 @@ export class GeoPanel extends LitElement {
             </button>
           </div>
         </div>
+        ${this.floorplan?.url && this.floorplan.visible !== false
+          ? html`<div class="trace-controls">
+              <label
+                ><input
+                  type="checkbox"
+                  .checked=${this.trace}
+                  @change=${(e: Event) => {
+                    this.trace = (e.target as HTMLInputElement).checked;
+                    this.traceStatus = '';
+                  }}
+                />${this._t('floorplan.trace')}</label
+              >
+              <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
+            </div>`
+          : ''}
         <div class="map-shell">
           <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
           ${pn === 0 ? html`<span class="map-empty">${this._t('geo.click_the_map_to_add_the')}</span>` : ''}
@@ -284,7 +315,29 @@ export class GeoPanel extends LitElement {
   }
 
   static styles = css`
+    .trace-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+    .trace-controls label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .trace-controls input {
+      width: auto;
+      accent-color: var(--mmwave-primary, #408564);
+    }
+    .trace-controls small {
+      color: var(--secondary-text-color);
+    }
+
     :host {
+      container-type: inline-size;
       display: block;
     }
     .panel-heading {
@@ -345,7 +398,8 @@ export class GeoPanel extends LitElement {
       padding: 0 6px 6px;
     }
     .field {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 90px) minmax(0, 1fr) 8ch 2.5ch;
       align-items: center;
       gap: 8px;
       padding: 8px 10px;
@@ -361,11 +415,13 @@ export class GeoPanel extends LitElement {
     .field label {
       font-size: 12px;
       color: var(--secondary-text-color);
-      width: 90px;
-      flex-shrink: 0;
+      min-width: 0;
+      overflow-wrap: anywhere;
     }
     .field input {
-      flex: 1;
+      box-sizing: border-box;
+      min-width: 0;
+      width: 100%;
       background: none;
       border: none;
       outline: none;
@@ -376,17 +432,37 @@ export class GeoPanel extends LitElement {
     }
     .field input.slider {
       accent-color: var(--mmwave-primary);
-      margin: 0 8px;
+      margin: 0;
     }
     .field input.num-input {
-      width: 45px;
-      flex: none;
+      font-size: 16px;
+      padding: 2px 0;
     }
     .unit {
       font-size: 11px;
       color: var(--secondary-text-color);
       min-width: 18px;
       text-align: right;
+    }
+    @container (max-width: 400px) {
+      .field {
+        grid-template-columns: minmax(0, 1fr) 8ch 2.5ch;
+        grid-template-areas: 'label value unit' 'slider slider slider';
+        row-gap: 6px;
+      }
+      .field label {
+        grid-area: label;
+      }
+      .field input.num-input {
+        grid-area: value;
+      }
+      .field .unit {
+        grid-area: unit;
+      }
+      .field input.slider {
+        grid-area: slider;
+        min-height: 28px;
+      }
     }
     .note {
       font-size: 10px;

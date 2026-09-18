@@ -1,3 +1,5 @@
+import { drawFloorplan } from '../utils/floorplan';
+import type { FloorplanConfig } from '../types';
 import { LitElement, html, css } from 'lit';
 import { localize } from '../localize/localize';
 import { customElement, property, query } from 'lit/decorators.js';
@@ -52,6 +54,7 @@ const snap = (value: number, step: number) => Math.round(value / step) * step;
 
 @customElement('mmwave-installation-3d')
 export class Installation3D extends LitElement {
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
   @property({ attribute: false }) adapter!: RadarModelAdapter;
   @property({ attribute: false }) calibration!: CalibrationConfig;
   @property({ attribute: false }) lang = 'en';
@@ -171,6 +174,10 @@ export class Installation3D extends LitElement {
     ctx.restore();
   }
 
+  private floorplanLoaded = () => {
+    if (this.isConnected) this._scheduleDraw();
+  };
+
   private _draw() {
     const cv = this._cv;
     if (!cv || !this.calibration || cv.offsetWidth === 0) return;
@@ -213,6 +220,25 @@ export class Installation3D extends LitElement {
     this._polygon(ctx, floor);
     ctx.fillStyle = 'rgba(11,130,92,.09)';
     ctx.fill();
+    ctx.save();
+    this._polygon(ctx, floor);
+    ctx.clip();
+    ctx.transform(
+      scene.floorW / (2 * scene.roomW),
+      scene.floorH / (2 * scene.roomW),
+      -scene.floorW / (2 * scene.roomD),
+      scene.floorH / (2 * scene.roomD),
+      scene.W / 2,
+      scene.floorTop,
+    );
+    drawFloorplan(
+      ctx,
+      { W: scene.roomW, H: scene.roomD, roomW: scene.roomW, roomD: scene.roomD },
+      this.floorplan,
+      this.floorplanLoaded,
+    );
+    ctx.restore();
+    this._polygon(ctx, floor);
     ctx.strokeStyle = 'rgba(11,130,92,.55)';
     ctx.lineWidth = 1.4;
     ctx.stroke();

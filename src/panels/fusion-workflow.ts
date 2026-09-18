@@ -244,6 +244,7 @@ export class FusionWorkflow extends LitElement {
           </div>
           ${adapter
             ? html`<mmwave-geo-panel
+                .floorplan=${this.config.floorplan}
                 .adapter=${adapter}
                 .calibration=${this.calibration(radar)}
                 .peerCalibrations=${peers}
@@ -258,6 +259,7 @@ export class FusionWorkflow extends LitElement {
         </section>
         <section ?hidden=${this.step !== 1}>
           <mmwave-fusion-calibration
+            .floorplan=${this.config.floorplan}
             .hass=${this.hass}
             .radars=${this.draft}
             .roomW=${Number(this.config.room_w)}
@@ -276,6 +278,7 @@ export class FusionWorkflow extends LitElement {
               </p>`
             : nothing}
           <mmwave-fusion-panel
+            .floorplan=${this.config.floorplan}
             .roomW=${Number(this.config.room_w)}
             .roomD=${Number(this.config.room_d)}
             .radars=${visuals}

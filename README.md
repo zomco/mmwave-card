@@ -183,3 +183,45 @@ Range-only radars use software distance limits (cm, 0 disables each bound) inste
 Compact range previews show the software interval directly: green is the retained sector and grey radial bands are excluded. Detailed range diagnostics remain in settings, not below the preview.
 
 Live previews use equal horizontal and vertical scale even when card height is capped. Unused space remains visible instead of stretching the radar fan; targets, trails, and boundaries share the same mapping.
+
+### Floor plan background
+
+In the card editor, expand **Floor plan background** and enter an image URL such as
+`/local/floorplans/room.png`. On HA, put the image at `/config/www/floorplans/room.png`
+(in this workspace: `ha-config/www/floorplans/room.png`). This version uses image URLs;
+it does not upload files. PNG, JPG and WebP are supported. Prefer a flat top-down plan.
+
+Unlock placement to drag the image, rotate it, or adjust offsets. **Calibrate scale**
+lets you select both ends of a known wall and enter its actual length in centimetres.
+**Set origin** maps a selected image point to the room's top-left coordinate origin.
+Then lock placement and save the card in HA. Visibility and opacity remain adjustable.
+
+The same background is used in single-radar and fusion views, direction calibration,
+and the installation floor. Image aspect ratio is preserved; room coordinates, not
+screen pixels, anchor it across mobile and desktop layouts. Settings are saved in the
+Lovelace card, not radar firmware. A fusion card shares one image across its radars.
+The image does not change detection filters: draw the room polygon separately.
+Image loading failures retain the usual grid and radar view.
+
+```yaml
+floorplan:
+  url: /local/floorplans/room.png
+  width_cm: 600
+  offset_x_cm: 0
+  offset_y_cm: 0
+  rotation: 0 # clockwise degrees, around the image's top-left corner
+  opacity: 0.45
+  visible: true
+  locked: true
+```
+
+`width_cm` is the physical width represented by the entire image, including margins;
+height follows the image aspect ratio. Offsets place the image's top-left corner in
+room coordinates. Omitted width defaults to room width. Copy `floorplan` to other
+cards if they should share the same placement.
+
+Upload a PNG, JPEG or GIF (under 9 MB) directly in **Floor plan background**. Home Assistant stores the image; save the card to keep its URL. No fusion integration is required. In boundary or zone editing, **Snap to walls** helps each tap land on a nearby image edge. Tap wall corners in order, undo mistakes, and review before saving. Image edges may include furniture or text; turn snapping off for manual placement. Cross-origin backgrounds remain viewable but may require uploading for snapping.
+
+Direction calibration places the entire standing circle inside configured room boundaries, with clearance from walls. Manual relocation follows the same rule. Multi-radar guidance uses the union of configured radar boundaries; event zones are not room boundaries. With no polygon, room dimensions apply. Furniture and obstacles absent from the boundary are not detected automatically; move a station to a clear position. Insufficient space is reported instead of adding points outside the boundary.
+
+The radar preview shows compact scene metrics in its bottom-right corner: gestures for LD2450A (`gesture_entity`), and breathing/heart rates for supported models such as LD6002 and R60ABD1 (`breath_entity`, `heart_entity`). Bind these optional sensors in the card editor. Missing, unavailable or non-positive rate readings display “—”.

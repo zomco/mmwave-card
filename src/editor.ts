@@ -1,3 +1,5 @@
+import './panels/floorplan-editor';
+import type { FloorplanConfig } from './types';
 import { LitElement, html, css, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
@@ -126,6 +128,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
    */
   private _t(key: string, params?: Record<string, unknown>) {
     return localize(key, this.hass?.language, params);
+  }
+
+  private _floorplanSettings() {
+    return html`<mmwave-floorplan-editor
+      .hass=${this.hass}
+      .config=${this._config.floorplan}
+      .roomW=${Number(this._config.room_w ?? 400)}
+      .roomD=${Number(this._config.room_d ?? 600)}
+      .lang=${this.hass?.language ?? 'en'}
+      @floorplan-changed=${(e: CustomEvent<FloorplanConfig>) => {
+        e.stopPropagation();
+        this._changed('floorplan', e.detail);
+      }}
+    ></mmwave-floorplan-editor>`;
   }
 
   private _changed(key: string, value: unknown) {
@@ -320,6 +336,11 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
         if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
           configPatch.presence_entity = id;
+        } else if (id.startsWith('sensor.') && (name === 'gesture' || id.endsWith('_gesture'))) {
+          configPatch.gesture_entity = id;
+        } else if (id.startsWith('sensor.') && (id.includes('gesture') || name.includes('gesture'))) {
+          // Gesture distance/speed/angle are separate from the presence measurement.
+          continue;
         } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'distance')) {
           configPatch.distance_entity = id;
         } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'motion_state')) {
@@ -352,9 +373,13 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           !name.includes('room z')
         ) {
           configPatch.z_entity = id;
-        } else if (id.startsWith('sensor.') && (id.includes('breath') || id.includes('respiration'))) {
+        } else if (
+          id.startsWith('sensor.') &&
+          (/_(?:breath|breathing|respiration)_(?:rate|value)$/.test(id) ||
+            /^(?:breath|breathing|respiration) rate$/.test(name))
+        ) {
           configPatch.breath_entity = id;
-        } else if (id.startsWith('sensor.') && id.includes('heart')) {
+        } else if (id.startsWith('sensor.') && (/_heart_rate$/.test(id) || name === 'heart rate')) {
           configPatch.heart_entity = id;
         } else if (id.startsWith('sensor.') && id.includes('sleep')) {
           configPatch.sleep_entity = id;
@@ -452,6 +477,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
         </div>
+        ${this._floorplanSettings()}
         <label class="check-row">
           <input
             type="checkbox"
@@ -756,6 +782,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <h3><span>4</span>${this._t('editor.event_zones_and_cameras')}</h3>
         <p class="section-help">${this._t('editor.draw_polygon_vertices_on_the_floor')}</p>
         <mmwave-zone-editor
+          .floorplan=${this._config.floorplan}
           .roomW=${Number(this._config.room_w ?? 400)}
           .roomD=${Number(this._config.room_d ?? 600)}
           .zones=${this._config.zones ?? []}
@@ -875,6 +902,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         </div>
       </div>
 
+      ${this._floorplanSettings()}
       <!-- Entity fields (model-specific) -->
       ${adapter
         ? html` <details

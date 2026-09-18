@@ -1,3 +1,4 @@
+import type { FloorplanConfig } from '../types';
 import { LitElement, css, html, PropertyValues } from 'lit';
 import { localize } from '../localize/localize';
 import { customElement, property, query, state } from 'lit/decorators.js';
@@ -14,6 +15,7 @@ import type {
 } from '../types';
 import {
   drawBase,
+  fitRoomMetrics,
   drawHeatmap,
   drawRadarFov,
   drawReplay,
@@ -51,6 +53,7 @@ function colorForId(id: string): string {
 
 @customElement('mmwave-fusion-panel')
 export class FusionPanel extends LitElement {
+  @property({ attribute: false }) floorplan?: FloorplanConfig;
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 600;
   @property({ attribute: false }) radars: FusionRadarVisual[] = [];
@@ -127,7 +130,7 @@ export class FusionPanel extends LitElement {
   private metrics(): CanvasMetrics {
     const width = this.canvas?.offsetWidth || 500;
     const height = Math.max(220, Math.min(520, Math.round((width * this.roomD) / this.roomW)));
-    return { W: width, H: height, roomW: this.roomW, roomD: this.roomD };
+    return fitRoomMetrics({ W: width, H: height, roomW: this.roomW, roomD: this.roomD });
   }
 
   private loop() {
@@ -136,7 +139,11 @@ export class FusionPanel extends LitElement {
       const metrics = this.metrics();
       const context = setupCanvas(canvas, metrics.H);
       const now = Date.now();
-      drawBase(context, metrics);
+      drawBase(
+        context,
+        metrics,
+        this.floorplan ? { ...this.floorplan, width_cm: this.floorplan.width_cm ?? this.roomW } : undefined,
+      );
       if (this.showHeatmap && this.heatmap) {
         drawHeatmap(context, this.heatmap.cells, this.heatmap.bin_cm, this.heatmap.max_visits, metrics);
       }

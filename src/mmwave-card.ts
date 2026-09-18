@@ -1010,6 +1010,9 @@ export class MMWaveCard extends LitElement {
           ${this._calibrationError ? html`<p role="alert">${this._calibrationError}</p>` : nothing}
           <div class="live-body">
             <mmwave-live-panel
+              .hass=${this._hass}
+              .config=${this._config}
+              .floorplan=${this._config.floorplan}
               .adapter=${this._adapter}
               .calibration=${this._cal}
               .lang=${lang}
@@ -1073,6 +1076,7 @@ export class MMWaveCard extends LitElement {
         >
           ${this._tab === TAB_GEO
             ? html` <mmwave-geo-panel
+                .floorplan=${this._config.floorplan}
                 .adapter=${this._adapter}
                 .calibration=${this._cal}
                 .lang=${lang}
@@ -1086,6 +1090,7 @@ export class MMWaveCard extends LitElement {
             ? this._adapter.info.is1DRanging
               ? html`<p>${this._t('fusioncal.range_only')}</p>`
               : html`<mmwave-fusion-calibration
+                  .floorplan=${this._config.floorplan}
                   .hass=${this._hass}
                   .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
                   .lang=${lang}
@@ -1104,6 +1109,9 @@ export class MMWaveCard extends LitElement {
             : nothing}
           ${this._tab === TAB_LIVE
             ? html` <mmwave-live-panel
+                .hass=${this._hass}
+                .config=${this._config}
+                .floorplan=${this._config.floorplan}
                 .adapter=${this._adapter}
                 .calibration=${this._cal}
                 .lang=${lang}
@@ -1217,6 +1225,7 @@ export class MMWaveCard extends LitElement {
         ${this._calibrationError ? html`<p role="alert">${this._calibrationError}</p>` : nothing}
         <div class="live-body">
           <mmwave-fusion-panel
+            .floorplan=${this._config.floorplan}
             .roomW=${this._config.room_w}
             .roomD=${this._config.room_d}
             .radars=${this._fusionRadars}
