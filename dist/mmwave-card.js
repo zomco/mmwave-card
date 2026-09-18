@@ -260,18 +260,18 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
       </details>
 
       ${this.adapter.info.is1DRanging?B`<section class="boundary-card">
-            <h3>${this._L("range.title")}</h3>
-            <p class="note">${this._L("range.explanation")}</p>
-            ${this._numField(this._L("range.min"),"distance_min",t.distance_min??0,10,0,1e3)}
-            ${this._numField(this._L("range.max"),"distance_max",t.distance_max??0,10,0,1e3)}
-            <p class="note">${this._L("range.zero")}</p>
-            <mmwave-range-status
-              .calibration=${t}
-              .maxRangeM=${this.maxRangeM}
-              .lang=${this.lang}
-              .model=${this.adapter.info.id}
-            ></mmwave-range-status>
-          </section>`:""}
+              <h3>${this._L("range.title")}</h3>
+              <p class="note">${this._L("range.explanation")}</p>
+              ${this._numField(this._L("range.min"),"distance_min",t.distance_min??0,10,0,1e3)}
+              ${this._numField(this._L("range.max"),"distance_max",t.distance_max??0,10,0,1e3)}
+              <p class="note">${this._L("range.zero")}</p>
+              <mmwave-range-status
+                .calibration=${t}
+                .maxRangeM=${this.maxRangeM}
+                .lang=${this.lang}
+                .model=${this.adapter.info.id}
+              ></mmwave-range-status>
+            </section>`:""}
       <section class="boundary-card" ?hidden=${!this.showBoundary||this.adapter.info.is1DRanging}>
         <div class="section-heading">
           <div>
@@ -295,15 +295,15 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
           </div>
         </div>
         ${this.floorplan?.url&&!1!==this.floorplan.visible?B`<div class="trace-controls">
-              <label
-                ><input
-                  type="checkbox"
-                  .checked=${this.trace}
-                  @change=${t=>{this.trace=t.target.checked,this.traceStatus=""}}
-                />${this._t("floorplan.trace")}</label
-              >
-              <small role="status">${this._t("floorplan."+(this.traceStatus||"trace_hint"))}</small>
-            </div>`:""}
+                <label
+                  ><input
+                    type="checkbox"
+                    .checked=${this.trace}
+                    @change=${t=>{this.trace=t.target.checked,this.traceStatus=""}}
+                  />${this._t("floorplan.trace")}</label
+                >
+                <small role="status">${this._t("floorplan."+(this.traceStatus||"trace_hint"))}</small>
+              </div>`:""}
         <div class="map-shell">
           <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
           ${0===e?B`<span class="map-empty">${this._t("geo.click_the_map_to_add_the")}</span>`:""}
@@ -603,11 +603,11 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
           @click=${this.onCanvasClick}
         ></canvas>
         ${e?B`<div class="message" role="status">
-              ${this._t("fusioncal.ready_summary",{p0:o,p1:this.radars.length-o})}
-            </div>`:Y}
+                ${this._t("fusioncal.ready_summary",{p0:o,p1:this.radars.length-o})}
+              </div>`:Y}
         ${e&&t.some(t=>this.solutionMeetsQuality(t)&&t.retainedCurrent)?B`<div class="message">
-              ${this._t("fusioncal.retained_names",{p0:t.filter(t=>this.solutionMeetsQuality(t)&&t.retainedCurrent).map(t=>t.radarId).join(", ")})}
-            </div>`:Y}
+                ${this._t("fusioncal.retained_names",{p0:t.filter(t=>this.solutionMeetsQuality(t)&&t.retainedCurrent).map(t=>t.radarId).join(", ")})}
+              </div>`:Y}
         <div class=${`capture-dock ${e?"ready":""} ${this.capturing?"capturing":""}`}>
           <div class="capture-bar">
             <span>${this._t("fusioncal.tap_another_region_or_follow_recommendation")}</span>
@@ -660,64 +660,66 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
               `})}
           </div>
           ${n.length?B`
-                <div class="installation-review">
-                  <strong>${this._t("fusioncal.review_installation_parameters")}</strong>
-                  <span>
-                    ${this._t("fusioncal.review_p0_radars_before_retrying",{p0:n.map(t=>t.id).join(", ")})}
-                  </span>
-                  <small>${this._t("fusioncal.xy_yaw_only_manual_note")}</small>
-                </div>
-              `:Y}
+                  <div class="installation-review">
+                    <strong>${this._t("fusioncal.review_installation_parameters")}</strong>
+                    <span>
+                      ${this._t("fusioncal.review_p0_radars_before_retrying",{p0:n.map(t=>t.id).join(", ")})}
+                    </span>
+                    <small>${this._t("fusioncal.xy_yaw_only_manual_note")}</small>
+                  </div>
+                `:Y}
           ${t.length?B`
-                <div class="results">
-                  ${this.radars.map(e=>{const i=t.find(t=>t.radarId===e.id),a=ti(e),r=Boolean(i&&this.solutionMeetsQuality(i)),o=i?function(t,e){return{radarX:Ge(e.radar_x-t.radar_x),radarY:Ge(e.radar_y-t.radar_y),yaw:Ge(Ze(e.yaw-t.yaw))}}(a,i.calibration):void 0;return B`
-                      <div class="result ${r?"":"bad"}">
-                        <header>
-                          <span><strong>${e.id}</strong><small>${e.radar_model}</small></span>
-                          <b class="status ${r?"accepted":"review"}">
-                            ${r?this._t("fusioncal.calibration_reference_accepted"):this._t("fusioncal.installation_needs_review")}
-                          </b>
-                        </header>
-                        ${i?B`
-                              <div class="residual">
-                                <strong>${i.residualBeforeCm} → ${i.residualAfterCm} cm</strong>
-                                <small class=${r?"":"warning"}>${this.qualityMessage(i)}</small>
-                              </div>
-                              <div class="parameter-grid">
-                                <div>
-                                  <small>${this._t("fusioncal.current_installation")}</small>
-                                  <span>
-                                    X ${this.formatParameter(a.radar_x)} · Y
-                                    ${this.formatParameter(a.radar_y)} · yaw ${this.formatParameter(a.yaw)}°
-                                  </span>
-                                </div>
-                                <div>
-                                  <small>${this._t("fusioncal.fitted_reference")}</small>
-                                  <span>
-                                    X ${this.formatParameter(i.calibration.radar_x)} · Y
-                                    ${this.formatParameter(i.calibration.radar_y)} · yaw
-                                    ${this.formatParameter(i.calibration.yaw)}°
-                                  </span>
-                                </div>
-                                <div class="adjustment">
-                                  <small>${this._t("fusioncal.suggested_manual_adjustment")}</small>
-                                  <span>
-                                    ΔX ${this.formatAdjustment(o?.radarX??0)} · ΔY
-                                    ${this.formatAdjustment(o?.radarY??0)} · Δyaw
-                                    ${this.formatAdjustment(o?.yaw??0)}°
-                                  </span>
-                                </div>
-                              </div>
-                              <small class="solution-meta">
-                                ${i.pointCount} ${this._t("fusioncal.points")} · yaw ${i.calibration.yaw}°
-                                · ${this._t("fusioncal.span_p0_cm",{p0:i.referenceSpanCm})} · max
-                                ${i.maxResidualCm} cm
-                              </small>
-                            `:B`<span class="missing">${this._t("fusioncal.not_enough_references")}</span>`}
-                      </div>
-                    `})}
-                </div>
-              `:Y}
+                  <div class="results">
+                    ${this.radars.map(e=>{const i=t.find(t=>t.radarId===e.id),a=ti(e),r=Boolean(i&&this.solutionMeetsQuality(i)),o=i?function(t,e){return{radarX:Ge(e.radar_x-t.radar_x),radarY:Ge(e.radar_y-t.radar_y),yaw:Ge(Ze(e.yaw-t.yaw))}}(a,i.calibration):void 0;return B`
+                        <div class="result ${r?"":"bad"}">
+                          <header>
+                            <span><strong>${e.id}</strong><small>${e.radar_model}</small></span>
+                            <b class="status ${r?"accepted":"review"}">
+                              ${r?this._t("fusioncal.calibration_reference_accepted"):this._t("fusioncal.installation_needs_review")}
+                            </b>
+                          </header>
+                          ${i?B`
+                                  <div class="residual">
+                                    <strong>${i.residualBeforeCm} → ${i.residualAfterCm} cm</strong>
+                                    <small class=${r?"":"warning"}>${this.qualityMessage(i)}</small>
+                                  </div>
+                                  <div class="parameter-grid">
+                                    <div>
+                                      <small>${this._t("fusioncal.current_installation")}</small>
+                                      <span>
+                                        X ${this.formatParameter(a.radar_x)} · Y
+                                        ${this.formatParameter(a.radar_y)} · yaw
+                                        ${this.formatParameter(a.yaw)}°
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <small>${this._t("fusioncal.fitted_reference")}</small>
+                                      <span>
+                                        X ${this.formatParameter(i.calibration.radar_x)} · Y
+                                        ${this.formatParameter(i.calibration.radar_y)} · yaw
+                                        ${this.formatParameter(i.calibration.yaw)}°
+                                      </span>
+                                    </div>
+                                    <div class="adjustment">
+                                      <small>${this._t("fusioncal.suggested_manual_adjustment")}</small>
+                                      <span>
+                                        ΔX ${this.formatAdjustment(o?.radarX??0)} · ΔY
+                                        ${this.formatAdjustment(o?.radarY??0)} · Δyaw
+                                        ${this.formatAdjustment(o?.yaw??0)}°
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <small class="solution-meta">
+                                    ${i.pointCount} ${this._t("fusioncal.points")} · yaw
+                                    ${i.calibration.yaw}° ·
+                                    ${this._t("fusioncal.span_p0_cm",{p0:i.referenceSpanCm})} · max
+                                    ${i.maxResidualCm} cm
+                                  </small>
+                                `:B`<span class="missing">${this._t("fusioncal.not_enough_references")}</span>`}
+                        </div>
+                      `})}
+                  </div>
+                `:Y}
         </div>
         <div class="calibration-progress">
           ${this._t("fusioncal.p0_p1_radars_ready",{p0:o,p1:this.radars.length})}
@@ -1224,10 +1226,10 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
     }
   `}};function ii(t,e,i){return!(i<0||i>1e3)&&Math.hypot(e.x-t.x,e.y-t.y)<=100+300*i/1e3}function ai(t,e){return t?0===e.length?"unlocated":e.some(t=>t.room?.inBoundary)?"present":"filtered":"none"}t([ut({attribute:!1})],ei.prototype,"floorplan",void 0),t([ut({attribute:!1})],ei.prototype,"hass",void 0),t([ut({attribute:!1})],ei.prototype,"radars",void 0),t([ut({type:Number})],ei.prototype,"roomW",void 0),t([ut({type:Number})],ei.prototype,"roomD",void 0),t([ut({attribute:!1})],ei.prototype,"lang",void 0),t([ut({attribute:!1})],ei.prototype,"applyLabel",void 0),t([gt()],ei.prototype,"references",void 0),t([gt()],ei.prototype,"selectedRegionId",void 0),t([gt()],ei.prototype,"regionOverrides",void 0),t([gt()],ei.prototype,"capturing",void 0),t([gt()],ei.prototype,"captureProgress",void 0),t([gt()],ei.prototype,"captureMessage",void 0),t([gt()],ei.prototype,"captureCounts",void 0),t([gt()],ei.prototype,"mobileFocus",void 0),t([gt()],ei.prototype,"detailsExpanded",void 0),t([mt("#fusion-calibration-canvas")],ei.prototype,"canvas",void 0),ei=t([pt("mmwave-fusion-calibration")],ei);const ri=["#ff9800","#03a9f4","#e91e63"];function oi(t){return ri[(t%ri.length+ri.length)%ri.length]}function si(t,e,i,a,r){const o=2/Math.max(1e-4,a),s=o*r,n=1/(1+s+.48*s*s+.235*s*s*s),l=t-e,d=(i+o*l)*r;let c=(i-o*d)*n,p=e+(l+d)*n;return(Math.abs(e-t)<1e-6||(e-t)*(p-e)>0)&&(p=e,c=0),[p,c]}let ni=class extends dt{constructor(){super(...arguments),this.lang="en",this.roomW=400,this.roomD=350,this.targets=[],this.present=!1,this.showStatus=!1,this._trails=new Map,this._animatedTargets=new Map,this._rafId=0,this._lastFrameAt=0,this._lastTrailPruneAt=0}connectedCallback(){super.connectedCallback(),this._lastFrameAt=Date.now(),this._loop()}disconnectedCallback(){super.disconnectedCallback(),cancelAnimationFrame(this._rafId)}willUpdate(t){t.has("targets")&&this._setTargetGoals(this.targets)}_setTargetGoals(t){const e=Date.now(),i=new Set(t.filter(t=>t.room).map(t=>t.index));for(const t of this._animatedTargets.keys())i.has(t)||this._animatedTargets.delete(t);for(const i of t){if(!i.room)continue;const t=i.room.roomX,a=i.room.roomY,r=Math.hypot(i.rawX,i.rawY)/100,o=this._animatedTargets.get(i.index);o&&ii({x:o.goalX,y:o.goalY},{x:t,y:a},e-o.lastSeen)?(o.goalX=t,o.goalY=a,o.goalRangeM=r,o.lastSeen=e):(this._trails.delete(i.index),this._animatedTargets.set(i.index,{x:t,y:a,rangeM:r,goalX:t,goalY:a,goalRangeM:r,velocityX:0,velocityY:0,velocityRange:0,lastSeen:e,lastTrailAt:0}))}}_advanceTargets(t){const e=Math.min(Math.max((t-this._lastFrameAt)/1e3,0),.05);this._lastFrameAt=t;const i=Math.max(this.adapter.info.updateRateHz,1),a=Math.min(.22,Math.max(.12,1.25/i));for(const[i,r]of this._animatedTargets)t-r.lastSeen>1e3?this._animatedTargets.delete(i):([r.x,r.velocityX]=si(r.x,r.goalX,r.velocityX,a,e),[r.y,r.velocityY]=si(r.y,r.goalY,r.velocityY,a,e),[r.rangeM,r.velocityRange]=si(r.rangeM,r.goalRangeM,r.velocityRange,a,e))}_sampleTrails(t,e){for(const i of t){const t=this._animatedTargets.get(i.index);if(!t||!i.room?.inBoundary||e-t.lastTrailAt<75)continue;t.lastTrailAt=e;const a=this._trails.get(i.index)??[],r=a.at(-1);(!r||Math.hypot(t.x-r.x,t.y-r.y)>=.5)&&(a.push({x:t.x,y:t.y,t:e}),this._trails.set(i.index,a))}if(e-this._lastTrailPruneAt>=1e3){this._lastTrailPruneAt=e;const t=e-9e4;for(const[e,i]of this._trails){const a=i.filter(e=>e.t>t);a.length>0?this._trails.set(e,a):this._trails.delete(e)}}}clearTrail(){this._trails.clear();for(const t of this._animatedTargets.values())t.lastTrailAt=0}_cssH(){const t=this._cv?.offsetWidth;if(!t||0===t)return 340;const e=this.roomD/this.roomW;return Math.max(140,Math.min(340,Math.round(t*e)))}_m(){return we({W:this._cv?.offsetWidth||400,H:this._cssH(),roomW:this.roomW,roomD:this.roomD})}_loop(){const t=this._cv;if(t&&t.offsetWidth>0&&this.adapter){const e=Se(t,this._cssH()),i=this._m(),a=Date.now();this._advanceTargets(a),this._sampleTrails(this.targets,a),Re(e,i,this.floorplan?{...this.floorplan,width_cm:this.floorplan.width_cm??this.roomW}:void 0);const r=$e(this.calibration.radar_x,this.calibration.radar_y,i);Ae(e,r.cx,r.cy,this.calibration.yaw,this.calibration.pitch,this.adapter.info.fovDegrees,this.adapter.info.minRangeM,this.maxRangeM??this.adapter.info.maxRangeM,i,this.adapter.info.vitalRangeM),this.adapter.info.is1DRanging?function(t,e,i,a,r,o,s,n,l,d,c){const p=De(t,e,i,c),h=Math.PI/2-(a+o/2)*Math.PI/180,_=h+o*Math.PI/180,u=Math.max(0,Math.cos(r*Math.PI/180)),g=Math.max(100*s,l),m=Math.min(100*n,d>0?d:1/0),f=(e,i)=>{if(i<=e)return;const a=p.point(i*u,h);t.beginPath(),t.moveTo(a.x,a.y),p.arc(i*u,h,_),p.arc(e*u,_,h,!0),t.closePath(),t.fillStyle="rgba(180,185,190,.82)",t.fill("evenodd")};if(t.save(),g>=m)f(100*s,100*n);else{f(100*s,g),f(m,100*n),t.strokeStyle="rgba(11,130,92,.95)",t.lineWidth=2;for(const e of[g,m])e<=100*s||e>=100*n||(t.beginPath(),p.arc(e*u,h,_),t.stroke())}t.restore()}(e,r.cx,r.cy,this.calibration.yaw,this.calibration.pitch,this.adapter.info.fovDegrees,this.adapter.info.minRangeM,this.maxRangeM??this.adapter.info.maxRangeM,this.calibration.distance_min??0,this.calibration.distance_max??0,i):function(t,e,i){if(e.length<3)return;const a=e.map(t=>$e(t.x,t.y,i));t.save(),t.beginPath(),t.rect(0,0,i.W,i.H),t.moveTo(a[0].cx,a[0].cy),a.slice(1).forEach(e=>t.lineTo(e.cx,e.cy)),t.closePath(),t.fillStyle="rgba(100,116,139,.25)",t.fill("evenodd"),t.beginPath(),t.moveTo(a[0].cx,a[0].cy),a.slice(1).forEach(e=>t.lineTo(e.cx,e.cy)),t.closePath(),t.strokeStyle="rgba(11,130,92,.95)",t.lineWidth=2,t.setLineDash([6,4]),t.stroke(),t.restore()}(e,this.calibration.polygon,i);for(const[t,r]of this._trails)if(!(r.length<2)){e.save(),e.strokeStyle=oi(t),e.lineWidth=2,e.lineCap="round";for(let t=1;t<r.length;t++){const o=r[t-1],s=r[t],n=(a-s.t)/9e4;e.globalAlpha=Math.max(0,.5-.5*n);const l=$e(o.x,o.y,i),d=$e(s.x,s.y,i);e.beginPath(),e.moveTo(l.cx,l.cy),e.lineTo(d.cx,d.cy),e.stroke()}e.restore()}for(const t of this.targets){if(!t.room)continue;const a=this._animatedTargets.get(t.index);if(this.adapter.info.is1DRanging)Pe(e,r.cx,r.cy,this.calibration.yaw,this.calibration.pitch,this.adapter.info.fovDegrees,a?.rangeM??Math.hypot(t.rawX,t.rawY)/100,i,t.room.inBoundary);else{const r=$e(a?.x??t.room.roomX,a?.y??t.room.roomY,i),o=oi(t.index);Ee(e,r.cx,r.cy,t.room.inBoundary,o),this.adapter.info.maxTargets>1&&(e.fillStyle=o,e.font="bold 10px system-ui",e.textAlign="center",e.textBaseline="middle",e.fillText(String(t.index+1),r.cx,r.cy-14),e.textBaseline="alphabetic")}}}this._rafId=requestAnimationFrame(()=>this._loop())}_L(t){return Te(t,this.lang)}_t(t,e){return Te(t,this.lang,e)}_badgeText(){return this._L(`live.badge_${ai(this.present,this.targets)}`)}_badgeCls(){const t=ai(this.present,this.targets);return"none"===t?"":"filtered"===t?"filtered":"on"}render(){return B`
       ${this.showStatus?B`<div class="panel-heading">
-            <span class="eyebrow">${this._t("live.step_3_live_test")}</span>
-            <h2>${this._t("live.verify_coverage_and_target_trails")}</h2>
-            <p>${this._t("live.walk_through_the_room_and_confirm")}</p>
-          </div>`:""}
+              <span class="eyebrow">${this._t("live.step_3_live_test")}</span>
+              <h2>${this._t("live.verify_coverage_and_target_trails")}</h2>
+              <p>${this._t("live.walk_through_the_room_and_confirm")}</p>
+            </div>`:""}
       <div class="scene-shell">
         <canvas id="live-cv"></canvas>
         <div class="scene-toolbar">
@@ -1244,36 +1246,36 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         ${this.present?"":B`<div class="idle-hint"><span>◎</span>${this._t("live.waiting_for_a_radar_target")}</div>`}
       </div>
       ${!this.adapter.info.is1DRanging&&this.calibration.polygon.length>=3?B`<div class="boundary-legend">
-            <span><i class="boundary-line"></i>${this._t("live.polygon_boundary")}</span>
-            <span><i class="filtered-area"></i>${this._t("live.filtered_area")}</span>
-          </div>`:""}
+              <span><i class="boundary-line"></i>${this._t("live.polygon_boundary")}</span>
+              <span><i class="filtered-area"></i>${this._t("live.filtered_area")}</span>
+            </div>`:""}
       ${this.showStatus?B`
-            <div class="target-summary">
-              <div class="summary-head">
-                <strong>${this._t("live.detected_targets")}</strong>
-                <span
-                  >${this.targets.filter(t=>t.room?.inBoundary).length} /
-                  ${this.adapter.info.maxTargets}</span
-                >
+              <div class="target-summary">
+                <div class="summary-head">
+                  <strong>${this._t("live.detected_targets")}</strong>
+                  <span
+                    >${this.targets.filter(t=>t.room?.inBoundary).length} /
+                    ${this.adapter.info.maxTargets}</span
+                  >
+                </div>
+                <div class="target-list">
+                  ${this.targets.length>0?this.targets.map(t=>B`
+                            <div
+                              class="target-row ${t.room?.inBoundary?"":"outside"}"
+                              style="--target-color:${oi(t.index)}"
+                            >
+                              <span class="target-id"><i></i>${this._t("live.target")} ${t.index+1}</span>
+                              <span class="target-coord">
+                                ${t.room?`X ${Math.round(t.room.roomX)} · Y ${Math.round(t.room.roomY)}${this.adapter.info.hasZAxis?` · Z ${Math.round(t.room.roomZ)}`:""} cm`:"—"}
+                              </span>
+                              <span class="target-state"
+                                >${t.room?.inBoundary?this._t("live.inside"):this._t("live.outside")}</span
+                              >
+                            </div>
+                          `):B`<div class="target-empty">${this._t("live.no_target_data_yet")}</div>`}
+                </div>
               </div>
-              <div class="target-list">
-                ${this.targets.length>0?this.targets.map(t=>B`
-                        <div
-                          class="target-row ${t.room?.inBoundary?"":"outside"}"
-                          style="--target-color:${oi(t.index)}"
-                        >
-                          <span class="target-id"><i></i>${this._t("live.target")} ${t.index+1}</span>
-                          <span class="target-coord">
-                            ${t.room?`X ${Math.round(t.room.roomX)} · Y ${Math.round(t.room.roomY)}${this.adapter.info.hasZAxis?` · Z ${Math.round(t.room.roomZ)}`:""} cm`:"—"}
-                          </span>
-                          <span class="target-state"
-                            >${t.room?.inBoundary?this._t("live.inside"):this._t("live.outside")}</span
-                          >
-                        </div>
-                      `):B`<div class="target-empty">${this._t("live.no_target_data_yet")}</div>`}
-              </div>
-            </div>
-          `:""}
+            `:""}
     `}static{this.styles=s`
     .scene-metrics {
       position: absolute;
@@ -1600,34 +1602,34 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
             `)}
         </div>
         ${"unsupported"===this.replayError?B`<span class="heatmap-note">${this._t("fusion.replay_needs_newer_backend")}</span>`:"failed"===this.replayError?B`<span class="heatmap-note">${this._t("fusion.replay_failed")}</span>`:this.replayLoading?B`<span class="heatmap-note">${this._t("fusion.replay_loading")}</span>`:t?0===t.tracks.length?B`<span class="heatmap-note">${this._t("fusion.replay_empty")}</span>`:B`
-                      <button type="button" class="play" @click=${this.togglePlaying}>
-                        ${this.playing?"❙❙":"▶"}
-                      </button>
-                      <div class="windows">
-                        ${[1,4,16].map(t=>B`
-                            <button
-                              type="button"
-                              class=${this.speed===t?"selected":""}
-                              @click=${()=>this.speed=t}
-                            >
-                              ${t}×
-                            </button>
-                          `)}
-                      </div>
-                      <input
-                        class="scrub"
-                        type="range"
-                        min="0"
-                        max="1000"
-                        .value=${String(Math.round(1e3*a))}
-                        @input=${t=>{this.playing=!1,this.scrubTo(Number(t.target.value)/1e3)}}
-                      />
-                      <span class="clock">${this.clockAt(this.playhead)}</span>
-                      <span class="heatmap-note">
-                        ${this._t("fusion.replay_summary",{tracks:t.tracks.length,points:t.total_points.toLocaleString()})}
-                        ${t.thinned?` · ${this._t("fusion.replay_thinned",{hz:t.sample_hz.toFixed(1)})}`:""}
-                      </span>
-                    `:""}
+                        <button type="button" class="play" @click=${this.togglePlaying}>
+                          ${this.playing?"❙❙":"▶"}
+                        </button>
+                        <div class="windows">
+                          ${[1,4,16].map(t=>B`
+                              <button
+                                type="button"
+                                class=${this.speed===t?"selected":""}
+                                @click=${()=>this.speed=t}
+                              >
+                                ${t}×
+                              </button>
+                            `)}
+                        </div>
+                        <input
+                          class="scrub"
+                          type="range"
+                          min="0"
+                          max="1000"
+                          .value=${String(Math.round(1e3*a))}
+                          @input=${t=>{this.playing=!1,this.scrubTo(Number(t.target.value)/1e3)}}
+                        />
+                        <span class="clock">${this.clockAt(this.playhead)}</span>
+                        <span class="heatmap-note">
+                          ${this._t("fusion.replay_summary",{tracks:t.tracks.length,points:t.total_points.toLocaleString()})}
+                          ${t.thinned?` · ${this._t("fusion.replay_thinned",{hz:t.sample_hz.toFixed(1)})}`:""}
+                        </span>
+                      `:""}
       </div>
     `}renderHeatmapLegend(){const t=[[1,this._t("fusion.window_hour")],[24,this._t("fusion.window_day")],[168,this._t("fusion.window_week")]];return B`
       <div class="heatmap-bar">
@@ -1644,16 +1646,16 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
             `)}
         </div>
         ${"unsupported"===this.heatmapError?B`<span class="heatmap-note">${this._t("fusion.heatmap_needs_newer_backend")}</span>`:"failed"===this.heatmapError?B`<span class="heatmap-note">${this._t("fusion.heatmap_failed")}</span>`:this.heatmapLoading?B`<span class="heatmap-note">${this._t("fusion.heatmap_loading")}</span>`:this.heatmap?B`
-                    <span class="ramp">
-                      <small>${this._t("fusion.heatmap_rare")}</small>
-                      ${function(t=5){return Array.from({length:t},(e,i)=>Ce(i/(t-1),.14+i/(t-1)*.58))}().map(t=>B`<i style="background:${t}"></i>`)}
-                      <small>${this._t("fusion.heatmap_frequent")}</small>
-                    </span>
-                    <span class="heatmap-note">
-                      ${this._t("fusion.heatmap_summary",{points:this.heatmap.total_points.toLocaleString(),bin:this.heatmap.bin_cm})}
-                      ${this.heatmap.truncated?` · ${this._t("fusion.heatmap_truncated")}`:""}
-                    </span>
-                  `:""}
+                      <span class="ramp">
+                        <small>${this._t("fusion.heatmap_rare")}</small>
+                        ${function(t=5){return Array.from({length:t},(e,i)=>Ce(i/(t-1),.14+i/(t-1)*.58))}().map(t=>B`<i style="background:${t}"></i>`)}
+                        <small>${this._t("fusion.heatmap_frequent")}</small>
+                      </span>
+                      <span class="heatmap-note">
+                        ${this._t("fusion.heatmap_summary",{points:this.heatmap.total_points.toLocaleString(),bin:this.heatmap.bin_cm})}
+                        ${this.heatmap.truncated?` · ${this._t("fusion.heatmap_truncated")}`:""}
+                      </span>
+                    `:""}
       </div>
     `}render(){const t=this.radars.filter(t=>t.available).length,e=this.radars.filter(t=>t.calibrationWarning),i=this.events.filter(t=>"trajectory"===t.event_type||"traverse"===t.event_type),a=i.length?i:this.events;return B`
       <div class="scene-toolbar">
@@ -1689,9 +1691,9 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
       </div>
       ${this.showReplay?this.renderReplayBar():""} ${this.showHeatmap?this.renderHeatmapLegend():""}
       ${e.length?B`<div class="calibration-warning">
-            ${this._t("fusion.calibration_warning")}:
-            ${e.map(t=>{const e=null==t.inRoomRatio?"?":`${Math.round(100*t.inRoomRatio)}%`;return`${t.config.id} (${e})`}).join(", ")}
-          </div>`:""}
+              ${this._t("fusion.calibration_warning")}:
+              ${e.map(t=>{const e=null==t.inRoomRatio?"?":`${Math.round(100*t.inRoomRatio)}%`;return`${t.config.id} (${e})`}).join(", ")}
+            </div>`:""}
       <div class="summary">
         <div><strong>${this.targets.length}</strong><span>${this._t("fusion.fused_targets")}</span></div>
         ${this.targets.map(t=>B`
@@ -1704,24 +1706,24 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
           `)}
       </div>
       ${a.length?B`
-            <div class="events">
-              <strong>${this._t("fusion.recent_events")}</strong>
-              ${a.slice(0,8).map(t=>B`
-                  <button
-                    type="button"
-                    class=${t.event_id===this.selectedEventId?"selected":""}
-                    @click=${()=>this.selectEvent(t)}
-                  >
-                    <span>
-                      ${t.event_type.toUpperCase()} · ${t.zone_id}
-                      ${null==t.quality_score?"":` · ${t.quality_score}/100`}
-                    </span>
-                    <small>${new Date(1e3*t.timestamp).toLocaleString()}</small>
-                    <em class=${"failed"===t.clip_status?"failed":""}>${this.eventStatus(t)}</em>
-                  </button>
-                `)}
-            </div>
-          `:""}
+              <div class="events">
+                <strong>${this._t("fusion.recent_events")}</strong>
+                ${a.slice(0,8).map(t=>B`
+                    <button
+                      type="button"
+                      class=${t.event_id===this.selectedEventId?"selected":""}
+                      @click=${()=>this.selectEvent(t)}
+                    >
+                      <span>
+                        ${t.event_type.toUpperCase()} · ${t.zone_id}
+                        ${null==t.quality_score?"":` · ${t.quality_score}/100`}
+                      </span>
+                      <small>${new Date(1e3*t.timestamp).toLocaleString()}</small>
+                      <em class=${"failed"===t.clip_status?"failed":""}>${this.eventStatus(t)}</em>
+                    </button>
+                  `)}
+              </div>
+            `:""}
     `}static{this.styles=s`
     :host {
       display: block;
@@ -2014,17 +2016,17 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
                 </button>`)}
           </div>
           ${e?B`<mmwave-geo-panel
-                .floorplan=${this.config.floorplan}
-                .adapter=${e}
-                .calibration=${this.calibration(t)}
-                .peerCalibrations=${i}
-                .showBoundary=${!1}
-                .roomW=${Number(this.config.room_w)}
-                .roomD=${Number(this.config.room_d)}
-                .lang=${this.hass.language}
-                .maxRangeM=${e.info.maxRangeM}
-                @calibration-changed=${this.changePose}
-              ></mmwave-geo-panel>`:Y}
+                  .floorplan=${this.config.floorplan}
+                  .adapter=${e}
+                  .calibration=${this.calibration(t)}
+                  .peerCalibrations=${i}
+                  .showBoundary=${!1}
+                  .roomW=${Number(this.config.room_w)}
+                  .roomD=${Number(this.config.room_d)}
+                  .lang=${this.hass.language}
+                  .maxRangeM=${e.info.maxRangeM}
+                  @calibration-changed=${this.changePose}
+                ></mmwave-geo-panel>`:Y}
         </section>
         <section ?hidden=${1!==this.step}>
           <mmwave-fusion-calibration
@@ -2042,8 +2044,8 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         <section ?hidden=${2!==this.step}>
           <p>${this.t("workflow.verify_hint")}</p>
           ${this.pendingRadars.length?B`<p class="pending-calibration">
-                ${this.t("fusioncal.pending_names",{p0:this.pendingRadars.join(", ")})}
-              </p>`:Y}
+                  ${this.t("fusioncal.pending_names",{p0:this.pendingRadars.join(", ")})}
+                </p>`:Y}
           <mmwave-fusion-panel
             .floorplan=${this.config.floorplan}
             .roomW=${Number(this.config.room_w)}
@@ -2056,19 +2058,19 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         </section>
         ${this.message?B`<p role="status">${this.message}</p>`:Y}
         ${this.failures.length?B`<ul role="alert">
-              ${this.failures.map(t=>B`<li>${t}</li>`)}
-            </ul>`:Y}
+                ${this.failures.map(t=>B`<li>${t}</li>`)}
+              </ul>`:Y}
       </div>
       <footer>
         <small>${this.dirty?this.t("workflow.unsaved"):this.t("workflow.draft_hint")}</small>
         ${this.step>0?B`<button type="button" ?disabled=${this.saving} @click=${()=>this.step--}>
-              ${this.t("workflow.previous")}
-            </button>`:Y}
+                ${this.t("workflow.previous")}
+              </button>`:Y}
         ${this.step<2?B`<button type="button" class="primary" ?disabled=${this.saving} @click=${()=>this.step++}>
-              ${this.t("workflow.next")}
-            </button>`:B`<button type="button" class="primary" ?disabled=${this.saving} @click=${this.save}>
-              ${this.t(this.saving?"workflow.saving":"workflow.apply_sync")}
-            </button>`}
+                ${this.t("workflow.next")}
+              </button>`:B`<button type="button" class="primary" ?disabled=${this.saving} @click=${this.save}>
+                ${this.t(this.saving?"workflow.saving":"workflow.apply_sync")}
+              </button>`}
       </footer>`}static{this.styles=s`
     :host {
       --primary-color: var(--mmwave-primary, #0b825c);
@@ -2200,7 +2202,7 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         flex-basis: 100%;
       }
     }
-  `}};t([ut({attribute:!1})],pi.prototype,"hass",void 0),t([ut({attribute:!1})],pi.prototype,"config",void 0),t([gt()],pi.prototype,"draft",void 0),t([gt()],pi.prototype,"step",void 0),t([gt()],pi.prototype,"selected",void 0),t([gt()],pi.prototype,"saving",void 0),t([gt()],pi.prototype,"message",void 0),t([gt()],pi.prototype,"failures",void 0),t([gt()],pi.prototype,"targets",void 0),t([gt()],pi.prototype,"hasCapture",void 0),t([gt()],pi.prototype,"pendingRadars",void 0),pi=t([pt("mmwave-fusion-workflow")],pi),window.customCards??=[],window.customCards.push({type:Fe,name:"MMWave Radar HA Card",description:"Multi-model mmWave radar calibration & live visualization",preview:!0,documentationURL:"https://github.com/YOUR_GITHUB_USERNAME/lovelace-mmwave-card"}),console.info("%c MMWAVE-CARD %c v1.0.0 (build 10bab9ef6c7d) ","background:#03a9f4;color:#fff;font-weight:700","background:#1c1c2e;color:#03a9f4;font-weight:700");function hi(t,e=new Set){return"string"==typeof t&&/^[a-z_]+\.[a-z0-9_]+$/.test(t)?e.add(t):Array.isArray(t)?t.forEach(t=>hi(t,e)):t&&"object"==typeof t&&Object.values(t).forEach(t=>hi(t,e)),e}function _i(t,e){return[...hi(e)].some(e=>{const i=t.states[e];return i&&"unavailable"!==i.state&&"unknown"!==i.state})}const ui={radar_x:"mount_x",radar_y:"mount_y",radar_z:"mount_z",yaw:"mount_yaw",pitch:"mount_pitch",roll:"mount_roll"};let gi=class extends dt{constructor(){super(...arguments),this._tab=0,this._isCalibrating=!1,this._calibrationLoading=!1,this._calibrationError="",this._targets=[],this._present=!1,this._syncState="idle",this._syncFailures=[],this._fusionTargets=[],this._fusionRadars=[],this._fusionBackendState="connecting",this._fusionEvents=[],this._fusionHistoryTrack=[],this._fusionVideoUrl="",this._fusionHeatmapLoading=!1,this._fusionHeatmapError="",this._fusionReplayLoading=!1,this._fusionReplayError="",this._deviceLoaded=!1,this._localFusion=new _e,this._localObservationBuffer=[],this._sourceSignatures=new Map,this._fusionConnecting=!1}setConfig(t){if(this._disconnectFusionBackend(),this._deviceLoaded=!1,this._singleProfile=void 0,this._singleProfileRevision=void 0,t.radars?.length){this._config={...yt,...t};const e=this._config.room_w,i=this._config.room_d;return this._fusionRadars=t.radars.map((a,r)=>{const o=de(a.radar_model);if(!o)throw new Error(`Unknown radar_model for radars[${r}]: "${a.radar_model}"`);if(o.info.is1DRanging)throw new Error(`Radar "${a.id}" uses a ranging-only model and cannot participate in 2-D fusion.`);const s={...a,type:this._config.type,room_w:e,room_d:i},n=o.validateConfig(s);n.length&&console.warn(`Radar "${a.id}" is not fully configured: ${n.join("; ")}`);const l=o.getDefaultCalibration();return{config:a,adapter:o,calibration:{...l,radar_x:Math.round(e*(r+1)/(t.radars.length+1)),radar_y:Math.round(.2*i),...a.calibration,polygon:a.calibration?.polygon??[]},available:!1}}),this._adapter=this._fusionRadars[0].adapter,this._cal=this._fusionRadars[0].calibration,this._localFusion=new _e({...t.fusion,min_confirm_sources:t.fusion?.min_confirm_sources??(t.radars.length>1?2:1),track_ttl_s:t.fusion?.track_ttl_s??(t.radars.some(t=>"r60abd1"===t.radar_model)?3:1.2)}),this._fusionTargets=[],this._fusionEvents=[],this._fusionHistoryTrack=[],this._selectedFusionEvent=void 0,this._fusionHeatmap=void 0,this._fusionHeatmapError="",this._fusionReplay=void 0,this._fusionReplayError="",this._fusionVideoUrl="",this._localObservationBuffer=[],this._sourceSignatures.clear(),void(this._fusionBackendState="connecting")}if(!t.radar_model)throw new Error("radar_model is required");const e=de(t.radar_model);if(!e)throw new Error(`Unknown radar_model: "${t.radar_model}". Check src/models/index.ts.`);const i=e.validateConfig(t);if(i.length)throw new Error(i.join("; "));this._config={...yt,...t},this._adapter=e;const a=e.getDefaultCalibration(),r=this._config.room_w,o=this._config.room_d;a.radar_x=Math.round(.382*r),a.radar_y=Math.round(.382*o),this._cal=a}static async getConfigElement(){return await Promise.resolve().then(function(){return ki}),document.createElement(qe)}static getStubConfig(){return{...yt,radar_model:"r60abd1",presence_entity:"binary_sensor.r60abd1_presence",x_entity:"sensor.r60abd1_x",y_entity:"sensor.r60abd1_y",z_entity:"sensor.r60abd1_z"}}getCardSize(){return 7}set hass(t){if(this._hass=t,!this._adapter||!this._config)return;if(this._config.radars?.length)return this._updateFusionMode(t),void this._connectFusionBackend();this._deviceLoaded||(this._deviceLoaded=!0,this._loadFromDevice(),this._loadSingleProfile());const e=this._adapter.readFromHass(t,this._config);this._present=e.present,this._maxRangeM=e.maxRangeM,this._targets=e.targets.map(t=>{return{...t,room:{...he(t.rawX,t.rawY,t.rawZ,this._cal),...this._adapter.info.is1DRanging?{inBoundary:(e=Math.hypot(t.rawX,t.rawY,t.rawZ),i=this._cal,Number.isFinite(e)&&e>=(i.distance_min??0)&&(!(i.distance_max>0)||e<=i.distance_max))}:{}}};var e,i}),this.requestUpdate()}_L(t){return Te(t,this._hass?.language)}_t(t,e){return Te(t,this._hass?.language,e)}_insideTargetCount(){return this._targets.filter(t=>t.room?.inBoundary).length}_syncLabel(){return"syncing"===this._syncState?this._t("card.syncing"):"success"===this._syncState?this._t("card.synced"):"error"===this._syncState?this._t("card.sync_failed"):this._t("card.sync_to_device")}disconnectedCallback(){super.disconnectedCallback(),null!=this._syncResetTimer&&clearTimeout(this._syncResetTimer),this._disconnectFusionBackend()}_updateFusionMode(t){const e=Date.now(),i=[];this._fusionRadars=this._fusionRadars.map(a=>{const r={...a.config,type:this._config.type,room_w:this._config.room_w,room_d:this._config.room_d},o=a.config.frame_entity?t.states[a.config.frame_entity]:void 0,s=o?wt(o.state):void 0,n=s?{present:s.targets.length>0,targets:s.targets.map((t,e)=>{const i=Number(a.config.frame_coordinate_scale??1);return{index:e,rawX:t.x*i,rawY:t.y*i,rawZ:t.z*i,speed:null==t.speed?void 0:t.speed*i}})}:a.adapter.readFromHass(t,r),l=function(t,e){const i=e.frame_entity?t.states[e.frame_entity]:void 0;return(i&&wt(i.state)?[e.frame_entity]:[...hi(e)]).sort().map(e=>`${e}:${t.states[e]?.last_updated??"missing"}`).join("|")}(t,a.config),d=l!==this._sourceSignatures.get(a.config.id);if(this._sourceSignatures.set(a.config.id,l),d)for(const t of n.targets){const r=he(t.rawX,t.rawY,t.rawZ,a.calibration);i.push({radarId:a.config.id,slot:t.index,timestamp:e,x:r.roomX,y:r.roomY,weight:Math.max(Number(a.config.measurement_weight??1),.01)})}return{...a,available:_i(t,a.config)}});const a=i.filter(t=>t.x>=0&&t.x<=Number(this._config.room_w)&&t.y>=0&&t.y<=Number(this._config.room_d));a.length&&this._localObservationBuffer.push(...a),this._localObservationBuffer=this._localObservationBuffer.filter(t=>e-t.timestamp<=250);const r=this._localFusion.step(this._localObservationBuffer,e);"online"!==this._fusionBackendState&&(this._fusionTargets=r,"connecting"===this._fusionBackendState&&r.length&&(this._fusionBackendState="fallback")),this.requestUpdate()}async _connectFusionBackend(){if(this._fusionConnecting||this._fusionUnsubscribe||!this._config.radars?.length||!this._hass)return;this._fusionConnecting=!0;const t=this._config.fusion_id||"home";try{if(!1!==this._config.sync_backend&&!this._isEditorPreview())try{await this._hass.callWS({type:"mmwave_fusion/configure",config:{fusion_id:t,room_w:this._config.room_w,room_d:this._config.room_d,radars:this._config.radars,zones:this._config.zones??[],cameras:this._config.cameras??[],fusion:this._config.fusion??{},quality:this._config.quality??{}}})}catch(t){console.info("MMWave Fusion backend configuration was not updated",t)}this._fusionUnsubscribe=await this._hass.connection.subscribeMessage(e=>{if(e.fusion_id!==t)return;const i=e.api_version??0;if(i<4)return"outdated"!==this._fusionBackendState&&console.warn(`MMWave Fusion backend speaks api_version ${i}, this card needs 4; please update the mmwave-fusion integration`),this._fusionBackendState="outdated",void this.requestUpdate();this._fusionTargets=e.tracks,e.events.length&&(this._fusionEvents=[...e.events,...this._fusionEvents].slice(0,100));const a=new Map(e.radars.map(t=>[t.id,t]));this._fusionRadars=this._fusionRadars.map(t=>({...t,calibration:a.get(t.config.id)?.calibration??t.calibration,config:{...t.config,calibration:a.get(t.config.id)?.calibration??t.calibration,calibration_profile_id:a.get(t.config.id)?.calibration_profile_id??t.config.calibration_profile_id,calibration_profile_revision:a.get(t.config.id)?.calibration_profile_revision??t.config.calibration_profile_revision},available:a.get(t.config.id)?.available??t.available,observations:a.get(t.config.id)?.observations,inRoomRatio:a.get(t.config.id)?.in_room_ratio,calibrationWarning:a.get(t.config.id)?.calibration_warning})),this._fusionBackendState="online",this.requestUpdate()},{type:"mmwave_fusion/subscribe",fusion_id:t}),await this._loadFusionEvents()}catch(t){const e=t?.code;"unknown_command"===e?(console.info("MMWave Fusion integration is not installed; multi-radar fusion needs it"),this._fusionBackendState="missing"):(console.warn("MMWave Fusion backend unavailable; using browser fallback",t),this._fusionBackendState="fallback")}finally{this._fusionConnecting=!1}}_disconnectFusionBackend(){this._fusionUnsubscribe?.(),this._fusionUnsubscribe=void 0,this._fusionConnecting=!1}_isEditorPreview(){let t=this.parentNode??this.getRootNode();for(;t;){if(t instanceof HTMLElement&&["HUI-CARD-PREVIEW","HUI-DIALOG-EDIT-CARD"].includes(t.tagName))return!0;t=t.parentNode??(t instanceof ShadowRoot?t.host:null)}return!1}async _openCalibration(){if(!this._calibrationLoading&&this._hass.user?.is_admin)if(this._isEditorPreview())this._calibrationError=this._t("workflow.preview_readonly");else{this._calibrationLoading=!0,this._calibrationError="";try{if(this._config.radars?.length){const t=await this._hass.callWS({type:"mmwave_fusion/get_config",fusion_id:this._config.fusion_id||"home"});if(t.api_version<4||!t.config)throw new Error(this._t("workflow.backend_required"));this._fusionCalibrationConfig={...this._config,...t.config}}else this._loadFromDevice(),await this._loadSingleProfile(),this._originalCalibration=structuredClone(this._cal),this._isCalibrating=!0,this._tab=0}catch(t){this._calibrationError=String(t.message??t)}finally{this._calibrationLoading=!1}}}_closeCalibration(){if("syncing"!==this._syncState){if(this._originalCalibration&&JSON.stringify(this._cal)!==JSON.stringify(this._originalCalibration)){if(!confirm(this._t("workflow.discard_confirm")))return;this._cal=structuredClone(this._originalCalibration)}this._isCalibrating=!1}}async _loadSingleProfile(){if(!this._hass.user?.is_admin||!this._config.device_id||this._adapter.info.is1DRanging)return;const t=this._config.device_id;try{const e=await this._hass.callWS({type:"mmwave_fusion/list_calibration_profiles"});if(this._config.device_id!==t||this._isCalibrating)return;const i=e.find(e=>e.profile_id===`device:${t}`&&e.radar_model===this._config.radar_model);this._singleProfileRevision=i?.revision??0,this._singleProfile=i,i&&(this._cal=structuredClone(i.calibration))}catch{this._singleProfileRevision=void 0,this._singleProfile=void 0}}async _loadFusionEvents(){if(this._hass&&this._config.radars?.length)try{const t=await this._hass.callWS({type:"mmwave_fusion/query_events",fusion_id:this._config.fusion_id||"home",limit:100});this._fusionEvents=t.map(t=>({event_id:String(t.event_id),fusion_id:String(t.fusion_id),track_id:String(t.track_id),event_type:t.event_type,zone_id:String(t.zone_id),timestamp:Number(t.ts),x:Number(t.x),y:Number(t.y),clip_path:t.clip_path?String(t.clip_path):void 0,camera_entity_id:t.camera_entity_id?String(t.camera_entity_id):void 0,clip_status:t.clip_status?String(t.clip_status):void 0,clip_provider:t.clip_provider?String(t.clip_provider):void 0,clip_file_size:t.clip_file_size?Number(t.clip_file_size):void 0,clip_error:t.clip_error?String(t.clip_error):void 0,metadata:t.metadata&&"object"==typeof t.metadata?t.metadata:void 0,quality_score:null==t.quality_score?void 0:Number(t.quality_score),quality_reason:t.quality_reason?String(t.quality_reason):void 0,recording_decision:t.recording_decision?String(t.recording_decision):void 0,recording_decisions:Array.isArray(t.recording_decisions)?t.recording_decisions:void 0}))}catch(t){console.info("MMWave Fusion history is not available",t)}}async _loadFusionHeatmap(t){if(this._hass){this._fusionHeatmapLoading=!0,this._fusionHeatmapError="";try{this._fusionHeatmap=await this._hass.callWS({type:"mmwave_fusion/query_heatmap",fusion_id:this._config.fusion_id||"home",hours:t.detail.hours,bin_cm:t.detail.binCm})}catch(t){const e=t?.code;this._fusionHeatmapError="unknown_command"===e?"unsupported":"failed","unknown_command"!==e&&console.warn("MMWave Fusion heatmap query failed",t)}finally{this._fusionHeatmapLoading=!1}}}async _loadFusionReplay(t){if(this._hass){this._fusionReplayLoading=!0,this._fusionReplayError="";try{this._fusionReplay=await this._hass.callWS({type:"mmwave_fusion/query_replay",fusion_id:this._config.fusion_id||"home",since:t.detail.since,until:t.detail.until})}catch(t){const e=t?.code;this._fusionReplayError="unknown_command"===e?"unsupported":"failed","unknown_command"!==e&&console.warn("MMWave Fusion replay query failed",t)}finally{this._fusionReplayLoading=!1}}}async _selectFusionEvent(t){this._selectedFusionEvent=t.detail,this._fusionVideoUrl="";try{await this._loadFusionEvents();const e=this._fusionEvents.find(e=>e.event_id===t.detail.event_id)??t.detail;if(this._selectedFusionEvent=e,this._fusionHistoryTrack=await this._hass.callWS({type:"mmwave_fusion/query_track",track_id:e.track_id,limit:1e4}),e.clip_path){const t=await this._hass.callWS({type:"media_source/resolve_media",media_content_id:`media-source://media_source/local/${e.clip_path}`});this._fusionVideoUrl=t.url}}catch(t){console.warn("Failed to load fused trajectory event",t)}}_gotoTab(t){this._tab=t,this._livePanel?.clearTrail(),this.requestUpdate()}_onPolygonPointAdded(t){const e=this.shadowRoot?.querySelector("#poly-cv"),i={W:e?.offsetWidth??400,H:165,roomW:this._cal?.room_w??this._config.room_w,roomD:this._cal?.room_d??this._config.room_d},a=ke(t.detail.canvasX,t.detail.canvasY,i),r={...this._cal,polygon:[...this._cal.polygon,a]};this._cal=r,this.requestUpdate()}_onCalibrationChanged(t){let e=t.detail;const i=e.room_w??this._config.room_w,a=e.room_d??this._config.room_d;e.radar_x>i&&(e={...e,radar_x:i}),e.radar_y>a&&(e={...e,radar_y:a}),this._cal=this._adapter.info.is1DRanging?{...e,polygon:[]}:e,this._hass&&(this.hass=this._hass),this.requestUpdate()}_onCaptureRequested(){}_devicePrefix(){if(this._adapter.info.is1DRanging){const t=this._config.presence_entity,e=t?.match(/^binary_sensor\.(.+)_presence$/);if(e)return e[1]}const t=this._config?.x_entity||"";if(t){const e=t.match(/^sensor\.(.+?)(_radar_x|_x)$/);if(e)return e[1];const i=t.split(".")[1]?.split("_")||[];return i.slice(0,i.length-1).join("_")}const e=(this._config?.target_1_x_entity||"").match(/^sensor\.(.+?)_target_\d+_x$/);return e?e[1]:""}_loadFromDevice(){if(!this._hass||!this._config)return;const t=this._devicePrefix();if(!t)return;const e={...this._cal};for(const[i,a]of Object.entries(ui)){const r=this._hass.states[`number.${t}_${a}`];r&&r.state&&!isNaN(Number(r.state))&&(e[i]=Number(r.state))}if(this._adapter.info.is1DRanging){for(const i of["distance_min","distance_max"]){const a=Number(this._hass.states[`number.${t}_zone_${"distance_min"===i?"min":"max"}_distance`]?.state);Number.isFinite(a)&&a>=0&&(e[i]=a)}e.polygon=[]}const i=this._config.polygon_entity||`text.${t}_zone_polygon`,a=this._adapter.info.is1DRanging?void 0:this._hass.states[i];if(a&&a.state){const t=a.state.split(";").filter(t=>t.includes(",")).map(t=>{const[e,i]=t.split(",");return{x:parseFloat(e),y:parseFloat(i)}});t.length>0?e.polygon=t:e.polygon=[]}else a&&""===a.state&&(e.polygon=[]);const r=e.room_w??this._config.room_w,o=e.room_d??this._config.room_d;e.radar_x>r&&(e.radar_x=r),e.radar_y>o&&(e.radar_y=o),this._cal=e,this._singleProfile&&(this._cal=structuredClone(this._singleProfile.calibration)),this.requestUpdate()}async _sync(){if(!this._hass.user?.is_admin)return;const t=this._devicePrefix();if(t){if(this._adapter.info.is1DRanging&&(this._cal.distance_max??0)>0&&(this._cal.distance_min??0)>this._cal.distance_max)return this._syncFailures=[this._t("range.invalid")],void(this._syncState="error");this._syncState="syncing";try{if(void 0!==this._singleProfileRevision&&this._config.device_id){const t=await this._hass.callWS({type:"mmwave_fusion/upsert_calibration_profile",profile:{profile_id:`device:${this._config.device_id}`,device_id:this._config.device_id,radar_model:this._config.radar_model,name:this._adapter.info.displayName,calibration:this._cal,expected_revision:this._singleProfileRevision}});this._singleProfileRevision=t.revision,this._singleProfile=t,this._originalCalibration=structuredClone(this._cal)}const e=[];for(const[i,a]of Object.entries(ui)){const r=this._cal[i],o=`number.${t}_${a}`;if(void 0!==this._hass.states[o])try{await this._hass.callService("number","set_value",{entity_id:o,value:r})}catch(t){e.push(o),console.warn(`Failed to sync ${o}`,t)}else e.push(`${o} (no such entity)`)}if(this._adapter.info.is1DRanging)for(const[i,a]of[["distance_min","zone_min_distance"],["distance_max","zone_max_distance"]]){const r=`number.${t}_${a}`;if(this._hass.states[r])try{await this._hass.callService("number","set_value",{entity_id:r,value:this._cal[i]??0})}catch{e.push(r)}else e.push(`${r} (no such entity)`)}const i=this._cal.polygon.map(t=>`${t.x},${t.y}`).join(";"),a=this._config.polygon_entity||`text.${t}_zone_polygon`;if(this._adapter.info.is1DRanging||void 0===this._hass.states[a])!this._adapter.info.is1DRanging&&this._cal.polygon.length>0&&e.push(`${a} (no such entity)`);else try{await this._hass.callService("text","set_value",{entity_id:a,value:i})}catch(t){e.push(a),console.warn(`Failed to sync ${a}`,t)}this._syncFailures=e,this._syncState=e.length>0?"error":"success",e.length||(this._originalCalibration=structuredClone(this._cal)),e.length>0&&console.error("mmwave-card: these did not reach the device -",e)}catch(t){this._syncFailures=[String(t.message??t)],this._syncState="error",console.error(t)}finally{null!=this._syncResetTimer&&clearTimeout(this._syncResetTimer),this._syncResetTimer=window.setTimeout(()=>this._syncState="idle",2200)}}else alert("Error: neither x_entity nor target_1_x_entity is configured.")}_reset(){if(!confirm(this._L("actions.reset_confirm")||"Reset to factory defaults?"))return;const t=this._adapter.getDefaultCalibration(),e=this._config.room_w,i=this._config.room_d;t.radar_x=Math.round(.382*e),t.radar_y=Math.round(.382*i),this._cal=t,this._gotoTab(0)}render(){if(!this._config||!this._adapter)return Y;if(this._config.radars?.length)return this._renderFusionMode();const t=this._cal.room_w??this._config.room_w,e=this._cal.room_d??this._config.room_d,i=this._hass?.language??"en",a=this._insideTargetCount(),r=[{icon:"mdi:cube-scan",title:this._t("card.installation"),description:this._t("card.place_the_radar_in_the_3d")},{icon:"mdi:compass-outline",title:this._t("card.direction"),description:this._t("card.calibrate_yaw_with_two_reference_points")},{icon:"mdi:radar",title:this._t("card.live_test"),description:this._t("card.verify_targets_boundary_and_trails")}];return this._isCalibrating?B`
+  `}};t([ut({attribute:!1})],pi.prototype,"hass",void 0),t([ut({attribute:!1})],pi.prototype,"config",void 0),t([gt()],pi.prototype,"draft",void 0),t([gt()],pi.prototype,"step",void 0),t([gt()],pi.prototype,"selected",void 0),t([gt()],pi.prototype,"saving",void 0),t([gt()],pi.prototype,"message",void 0),t([gt()],pi.prototype,"failures",void 0),t([gt()],pi.prototype,"targets",void 0),t([gt()],pi.prototype,"hasCapture",void 0),t([gt()],pi.prototype,"pendingRadars",void 0),pi=t([pt("mmwave-fusion-workflow")],pi),window.customCards??=[],window.customCards.push({type:Fe,name:"MMWave Radar HA Card",description:"Multi-model mmWave radar calibration & live visualization",preview:!0,documentationURL:"https://github.com/YOUR_GITHUB_USERNAME/lovelace-mmwave-card"}),console.info("%c MMWAVE-CARD %c v1.0.0 (build a53bfe3d1b18) ","background:#03a9f4;color:#fff;font-weight:700","background:#1c1c2e;color:#03a9f4;font-weight:700");function hi(t,e=new Set){return"string"==typeof t&&/^[a-z_]+\.[a-z0-9_]+$/.test(t)?e.add(t):Array.isArray(t)?t.forEach(t=>hi(t,e)):t&&"object"==typeof t&&Object.values(t).forEach(t=>hi(t,e)),e}function _i(t,e){return[...hi(e)].some(e=>{const i=t.states[e];return i&&"unavailable"!==i.state&&"unknown"!==i.state})}const ui={radar_x:"mount_x",radar_y:"mount_y",radar_z:"mount_z",yaw:"mount_yaw",pitch:"mount_pitch",roll:"mount_roll"};let gi=class extends dt{constructor(){super(...arguments),this._tab=0,this._isCalibrating=!1,this._calibrationLoading=!1,this._calibrationError="",this._targets=[],this._present=!1,this._syncState="idle",this._syncFailures=[],this._fusionTargets=[],this._fusionRadars=[],this._fusionBackendState="connecting",this._fusionEvents=[],this._fusionHistoryTrack=[],this._fusionVideoUrl="",this._fusionHeatmapLoading=!1,this._fusionHeatmapError="",this._fusionReplayLoading=!1,this._fusionReplayError="",this._deviceLoaded=!1,this._localFusion=new _e,this._localObservationBuffer=[],this._sourceSignatures=new Map,this._fusionConnecting=!1}setConfig(t){if(this._disconnectFusionBackend(),this._deviceLoaded=!1,this._singleProfile=void 0,this._singleProfileRevision=void 0,t.radars?.length){this._config={...yt,...t};const e=this._config.room_w,i=this._config.room_d;return this._fusionRadars=t.radars.map((a,r)=>{const o=de(a.radar_model);if(!o)throw new Error(`Unknown radar_model for radars[${r}]: "${a.radar_model}"`);if(o.info.is1DRanging)throw new Error(`Radar "${a.id}" uses a ranging-only model and cannot participate in 2-D fusion.`);const s={...a,type:this._config.type,room_w:e,room_d:i},n=o.validateConfig(s);n.length&&console.warn(`Radar "${a.id}" is not fully configured: ${n.join("; ")}`);const l=o.getDefaultCalibration();return{config:a,adapter:o,calibration:{...l,radar_x:Math.round(e*(r+1)/(t.radars.length+1)),radar_y:Math.round(.2*i),...a.calibration,polygon:a.calibration?.polygon??[]},available:!1}}),this._adapter=this._fusionRadars[0].adapter,this._cal=this._fusionRadars[0].calibration,this._localFusion=new _e({...t.fusion,min_confirm_sources:t.fusion?.min_confirm_sources??(t.radars.length>1?2:1),track_ttl_s:t.fusion?.track_ttl_s??(t.radars.some(t=>"r60abd1"===t.radar_model)?3:1.2)}),this._fusionTargets=[],this._fusionEvents=[],this._fusionHistoryTrack=[],this._selectedFusionEvent=void 0,this._fusionHeatmap=void 0,this._fusionHeatmapError="",this._fusionReplay=void 0,this._fusionReplayError="",this._fusionVideoUrl="",this._localObservationBuffer=[],this._sourceSignatures.clear(),void(this._fusionBackendState="connecting")}if(!t.radar_model)throw new Error("radar_model is required");const e=de(t.radar_model);if(!e)throw new Error(`Unknown radar_model: "${t.radar_model}". Check src/models/index.ts.`);const i=e.validateConfig(t);if(i.length)throw new Error(i.join("; "));this._config={...yt,...t},this._adapter=e;const a=e.getDefaultCalibration(),r=this._config.room_w,o=this._config.room_d;a.radar_x=Math.round(.382*r),a.radar_y=Math.round(.382*o),this._cal=a}static async getConfigElement(){return await Promise.resolve().then(function(){return ki}),document.createElement(qe)}static getStubConfig(){return{...yt,radar_model:"r60abd1",presence_entity:"binary_sensor.r60abd1_presence",x_entity:"sensor.r60abd1_x",y_entity:"sensor.r60abd1_y",z_entity:"sensor.r60abd1_z"}}getCardSize(){return 7}set hass(t){if(this._hass=t,!this._adapter||!this._config)return;if(this._config.radars?.length)return this._updateFusionMode(t),void this._connectFusionBackend();this._deviceLoaded||(this._deviceLoaded=!0,this._loadFromDevice(),this._loadSingleProfile());const e=this._adapter.readFromHass(t,this._config);this._present=e.present,this._maxRangeM=e.maxRangeM,this._targets=e.targets.map(t=>{return{...t,room:{...he(t.rawX,t.rawY,t.rawZ,this._cal),...this._adapter.info.is1DRanging?{inBoundary:(e=Math.hypot(t.rawX,t.rawY,t.rawZ),i=this._cal,Number.isFinite(e)&&e>=(i.distance_min??0)&&(!(i.distance_max>0)||e<=i.distance_max))}:{}}};var e,i}),this.requestUpdate()}_L(t){return Te(t,this._hass?.language)}_t(t,e){return Te(t,this._hass?.language,e)}_insideTargetCount(){return this._targets.filter(t=>t.room?.inBoundary).length}_syncLabel(){return"syncing"===this._syncState?this._t("card.syncing"):"success"===this._syncState?this._t("card.synced"):"error"===this._syncState?this._t("card.sync_failed"):this._t("card.sync_to_device")}disconnectedCallback(){super.disconnectedCallback(),null!=this._syncResetTimer&&clearTimeout(this._syncResetTimer),this._disconnectFusionBackend()}_updateFusionMode(t){const e=Date.now(),i=[];this._fusionRadars=this._fusionRadars.map(a=>{const r={...a.config,type:this._config.type,room_w:this._config.room_w,room_d:this._config.room_d},o=a.config.frame_entity?t.states[a.config.frame_entity]:void 0,s=o?wt(o.state):void 0,n=s?{present:s.targets.length>0,targets:s.targets.map((t,e)=>{const i=Number(a.config.frame_coordinate_scale??1);return{index:e,rawX:t.x*i,rawY:t.y*i,rawZ:t.z*i,speed:null==t.speed?void 0:t.speed*i}})}:a.adapter.readFromHass(t,r),l=function(t,e){const i=e.frame_entity?t.states[e.frame_entity]:void 0;return(i&&wt(i.state)?[e.frame_entity]:[...hi(e)]).sort().map(e=>`${e}:${t.states[e]?.last_updated??"missing"}`).join("|")}(t,a.config),d=l!==this._sourceSignatures.get(a.config.id);if(this._sourceSignatures.set(a.config.id,l),d)for(const t of n.targets){const r=he(t.rawX,t.rawY,t.rawZ,a.calibration);i.push({radarId:a.config.id,slot:t.index,timestamp:e,x:r.roomX,y:r.roomY,weight:Math.max(Number(a.config.measurement_weight??1),.01)})}return{...a,available:_i(t,a.config)}});const a=i.filter(t=>t.x>=0&&t.x<=Number(this._config.room_w)&&t.y>=0&&t.y<=Number(this._config.room_d));a.length&&this._localObservationBuffer.push(...a),this._localObservationBuffer=this._localObservationBuffer.filter(t=>e-t.timestamp<=250);const r=this._localFusion.step(this._localObservationBuffer,e);"online"!==this._fusionBackendState&&(this._fusionTargets=r,"connecting"===this._fusionBackendState&&r.length&&(this._fusionBackendState="fallback")),this.requestUpdate()}async _connectFusionBackend(){if(this._fusionConnecting||this._fusionUnsubscribe||!this._config.radars?.length||!this._hass)return;this._fusionConnecting=!0;const t=this._config.fusion_id||"home";try{if(!1!==this._config.sync_backend&&!this._isEditorPreview())try{await this._hass.callWS({type:"mmwave_fusion/configure",config:{fusion_id:t,room_w:this._config.room_w,room_d:this._config.room_d,radars:this._config.radars,zones:this._config.zones??[],cameras:this._config.cameras??[],fusion:this._config.fusion??{},quality:this._config.quality??{}}})}catch(t){console.info("MMWave Fusion backend configuration was not updated",t)}this._fusionUnsubscribe=await this._hass.connection.subscribeMessage(e=>{if(e.fusion_id!==t)return;const i=e.api_version??0;if(i<4)return"outdated"!==this._fusionBackendState&&console.warn(`MMWave Fusion backend speaks api_version ${i}, this card needs 4; please update the mmwave-fusion integration`),this._fusionBackendState="outdated",void this.requestUpdate();this._fusionTargets=e.tracks,e.events.length&&(this._fusionEvents=[...e.events,...this._fusionEvents].slice(0,100));const a=new Map(e.radars.map(t=>[t.id,t]));this._fusionRadars=this._fusionRadars.map(t=>({...t,calibration:a.get(t.config.id)?.calibration??t.calibration,config:{...t.config,calibration:a.get(t.config.id)?.calibration??t.calibration,calibration_profile_id:a.get(t.config.id)?.calibration_profile_id??t.config.calibration_profile_id,calibration_profile_revision:a.get(t.config.id)?.calibration_profile_revision??t.config.calibration_profile_revision},available:a.get(t.config.id)?.available??t.available,observations:a.get(t.config.id)?.observations,inRoomRatio:a.get(t.config.id)?.in_room_ratio,calibrationWarning:a.get(t.config.id)?.calibration_warning})),this._fusionBackendState="online",this.requestUpdate()},{type:"mmwave_fusion/subscribe",fusion_id:t}),await this._loadFusionEvents()}catch(t){const e=t?.code;"unknown_command"===e?(console.info("MMWave Fusion integration is not installed; multi-radar fusion needs it"),this._fusionBackendState="missing"):(console.warn("MMWave Fusion backend unavailable; using browser fallback",t),this._fusionBackendState="fallback")}finally{this._fusionConnecting=!1}}_disconnectFusionBackend(){this._fusionUnsubscribe?.(),this._fusionUnsubscribe=void 0,this._fusionConnecting=!1}_isEditorPreview(){let t=this.parentNode??this.getRootNode();for(;t;){if(t instanceof HTMLElement&&["HUI-CARD-PREVIEW","HUI-DIALOG-EDIT-CARD"].includes(t.tagName))return!0;t=t.parentNode??(t instanceof ShadowRoot?t.host:null)}return!1}async _openCalibration(){if(!this._calibrationLoading&&this._hass.user?.is_admin)if(this._isEditorPreview())this._calibrationError=this._t("workflow.preview_readonly");else{this._calibrationLoading=!0,this._calibrationError="";try{if(this._config.radars?.length){const t=await this._hass.callWS({type:"mmwave_fusion/get_config",fusion_id:this._config.fusion_id||"home"});if(t.api_version<4||!t.config)throw new Error(this._t("workflow.backend_required"));this._fusionCalibrationConfig={...this._config,...t.config}}else this._loadFromDevice(),await this._loadSingleProfile(),this._originalCalibration=structuredClone(this._cal),this._isCalibrating=!0,this._tab=0}catch(t){this._calibrationError=String(t.message??t)}finally{this._calibrationLoading=!1}}}_closeCalibration(){if("syncing"!==this._syncState){if(this._originalCalibration&&JSON.stringify(this._cal)!==JSON.stringify(this._originalCalibration)){if(!confirm(this._t("workflow.discard_confirm")))return;this._cal=structuredClone(this._originalCalibration)}this._isCalibrating=!1}}async _loadSingleProfile(){if(!this._hass.user?.is_admin||!this._config.device_id||this._adapter.info.is1DRanging)return;const t=this._config.device_id;try{const e=await this._hass.callWS({type:"mmwave_fusion/list_calibration_profiles"});if(this._config.device_id!==t||this._isCalibrating)return;const i=e.find(e=>e.profile_id===`device:${t}`&&e.radar_model===this._config.radar_model);this._singleProfileRevision=i?.revision??0,this._singleProfile=i,i&&(this._cal=structuredClone(i.calibration))}catch{this._singleProfileRevision=void 0,this._singleProfile=void 0}}async _loadFusionEvents(){if(this._hass&&this._config.radars?.length)try{const t=await this._hass.callWS({type:"mmwave_fusion/query_events",fusion_id:this._config.fusion_id||"home",limit:100});this._fusionEvents=t.map(t=>({event_id:String(t.event_id),fusion_id:String(t.fusion_id),track_id:String(t.track_id),event_type:t.event_type,zone_id:String(t.zone_id),timestamp:Number(t.ts),x:Number(t.x),y:Number(t.y),clip_path:t.clip_path?String(t.clip_path):void 0,camera_entity_id:t.camera_entity_id?String(t.camera_entity_id):void 0,clip_status:t.clip_status?String(t.clip_status):void 0,clip_provider:t.clip_provider?String(t.clip_provider):void 0,clip_file_size:t.clip_file_size?Number(t.clip_file_size):void 0,clip_error:t.clip_error?String(t.clip_error):void 0,metadata:t.metadata&&"object"==typeof t.metadata?t.metadata:void 0,quality_score:null==t.quality_score?void 0:Number(t.quality_score),quality_reason:t.quality_reason?String(t.quality_reason):void 0,recording_decision:t.recording_decision?String(t.recording_decision):void 0,recording_decisions:Array.isArray(t.recording_decisions)?t.recording_decisions:void 0}))}catch(t){console.info("MMWave Fusion history is not available",t)}}async _loadFusionHeatmap(t){if(this._hass){this._fusionHeatmapLoading=!0,this._fusionHeatmapError="";try{this._fusionHeatmap=await this._hass.callWS({type:"mmwave_fusion/query_heatmap",fusion_id:this._config.fusion_id||"home",hours:t.detail.hours,bin_cm:t.detail.binCm})}catch(t){const e=t?.code;this._fusionHeatmapError="unknown_command"===e?"unsupported":"failed","unknown_command"!==e&&console.warn("MMWave Fusion heatmap query failed",t)}finally{this._fusionHeatmapLoading=!1}}}async _loadFusionReplay(t){if(this._hass){this._fusionReplayLoading=!0,this._fusionReplayError="";try{this._fusionReplay=await this._hass.callWS({type:"mmwave_fusion/query_replay",fusion_id:this._config.fusion_id||"home",since:t.detail.since,until:t.detail.until})}catch(t){const e=t?.code;this._fusionReplayError="unknown_command"===e?"unsupported":"failed","unknown_command"!==e&&console.warn("MMWave Fusion replay query failed",t)}finally{this._fusionReplayLoading=!1}}}async _selectFusionEvent(t){this._selectedFusionEvent=t.detail,this._fusionVideoUrl="";try{await this._loadFusionEvents();const e=this._fusionEvents.find(e=>e.event_id===t.detail.event_id)??t.detail;if(this._selectedFusionEvent=e,this._fusionHistoryTrack=await this._hass.callWS({type:"mmwave_fusion/query_track",track_id:e.track_id,limit:1e4}),e.clip_path){const t=await this._hass.callWS({type:"media_source/resolve_media",media_content_id:`media-source://media_source/local/${e.clip_path}`});this._fusionVideoUrl=t.url}}catch(t){console.warn("Failed to load fused trajectory event",t)}}_gotoTab(t){this._tab=t,this._livePanel?.clearTrail(),this.requestUpdate()}_onPolygonPointAdded(t){const e=this.shadowRoot?.querySelector("#poly-cv"),i={W:e?.offsetWidth??400,H:165,roomW:this._cal?.room_w??this._config.room_w,roomD:this._cal?.room_d??this._config.room_d},a=ke(t.detail.canvasX,t.detail.canvasY,i),r={...this._cal,polygon:[...this._cal.polygon,a]};this._cal=r,this.requestUpdate()}_onCalibrationChanged(t){let e=t.detail;const i=e.room_w??this._config.room_w,a=e.room_d??this._config.room_d;e.radar_x>i&&(e={...e,radar_x:i}),e.radar_y>a&&(e={...e,radar_y:a}),this._cal=this._adapter.info.is1DRanging?{...e,polygon:[]}:e,this._hass&&(this.hass=this._hass),this.requestUpdate()}_onCaptureRequested(){}_devicePrefix(){if(this._adapter.info.is1DRanging){const t=this._config.presence_entity,e=t?.match(/^binary_sensor\.(.+)_presence$/);if(e)return e[1]}const t=this._config?.x_entity||"";if(t){const e=t.match(/^sensor\.(.+?)(_radar_x|_x)$/);if(e)return e[1];const i=t.split(".")[1]?.split("_")||[];return i.slice(0,i.length-1).join("_")}const e=(this._config?.target_1_x_entity||"").match(/^sensor\.(.+?)_target_\d+_x$/);return e?e[1]:""}_loadFromDevice(){if(!this._hass||!this._config)return;const t=this._devicePrefix();if(!t)return;const e={...this._cal};for(const[i,a]of Object.entries(ui)){const r=this._hass.states[`number.${t}_${a}`];r&&r.state&&!isNaN(Number(r.state))&&(e[i]=Number(r.state))}if(this._adapter.info.is1DRanging){for(const i of["distance_min","distance_max"]){const a=Number(this._hass.states[`number.${t}_zone_${"distance_min"===i?"min":"max"}_distance`]?.state);Number.isFinite(a)&&a>=0&&(e[i]=a)}e.polygon=[]}const i=this._config.polygon_entity||`text.${t}_zone_polygon`,a=this._adapter.info.is1DRanging?void 0:this._hass.states[i];if(a&&a.state){const t=a.state.split(";").filter(t=>t.includes(",")).map(t=>{const[e,i]=t.split(",");return{x:parseFloat(e),y:parseFloat(i)}});t.length>0?e.polygon=t:e.polygon=[]}else a&&""===a.state&&(e.polygon=[]);const r=e.room_w??this._config.room_w,o=e.room_d??this._config.room_d;e.radar_x>r&&(e.radar_x=r),e.radar_y>o&&(e.radar_y=o),this._cal=e,this._singleProfile&&(this._cal=structuredClone(this._singleProfile.calibration)),this.requestUpdate()}async _sync(){if(!this._hass.user?.is_admin)return;const t=this._devicePrefix();if(t){if(this._adapter.info.is1DRanging&&(this._cal.distance_max??0)>0&&(this._cal.distance_min??0)>this._cal.distance_max)return this._syncFailures=[this._t("range.invalid")],void(this._syncState="error");this._syncState="syncing";try{if(void 0!==this._singleProfileRevision&&this._config.device_id){const t=await this._hass.callWS({type:"mmwave_fusion/upsert_calibration_profile",profile:{profile_id:`device:${this._config.device_id}`,device_id:this._config.device_id,radar_model:this._config.radar_model,name:this._adapter.info.displayName,calibration:this._cal,expected_revision:this._singleProfileRevision}});this._singleProfileRevision=t.revision,this._singleProfile=t,this._originalCalibration=structuredClone(this._cal)}const e=[];for(const[i,a]of Object.entries(ui)){const r=this._cal[i],o=`number.${t}_${a}`;if(void 0!==this._hass.states[o])try{await this._hass.callService("number","set_value",{entity_id:o,value:r})}catch(t){e.push(o),console.warn(`Failed to sync ${o}`,t)}else e.push(`${o} (no such entity)`)}if(this._adapter.info.is1DRanging)for(const[i,a]of[["distance_min","zone_min_distance"],["distance_max","zone_max_distance"]]){const r=`number.${t}_${a}`;if(this._hass.states[r])try{await this._hass.callService("number","set_value",{entity_id:r,value:this._cal[i]??0})}catch{e.push(r)}else e.push(`${r} (no such entity)`)}const i=this._cal.polygon.map(t=>`${t.x},${t.y}`).join(";"),a=this._config.polygon_entity||`text.${t}_zone_polygon`;if(this._adapter.info.is1DRanging||void 0===this._hass.states[a])!this._adapter.info.is1DRanging&&this._cal.polygon.length>0&&e.push(`${a} (no such entity)`);else try{await this._hass.callService("text","set_value",{entity_id:a,value:i})}catch(t){e.push(a),console.warn(`Failed to sync ${a}`,t)}this._syncFailures=e,this._syncState=e.length>0?"error":"success",e.length||(this._originalCalibration=structuredClone(this._cal)),e.length>0&&console.error("mmwave-card: these did not reach the device -",e)}catch(t){this._syncFailures=[String(t.message??t)],this._syncState="error",console.error(t)}finally{null!=this._syncResetTimer&&clearTimeout(this._syncResetTimer),this._syncResetTimer=window.setTimeout(()=>this._syncState="idle",2200)}}else alert("Error: neither x_entity nor target_1_x_entity is configured.")}_reset(){if(!confirm(this._L("actions.reset_confirm")||"Reset to factory defaults?"))return;const t=this._adapter.getDefaultCalibration(),e=this._config.room_w,i=this._config.room_d;t.radar_x=Math.round(.382*e),t.radar_y=Math.round(.382*i),this._cal=t,this._gotoTab(0)}render(){if(!this._config||!this._adapter)return Y;if(this._config.radars?.length)return this._renderFusionMode();const t=this._cal.room_w??this._config.room_w,e=this._cal.room_d??this._config.room_d,i=this._hass?.language??"en",a=this._insideTargetCount(),r=[{icon:"mdi:cube-scan",title:this._t("card.installation"),description:this._t("card.place_the_radar_in_the_3d")},{icon:"mdi:compass-outline",title:this._t("card.direction"),description:this._t("card.calibrate_yaw_with_two_reference_points")},{icon:"mdi:radar",title:this._t("card.live_test"),description:this._t("card.verify_targets_boundary_and_trails")}];return this._isCalibrating?B`
       <ha-card>
         <header class="workflow-header">
           <button
@@ -2242,40 +2244,40 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
           @capture-requested=${this._onCaptureRequested}
         >
           ${0===this._tab?B` <mmwave-geo-panel
-                .floorplan=${this._config.floorplan}
-                .adapter=${this._adapter}
-                .calibration=${this._cal}
-                .lang=${i}
-                .roomW=${t}
-                .roomD=${e}
-                .maxRangeM=${this._maxRangeM}
-              >
-              </mmwave-geo-panel>`:Y}
-          ${1===this._tab?this._adapter.info.is1DRanging?B`<p>${this._t("fusioncal.range_only")}</p>`:B`<mmwave-fusion-calibration
                   .floorplan=${this._config.floorplan}
-                  .hass=${this._hass}
-                  .radars=${[{...this._config,id:this._config.device_id||"radar",calibration:this._cal}]}
+                  .adapter=${this._adapter}
+                  .calibration=${this._cal}
                   .lang=${i}
                   .roomW=${t}
                   .roomD=${e}
-                  .applyLabel=${this._t("workflow.use_results")}
-                  @fusion-calibration-applied=${t=>{const e=t.detail.solutions[0];e&&(this._onCalibrationChanged(new CustomEvent("calibration-changed",{detail:e.calibration})),this._gotoTab(2))}}
-                ></mmwave-fusion-calibration>`:Y}
+                  .maxRangeM=${this._maxRangeM}
+                >
+                </mmwave-geo-panel>`:Y}
+          ${1===this._tab?this._adapter.info.is1DRanging?B`<p>${this._t("fusioncal.range_only")}</p>`:B`<mmwave-fusion-calibration
+                    .floorplan=${this._config.floorplan}
+                    .hass=${this._hass}
+                    .radars=${[{...this._config,id:this._config.device_id||"radar",calibration:this._cal}]}
+                    .lang=${i}
+                    .roomW=${t}
+                    .roomD=${e}
+                    .applyLabel=${this._t("workflow.use_results")}
+                    @fusion-calibration-applied=${t=>{const e=t.detail.solutions[0];e&&(this._onCalibrationChanged(new CustomEvent("calibration-changed",{detail:e.calibration})),this._gotoTab(2))}}
+                  ></mmwave-fusion-calibration>`:Y}
           ${2===this._tab?B` <mmwave-live-panel
-                .hass=${this._hass}
-                .config=${this._config}
-                .floorplan=${this._config.floorplan}
-                .adapter=${this._adapter}
-                .calibration=${this._cal}
-                .lang=${i}
-                .roomW=${t}
-                .roomD=${e}
-                .targets=${this._targets}
-                .present=${this._present}
-                .maxRangeM=${this._maxRangeM}
-                .showStatus=${!0}
-              >
-              </mmwave-live-panel>`:Y}
+                  .hass=${this._hass}
+                  .config=${this._config}
+                  .floorplan=${this._config.floorplan}
+                  .adapter=${this._adapter}
+                  .calibration=${this._cal}
+                  .lang=${i}
+                  .roomW=${t}
+                  .roomD=${e}
+                  .targets=${this._targets}
+                  .present=${this._present}
+                  .maxRangeM=${this._maxRangeM}
+                  .showStatus=${!0}
+                >
+                </mmwave-live-panel>`:Y}
         </div>
 
         <footer class="workflow-footer">
@@ -2290,22 +2292,22 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
           </div>
           <div class="footer-actions">
             ${this._tab>0?B`<button class="secondary-button" type="button" @click=${()=>this._gotoTab(this._tab-1)}>
-                  <ha-icon icon="mdi:chevron-left"></ha-icon>${this._t("card.back")}
-                </button>`:Y}
+                    <ha-icon icon="mdi:chevron-left"></ha-icon>${this._t("card.back")}
+                  </button>`:Y}
             ${this._tab<2?B`<button class="primary-button" type="button" @click=${()=>this._gotoTab(this._tab+1)}>
-                  ${this._t("card.continue")}<ha-icon icon="mdi:chevron-right"></ha-icon>
-                </button>`:B`<button
-                  class="primary-button sync ${this._syncState}"
-                  type="button"
-                  title=${this._syncFailures.length>0?`Not written: ${this._syncFailures.join(", ")}`:Y}
-                  ?disabled=${"syncing"===this._syncState}
-                  @click=${this._sync}
-                >
-                  <ha-icon
-                    icon=${"success"===this._syncState?"mdi:check-circle":"error"===this._syncState?"mdi:alert-circle":"mdi:cloud-upload-outline"}
-                  ></ha-icon>
-                  ${this._syncLabel()}
-                </button>`}
+                    ${this._t("card.continue")}<ha-icon icon="mdi:chevron-right"></ha-icon>
+                  </button>`:B`<button
+                    class="primary-button sync ${this._syncState}"
+                    type="button"
+                    title=${this._syncFailures.length>0?`Not written: ${this._syncFailures.join(", ")}`:Y}
+                    ?disabled=${"syncing"===this._syncState}
+                    @click=${this._sync}
+                  >
+                    <ha-icon
+                      icon=${"success"===this._syncState?"mdi:check-circle":"error"===this._syncState?"mdi:alert-circle":"mdi:cloud-upload-outline"}
+                    ></ha-icon>
+                    ${this._syncLabel()}
+                  </button>`}
           </div>
         </footer>
       </ha-card>
@@ -2415,26 +2417,26 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
             @fusion-replay-requested=${this._loadFusionReplay}
           ></mmwave-fusion-panel>
           ${this._selectedFusionEvent?B`
-                <section class="fusion-playback">
-                  <header>
-                    <strong
-                      >${this._selectedFusionEvent.event_type.toUpperCase()} ·
-                      ${this._selectedFusionEvent.zone_id}</strong
-                    >
-                    <span>${new Date(1e3*this._selectedFusionEvent.timestamp).toLocaleString()}</span>
-                  </header>
-                  ${null!=this._selectedFusionEvent.quality_score?B`<p class="quality-detail">
-                        ${this._t("card.trajectory_quality")}:
-                        <strong>${this._selectedFusionEvent.quality_score}/100</strong>
-                        ${this._selectedFusionEvent.quality_reason?B` · ${this._selectedFusionEvent.quality_reason}`:Y}
-                      </p>`:Y}
-                  ${this._fusionVideoUrl?B`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`:B`<p>
-                        ${this._t("card.no_playable_clip_is_available_yet")}
-                        ${this._selectedFusionEvent.clip_status?B` (${this._selectedFusionEvent.clip_status})`:Y}
-                        ${this._selectedFusionEvent.clip_error?B`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`:Y}
-                      </p>`}
-                </section>
-              `:Y}
+                  <section class="fusion-playback">
+                    <header>
+                      <strong
+                        >${this._selectedFusionEvent.event_type.toUpperCase()} ·
+                        ${this._selectedFusionEvent.zone_id}</strong
+                      >
+                      <span>${new Date(1e3*this._selectedFusionEvent.timestamp).toLocaleString()}</span>
+                    </header>
+                    ${null!=this._selectedFusionEvent.quality_score?B`<p class="quality-detail">
+                            ${this._t("card.trajectory_quality")}:
+                            <strong>${this._selectedFusionEvent.quality_score}/100</strong>
+                            ${this._selectedFusionEvent.quality_reason?B` · ${this._selectedFusionEvent.quality_reason}`:Y}
+                          </p>`:Y}
+                    ${this._fusionVideoUrl?B`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`:B`<p>
+                            ${this._t("card.no_playable_clip_is_available_yet")}
+                            ${this._selectedFusionEvent.clip_status?B` (${this._selectedFusionEvent.clip_status})`:Y}
+                            ${this._selectedFusionEvent.clip_error?B`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`:Y}
+                          </p>`}
+                  </section>
+                `:Y}
         </div>
       </ha-card>
     `}static{this.styles=s`
@@ -2971,19 +2973,19 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         </button>
       </div>
       ${"scale"===this.mode?B`<label
-              >${this.t("length")}<input
-                type="number"
-                min="1"
-                .value=${String(this.length)}
-                @input=${t=>this.length=Number(t.target.value)}
-            /></label>
-            <button
-              type="button"
-              ?disabled=${2!==this.points.length||!ve(this.points[0],this.points[1],this.length)}
-              @click=${this.calibrate}
-            >
-              ${this.t("apply_scale")}
-            </button>`:Y}
+                >${this.t("length")}<input
+                  type="number"
+                  min="1"
+                  .value=${String(this.length)}
+                  @input=${t=>this.length=Number(t.target.value)}
+              /></label>
+              <button
+                type="button"
+                ?disabled=${2!==this.points.length||!ve(this.points[0],this.points[1],this.length)}
+                @click=${this.calibrate}
+              >
+                ${this.t("apply_scale")}
+              </button>`:Y}
       <div class="numbers">
         ${[["width_cm",e.width,"width"],["offset_x_cm",e.x,"x"],["offset_y_cm",e.y,"y"],["rotation",t.rotation??0,"rotation"]].map(([t,e,a])=>B` <label
               >${this.t(a)}<input
@@ -3102,15 +3104,15 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         <button type="button" class="new" @click=${this.beginNew}>＋ ${this._t("zone.new_zone")}</button>
       </div>
       ${this.floorplan?.url&&!1!==this.floorplan.visible?B`<div class="trace-controls">
-            <label
-              ><input
-                type="checkbox"
-                .checked=${this.trace}
-                @change=${t=>{this.trace=t.target.checked,this.traceStatus=""}}
-              />${this._t("floorplan.trace")}</label
-            >
-            <small role="status">${this._t("floorplan."+(this.traceStatus||"trace_hint"))}</small>
-          </div>`:""}
+              <label
+                ><input
+                  type="checkbox"
+                  .checked=${this.trace}
+                  @change=${t=>{this.trace=t.target.checked,this.traceStatus=""}}
+                />${this._t("floorplan.trace")}</label
+              >
+              <small role="status">${this._t("floorplan."+(this.traceStatus||"trace_hint"))}</small>
+            </div>`:""}
       <svg
         class=${this.draft?"floor active":"floor"}
         viewBox=${`0 0 ${this.roomW} ${this.roomD}`}
@@ -3135,19 +3137,19 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         <rect width="100%" height="100%" class="background" />
         ${i.map((t,e)=>{const i=this.draft===t,a=bi[e%bi.length];return B`
             ${t.polygon.length>=3?B`<polygon
-                  points=${this.pointString(t.polygon)}
-                  fill=${a}
-                  fill-opacity=${i?".20":".09"}
-                  stroke=${a}
-                  stroke-width=${i?"3":"2"}
-                  vector-effect="non-scaling-stroke"
-                />`:B`<polyline
-                  points=${this.pointString(t.polygon)}
-                  fill="none"
-                  stroke=${a}
-                  stroke-width="3"
-                  vector-effect="non-scaling-stroke"
-                />`}
+                    points=${this.pointString(t.polygon)}
+                    fill=${a}
+                    fill-opacity=${i?".20":".09"}
+                    stroke=${a}
+                    stroke-width=${i?"3":"2"}
+                    vector-effect="non-scaling-stroke"
+                  />`:B`<polyline
+                    points=${this.pointString(t.polygon)}
+                    fill="none"
+                    stroke=${a}
+                    stroke-width="3"
+                    vector-effect="non-scaling-stroke"
+                  />`}
             ${t.polygon.map((t,e)=>B`
                 <circle
                   cx=${t.x}
@@ -3172,41 +3174,45 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         <text x="8" y=${this.roomD-9} class="axis">Y ↓ ${this.roomD}cm</text>
       </svg>
       ${this.draft?B`
-            <div class="form-grid">
-              <label
-                >ID<input
-                  .value=${this.draft.id}
-                  @input=${t=>this.patch({id:t.target.value})}
-              /></label>
-              <label
-                >${this._t("zone.name")}<input
-                  .value=${this.draft.name??""}
-                  @input=${t=>this.patch({name:t.target.value})}
-              /></label>
-              <label
-                >${this._t("zone.dwell_seconds")}<input
-                  type="number"
-                  min="0"
-                  step="1"
-                  .value=${String(this.draft.dwell_s??0)}
-                  @input=${t=>this.patch({dwell_s:Number(t.target.value)})}
-              /></label>
-              <div class="vertex-count">${this.draft.polygon.length} ${this._t("zone.vertices")}</div>
-            </div>
-            <div class="actions">
-              <button type="button" @click=${this.undoPoint} ?disabled=${!this.draft.polygon.length}>
-                ↶ ${this._t("zone.undo_point")}
-              </button>
-              <button type="button" @click=${()=>this.patch({polygon:[]})} ?disabled=${!this.draft.polygon.length}>
-                ${this._t("zone.clear")}
-              </button>
-              <button type="button" class="danger" @click=${this.removeZone}>
-                ${this.originalId?this._t("zone.delete_zone"):this._t("zone.cancel")}
-              </button>
-              <button type="button" class="save" @click=${this.save}>${this._t("zone.save_zone")}</button>
-            </div>
-            ${this.error?B`<div class="error">${this.error}</div>`:Y}
-          `:B`<p class="hint">${this._t("zone.select_or_create_a_zone_then")}</p>`}
+              <div class="form-grid">
+                <label
+                  >ID<input
+                    .value=${this.draft.id}
+                    @input=${t=>this.patch({id:t.target.value})}
+                /></label>
+                <label
+                  >${this._t("zone.name")}<input
+                    .value=${this.draft.name??""}
+                    @input=${t=>this.patch({name:t.target.value})}
+                /></label>
+                <label
+                  >${this._t("zone.dwell_seconds")}<input
+                    type="number"
+                    min="0"
+                    step="1"
+                    .value=${String(this.draft.dwell_s??0)}
+                    @input=${t=>this.patch({dwell_s:Number(t.target.value)})}
+                /></label>
+                <div class="vertex-count">${this.draft.polygon.length} ${this._t("zone.vertices")}</div>
+              </div>
+              <div class="actions">
+                <button type="button" @click=${this.undoPoint} ?disabled=${!this.draft.polygon.length}>
+                  ↶ ${this._t("zone.undo_point")}
+                </button>
+                <button
+                  type="button"
+                  @click=${()=>this.patch({polygon:[]})}
+                  ?disabled=${!this.draft.polygon.length}
+                >
+                  ${this._t("zone.clear")}
+                </button>
+                <button type="button" class="danger" @click=${this.removeZone}>
+                  ${this.originalId?this._t("zone.delete_zone"):this._t("zone.cancel")}
+                </button>
+                <button type="button" class="save" @click=${this.save}>${this._t("zone.save_zone")}</button>
+              </div>
+              ${this.error?B`<div class="error">${this.error}</div>`:Y}
+            `:B`<p class="hint">${this._t("zone.select_or_create_a_zone_then")}</p>`}
     `}static{this.styles=s`
     .trace-controls {
       display: flex;
@@ -3474,97 +3480,97 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
             </button>
           </div>
           ${a&&r&&o?B`
-                <div class="radar-tab-panel" role="tabpanel" aria-labelledby=${`radar-tab-${i}`}>
-                  <section class="radar-editor">
-                    <header>
-                      <span>
-                        <strong>${this._t("editor.radar")} ${i+1}</strong>
-                        <small>${a.id} · ${r.info.displayName}</small>
-                      </span>
-                      <button
-                        type="button"
-                        class="remove-button"
-                        ?disabled=${e.length<=1}
-                        @click=${()=>this._removeFusionRadar(i)}
-                      >
-                        ×
-                      </button>
-                    </header>
-                    <div class="two-col">
-                      <div class="field compact">
-                        <label>ID</label>
-                        <input
-                          type="text"
-                          .value=${a.id}
-                          @change=${t=>this._updateFusionRadar(i,{id:t.target.value})}
-                        />
-                      </div>
-                      <div class="field compact">
-                        <label>${this._L("editor.model")}</label>
-                        <select
-                          .value=${a.radar_model}
-                          @change=${t=>this._updateFusionRadar(i,{radar_model:t.target.value})}
+                  <div class="radar-tab-panel" role="tabpanel" aria-labelledby=${`radar-tab-${i}`}>
+                    <section class="radar-editor">
+                      <header>
+                        <span>
+                          <strong>${this._t("editor.radar")} ${i+1}</strong>
+                          <small>${a.id} · ${r.info.displayName}</small>
+                        </span>
+                        <button
+                          type="button"
+                          class="remove-button"
+                          ?disabled=${e.length<=1}
+                          @click=${()=>this._removeFusionRadar(i)}
                         >
-                          ${t.map(t=>B`<option value=${t.id} ?selected=${t.id===a.radar_model}>
-                                ${t.label}
+                          ×
+                        </button>
+                      </header>
+                      <div class="two-col">
+                        <div class="field compact">
+                          <label>ID</label>
+                          <input
+                            type="text"
+                            .value=${a.id}
+                            @change=${t=>this._updateFusionRadar(i,{id:t.target.value})}
+                          />
+                        </div>
+                        <div class="field compact">
+                          <label>${this._L("editor.model")}</label>
+                          <select
+                            .value=${a.radar_model}
+                            @change=${t=>this._updateFusionRadar(i,{radar_model:t.target.value})}
+                          >
+                            ${t.map(t=>B`<option value=${t.id} ?selected=${t.id===a.radar_model}>
+                                  ${t.label}
+                                </option>`)}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label>${this._t("editor.radar_device")}</label>
+                        <select
+                          .value=${a.device_id??""}
+                          @change=${t=>this._fusionDeviceChanged(i,t)}
+                        >
+                          <option value="">-- ${this._t("editor.select_device")} --</option>
+                          ${this._devices.map(t=>B`<option value=${t.id} ?selected=${t.id===a.device_id}>
+                                ${t.name_by_user||t.name||"Unknown device"}
                               </option>`)}
                         </select>
                       </div>
-                    </div>
-                    <div class="field">
-                      <label>${this._t("editor.radar_device")}</label>
-                      <select
-                        .value=${a.device_id??""}
-                        @change=${t=>this._fusionDeviceChanged(i,t)}
-                      >
-                        <option value="">-- ${this._t("editor.select_device")} --</option>
-                        ${this._devices.map(t=>B`<option value=${t.id} ?selected=${t.id===a.device_id}>
-                              ${t.name_by_user||t.name||"Unknown device"}
-                            </option>`)}
-                      </select>
-                    </div>
-                    <div class="field profile-field">
-                      <label>${this._t("editor.calibration_profile")}</label>
-                      <select
-                        .value=${a.calibration_profile_id??""}
-                        @change=${t=>this._profileChanged(i,t)}
-                      >
-                        <option value="">${this._t("editor.manual_not_linked")}</option>
-                        ${this._calibrationProfiles.filter(t=>t.device_id===a.device_id&&t.radar_model===a.radar_model).map(t=>B`
-                              <option
-                                value=${t.profile_id}
-                                ?selected=${t.profile_id===a.calibration_profile_id}
-                              >
-                                ${t.name} · ${t.radar_model} · v${t.revision}
-                              </option>
-                            `)}
-                      </select>
-                      ${a.calibration_profile_id?B`<small class="profile-badge">
-                            ${this._t("editor.device_profile_snapshot")} ·
-                            v${a.calibration_profile_revision??"?"}
-                          </small>`:Y}
-                    </div>
-                    ${r?B`
-                          <details class="advanced">
-                            <summary>${this._t("editor.entity_mapping")}</summary>
-                            <div class="advanced-fields">
-                              ${r.getEntitySchema().map(t=>B`
-                                  <div class="field">
-                                    <label>${this._L(t.labelKey)}${t.required?"":" *"}</label>
-                                    <input
-                                      type="text"
-                                      list="entities-list"
-                                      .value=${String(a[t.key]??"")}
-                                      @change=${e=>this._updateFusionRadar(i,{[t.key]:e.target.value})}
-                                    />
-                                  </div>
-                                `)}
-                            </div>
-                          </details>
-                        `:Y}
-                  </section>
-                </div>
-              `:Y}
+                      <div class="field profile-field">
+                        <label>${this._t("editor.calibration_profile")}</label>
+                        <select
+                          .value=${a.calibration_profile_id??""}
+                          @change=${t=>this._profileChanged(i,t)}
+                        >
+                          <option value="">${this._t("editor.manual_not_linked")}</option>
+                          ${this._calibrationProfiles.filter(t=>t.device_id===a.device_id&&t.radar_model===a.radar_model).map(t=>B`
+                                <option
+                                  value=${t.profile_id}
+                                  ?selected=${t.profile_id===a.calibration_profile_id}
+                                >
+                                  ${t.name} · ${t.radar_model} · v${t.revision}
+                                </option>
+                              `)}
+                        </select>
+                        ${a.calibration_profile_id?B`<small class="profile-badge">
+                                ${this._t("editor.device_profile_snapshot")} ·
+                                v${a.calibration_profile_revision??"?"}
+                              </small>`:Y}
+                      </div>
+                      ${r?B`
+                              <details class="advanced">
+                                <summary>${this._t("editor.entity_mapping")}</summary>
+                                <div class="advanced-fields">
+                                  ${r.getEntitySchema().map(t=>B`
+                                      <div class="field">
+                                        <label>${this._L(t.labelKey)}${t.required?"":" *"}</label>
+                                        <input
+                                          type="text"
+                                          list="entities-list"
+                                          .value=${String(a[t.key]??"")}
+                                          @change=${e=>this._updateFusionRadar(i,{[t.key]:e.target.value})}
+                                        />
+                                      </div>
+                                    `)}
+                                </div>
+                              </details>
+                            `:Y}
+                    </section>
+                  </div>
+                `:Y}
         </div>
         ${this._profileStatus?B`<div class="profile-status">${this._profileStatus}</div>`:Y}
 
@@ -3769,9 +3775,9 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
         </select>
       </div>
       ${"idle"!==this._deviceStatus?B`<div class="match-status ${this._deviceStatus}">
-            <span>${"loading"===this._deviceStatus?"···":"success"===this._deviceStatus?"✓":"!"}</span>
-            ${"loading"===this._deviceStatus?this._t("editor.detecting_device_entities"):"success"===this._deviceStatus?this._t("editor.matched_p0_configuration_fields",{p0:this._matchedEntities}):this._t("editor.automatic_detection_failed_configure_entities_manually")}
-          </div>`:""}
+              <span>${"loading"===this._deviceStatus?"···":"success"===this._deviceStatus?"✓":"!"}</span>
+              ${"loading"===this._deviceStatus?this._t("editor.detecting_device_entities"):"success"===this._deviceStatus?this._t("editor.matched_p0_configuration_fields",{p0:this._matchedEntities}):this._t("editor.automatic_detection_failed_configure_entities_manually")}
+            </div>`:""}
 
       <!-- Room dimensions -->
       <h3><span>3</span>${this._L("editor.room_dimensions")}</h3>
@@ -3802,26 +3808,26 @@ function t(t,e,i,a){var r,o=arguments.length,s=o<3?e:null===a?a=Object.getOwnPro
       ${this._floorplanSettings()}
       <!-- Entity fields (model-specific) -->
       ${e?B` <details
-            class="advanced"
-            ?open=${this._advOpen}
-            @toggle=${t=>this._advOpen=t.target.open}
-          >
-            <summary>
-              <span>${this._t("editor.advanced_assign_entities_manually")}</span>
-              <small>${this._t("editor.troubleshooting")}</small>
-            </summary>
-            <div class="advanced-fields">
-              ${e.getEntitySchema().map(t=>B` <div class="field">
-                    <label>${this._L(t.labelKey)}${t.required?"":" *"}</label>
-                    <input
-                      type="text"
-                      list="entities-list"
-                      .value=${this._config[t.key]??""}
-                      @change=${e=>this._changed(t.key,e.target.value)}
-                    />
-                  </div>`)}
-            </div>
-          </details>`:Y}
+              class="advanced"
+              ?open=${this._advOpen}
+              @toggle=${t=>this._advOpen=t.target.open}
+            >
+              <summary>
+                <span>${this._t("editor.advanced_assign_entities_manually")}</span>
+                <small>${this._t("editor.troubleshooting")}</small>
+              </summary>
+              <div class="advanced-fields">
+                ${e.getEntitySchema().map(t=>B` <div class="field">
+                      <label>${this._L(t.labelKey)}${t.required?"":" *"}</label>
+                      <input
+                        type="text"
+                        list="entities-list"
+                        .value=${this._config[t.key]??""}
+                        @change=${e=>this._changed(t.key,e.target.value)}
+                      />
+                    </div>`)}
+              </div>
+            </details>`:Y}
 
       <datalist id="entities-list">
         ${(this.hass?Object.keys(this.hass.states):[]).map(t=>B`<option value=${t}></option>`)}

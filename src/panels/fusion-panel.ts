@@ -64,13 +64,7 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) selectedEventId = '';
   @property({ attribute: false }) lang = 'en';
   @property({ attribute: false }) backendState:
-    | 'connecting'
-    | 'online'
-    | 'preview'
-    | 'fallback'
-    | 'missing'
-    | 'outdated'
-    | 'error' = 'connecting';
+    'connecting' | 'online' | 'preview' | 'fallback' | 'missing' | 'outdated' | 'error' = 'connecting';
   @property({ attribute: false }) heatmap?: FusionHeatmap;
   @property({ type: Boolean }) heatmapLoading = false;
   /** '' when fine, 'unsupported' when the backend predates the command. */
@@ -484,55 +478,59 @@ export class FusionPanel extends LitElement {
             `,
           )}
         </div>
-        ${this.replayError === 'unsupported'
-          ? html`<span class="heatmap-note">${this._t('fusion.replay_needs_newer_backend')}</span>`
-          : this.replayError === 'failed'
-            ? html`<span class="heatmap-note">${this._t('fusion.replay_failed')}</span>`
-            : this.replayLoading
-              ? html`<span class="heatmap-note">${this._t('fusion.replay_loading')}</span>`
-              : !replay
-                ? ''
-                : replay.tracks.length === 0
-                  ? html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
-                  : html`
-                      <button type="button" class="play" @click=${this.togglePlaying}>
-                        ${this.playing ? '❙❙' : '▶'}
-                      </button>
-                      <div class="windows">
-                        ${[1, 4, 16].map(
-                          (speed) => html`
-                            <button
-                              type="button"
-                              class=${this.speed === speed ? 'selected' : ''}
-                              @click=${() => (this.speed = speed)}
-                            >
-                              ${speed}×
-                            </button>
-                          `,
-                        )}
-                      </div>
-                      <input
-                        class="scrub"
-                        type="range"
-                        min="0"
-                        max="1000"
-                        .value=${String(Math.round(fraction * 1000))}
-                        @input=${(event: Event) => {
-                          this.playing = false;
-                          this.scrubTo(Number((event.target as HTMLInputElement).value) / 1000);
-                        }}
-                      />
-                      <span class="clock">${this.clockAt(this.playhead)}</span>
-                      <span class="heatmap-note">
-                        ${this._t('fusion.replay_summary', {
-                          tracks: replay.tracks.length,
-                          points: replay.total_points.toLocaleString(),
-                        })}
-                        ${replay.thinned
-                          ? ` · ${this._t('fusion.replay_thinned', { hz: replay.sample_hz.toFixed(1) })}`
-                          : ''}
-                      </span>
-                    `}
+        ${
+          this.replayError === 'unsupported'
+            ? html`<span class="heatmap-note">${this._t('fusion.replay_needs_newer_backend')}</span>`
+            : this.replayError === 'failed'
+              ? html`<span class="heatmap-note">${this._t('fusion.replay_failed')}</span>`
+              : this.replayLoading
+                ? html`<span class="heatmap-note">${this._t('fusion.replay_loading')}</span>`
+                : !replay
+                  ? ''
+                  : replay.tracks.length === 0
+                    ? html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
+                    : html`
+                        <button type="button" class="play" @click=${this.togglePlaying}>
+                          ${this.playing ? '❙❙' : '▶'}
+                        </button>
+                        <div class="windows">
+                          ${[1, 4, 16].map(
+                            (speed) => html`
+                              <button
+                                type="button"
+                                class=${this.speed === speed ? 'selected' : ''}
+                                @click=${() => (this.speed = speed)}
+                              >
+                                ${speed}×
+                              </button>
+                            `,
+                          )}
+                        </div>
+                        <input
+                          class="scrub"
+                          type="range"
+                          min="0"
+                          max="1000"
+                          .value=${String(Math.round(fraction * 1000))}
+                          @input=${(event: Event) => {
+                            this.playing = false;
+                            this.scrubTo(Number((event.target as HTMLInputElement).value) / 1000);
+                          }}
+                        />
+                        <span class="clock">${this.clockAt(this.playhead)}</span>
+                        <span class="heatmap-note">
+                          ${this._t('fusion.replay_summary', {
+                            tracks: replay.tracks.length,
+                            points: replay.total_points.toLocaleString(),
+                          })}
+                          ${
+                            replay.thinned
+                              ? ` · ${this._t('fusion.replay_thinned', { hz: replay.sample_hz.toFixed(1) })}`
+                              : ''
+                          }
+                        </span>
+                      `
+        }
       </div>
     `;
   }
@@ -559,28 +557,30 @@ export class FusionPanel extends LitElement {
             `,
           )}
         </div>
-        ${this.heatmapError === 'unsupported'
-          ? html`<span class="heatmap-note">${this._t('fusion.heatmap_needs_newer_backend')}</span>`
-          : this.heatmapError === 'failed'
-            ? html`<span class="heatmap-note">${this._t('fusion.heatmap_failed')}</span>`
-            : this.heatmapLoading
-              ? html`<span class="heatmap-note">${this._t('fusion.heatmap_loading')}</span>`
-              : this.heatmap
-                ? html`
-                    <span class="ramp">
-                      <small>${this._t('fusion.heatmap_rare')}</small>
-                      ${heatmapLegendColors().map((color) => html`<i style="background:${color}"></i>`)}
-                      <small>${this._t('fusion.heatmap_frequent')}</small>
-                    </span>
-                    <span class="heatmap-note">
-                      ${this._t('fusion.heatmap_summary', {
-                        points: this.heatmap.total_points.toLocaleString(),
-                        bin: this.heatmap.bin_cm,
-                      })}
-                      ${this.heatmap.truncated ? ` · ${this._t('fusion.heatmap_truncated')}` : ''}
-                    </span>
-                  `
-                : ''}
+        ${
+          this.heatmapError === 'unsupported'
+            ? html`<span class="heatmap-note">${this._t('fusion.heatmap_needs_newer_backend')}</span>`
+            : this.heatmapError === 'failed'
+              ? html`<span class="heatmap-note">${this._t('fusion.heatmap_failed')}</span>`
+              : this.heatmapLoading
+                ? html`<span class="heatmap-note">${this._t('fusion.heatmap_loading')}</span>`
+                : this.heatmap
+                  ? html`
+                      <span class="ramp">
+                        <small>${this._t('fusion.heatmap_rare')}</small>
+                        ${heatmapLegendColors().map((color) => html`<i style="background:${color}"></i>`)}
+                        <small>${this._t('fusion.heatmap_frequent')}</small>
+                      </span>
+                      <span class="heatmap-note">
+                        ${this._t('fusion.heatmap_summary', {
+                          points: this.heatmap.total_points.toLocaleString(),
+                          bin: this.heatmap.bin_cm,
+                        })}
+                        ${this.heatmap.truncated ? ` · ${this._t('fusion.heatmap_truncated')}` : ''}
+                      </span>
+                    `
+                  : ''
+        }
       </div>
     `;
   }
@@ -596,19 +596,21 @@ export class FusionPanel extends LitElement {
       <div class="scene-toolbar">
         <span class="status ${this.backendState}">
           <i></i>
-          ${this.backendState === 'preview'
-            ? this._t('workflow.preview_status')
-            : this.backendState === 'online'
-              ? this._t('fusion.backend_fusion')
-              : this.backendState === 'missing'
-                ? this._t('fusion.integration_missing')
-                : this.backendState === 'outdated'
-                  ? this._t('fusion.integration_outdated')
-                  : this.backendState === 'fallback'
-                    ? this._t('fusion.local_fallback')
-                    : this.backendState === 'error'
-                      ? this._t('fusion.backend_error')
-                      : this._t('fusion.connecting')}
+          ${
+            this.backendState === 'preview'
+              ? this._t('workflow.preview_status')
+              : this.backendState === 'online'
+                ? this._t('fusion.backend_fusion')
+                : this.backendState === 'missing'
+                  ? this._t('fusion.integration_missing')
+                  : this.backendState === 'outdated'
+                    ? this._t('fusion.integration_outdated')
+                    : this.backendState === 'fallback'
+                      ? this._t('fusion.local_fallback')
+                      : this.backendState === 'error'
+                        ? this._t('fusion.backend_error')
+                        : this._t('fusion.connecting')
+          }
         </span>
         <span class="toolbar-actions">
           <button
@@ -637,17 +639,19 @@ export class FusionPanel extends LitElement {
         <canvas id="fusion-cv"></canvas>
       </div>
       ${this.showReplay ? this.renderReplayBar() : ''} ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
-      ${calibrationWarnings.length
-        ? html`<div class="calibration-warning">
-            ${this._t('fusion.calibration_warning')}:
-            ${calibrationWarnings
-              .map((radar) => {
-                const ratio = radar.inRoomRatio == null ? '?' : `${Math.round(radar.inRoomRatio * 100)}%`;
-                return `${radar.config.id} (${ratio})`;
-              })
-              .join(', ')}
-          </div>`
-        : ''}
+      ${
+        calibrationWarnings.length
+          ? html`<div class="calibration-warning">
+              ${this._t('fusion.calibration_warning')}:
+              ${calibrationWarnings
+                .map((radar) => {
+                  const ratio = radar.inRoomRatio == null ? '?' : `${Math.round(radar.inRoomRatio * 100)}%`;
+                  return `${radar.config.id} (${ratio})`;
+                })
+                .join(', ')}
+            </div>`
+          : ''
+      }
       <div class="summary">
         <div><strong>${this.targets.length}</strong><span>${this._t('fusion.fused_targets')}</span></div>
         ${this.targets.map(
@@ -661,29 +665,31 @@ export class FusionPanel extends LitElement {
           `,
         )}
       </div>
-      ${recentEvents.length
-        ? html`
-            <div class="events">
-              <strong>${this._t('fusion.recent_events')}</strong>
-              ${recentEvents.slice(0, 8).map(
-                (event) => html`
-                  <button
-                    type="button"
-                    class=${event.event_id === this.selectedEventId ? 'selected' : ''}
-                    @click=${() => this.selectEvent(event)}
-                  >
-                    <span>
-                      ${event.event_type.toUpperCase()} · ${event.zone_id}
-                      ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
-                    </span>
-                    <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
-                    <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
-                  </button>
-                `,
-              )}
-            </div>
-          `
-        : ''}
+      ${
+        recentEvents.length
+          ? html`
+              <div class="events">
+                <strong>${this._t('fusion.recent_events')}</strong>
+                ${recentEvents.slice(0, 8).map(
+                  (event) => html`
+                    <button
+                      type="button"
+                      class=${event.event_id === this.selectedEventId ? 'selected' : ''}
+                      @click=${() => this.selectEvent(event)}
+                    >
+                      <span>
+                        ${event.event_type.toUpperCase()} · ${event.zone_id}
+                        ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
+                      </span>
+                      <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
+                      <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
+                    </button>
+                  `,
+                )}
+              </div>
+            `
+          : ''
+      }
     `;
   }
 

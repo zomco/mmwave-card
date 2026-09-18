@@ -253,20 +253,24 @@ export class YawPanel extends LitElement {
       <div class="map-shell">
         <canvas id="yaw-cv" @click=${this._onCanvasClick}></canvas>
         <span class="map-tip">
-          ${yw.sub === 0 || yw.sub === 1
-            ? this._t('yaw.click_the_map_to_choose_where')
-            : yw.capturing
-              ? this._t('yaw.stand_still_while_waiting_for_radar')
-              : this._t('yaw.walk_to_the_marked_position')}
+          ${
+            yw.sub === 0 || yw.sub === 1
+              ? this._t('yaw.click_the_map_to_choose_where')
+              : yw.capturing
+                ? this._t('yaw.stand_still_while_waiting_for_radar')
+                : this._t('yaw.walk_to_the_marked_position')
+          }
         </span>
       </div>
       <button class="cap-btn" type="button" ?disabled=${!canCap || yw.capturing} @click=${this._onCapture}>
         <span class="cap-icon">${yw.capturing ? '···' : '◎'}</span>
-        ${yw.capturing
-          ? this._L('yaw.capture_wait')
-          : canCap
-            ? this._t('yaw.i_am_ready_capture_position')
-            : this._t('yaw.choose_a_position_on_the_map')}
+        ${
+          yw.capturing
+            ? this._L('yaw.capture_wait')
+            : canCap
+              ? this._t('yaw.i_am_ready_capture_position')
+              : this._t('yaw.choose_a_position_on_the_map')
+        }
       </button>
       <div class="result-card ${ok ? 'ok' : ''}">
         <span class="result-icon">${ok ? '✓' : 'i'}</span>

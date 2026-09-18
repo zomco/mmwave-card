@@ -253,21 +253,23 @@ export class GeoPanel extends LitElement {
         </div>
       </details>
 
-      ${this.adapter.info.is1DRanging
-        ? html`<section class="boundary-card">
-            <h3>${this._L('range.title')}</h3>
-            <p class="note">${this._L('range.explanation')}</p>
-            ${this._numField(this._L('range.min'), 'distance_min', c.distance_min ?? 0, 10, 0, 1000)}
-            ${this._numField(this._L('range.max'), 'distance_max', c.distance_max ?? 0, 10, 0, 1000)}
-            <p class="note">${this._L('range.zero')}</p>
-            <mmwave-range-status
-              .calibration=${c}
-              .maxRangeM=${this.maxRangeM}
-              .lang=${this.lang}
-              .model=${this.adapter.info.id}
-            ></mmwave-range-status>
-          </section>`
-        : ''}
+      ${
+        this.adapter.info.is1DRanging
+          ? html`<section class="boundary-card">
+              <h3>${this._L('range.title')}</h3>
+              <p class="note">${this._L('range.explanation')}</p>
+              ${this._numField(this._L('range.min'), 'distance_min', c.distance_min ?? 0, 10, 0, 1000)}
+              ${this._numField(this._L('range.max'), 'distance_max', c.distance_max ?? 0, 10, 0, 1000)}
+              <p class="note">${this._L('range.zero')}</p>
+              <mmwave-range-status
+                .calibration=${c}
+                .maxRangeM=${this.maxRangeM}
+                .lang=${this.lang}
+                .model=${this.adapter.info.id}
+              ></mmwave-range-status>
+            </section>`
+          : ''
+      }
       <section class="boundary-card" ?hidden=${!this.showBoundary || this.adapter.info.is1DRanging}>
         <div class="section-heading">
           <div>
@@ -290,21 +292,23 @@ export class GeoPanel extends LitElement {
             </button>
           </div>
         </div>
-        ${this.floorplan?.url && this.floorplan.visible !== false
-          ? html`<div class="trace-controls">
-              <label
-                ><input
-                  type="checkbox"
-                  .checked=${this.trace}
-                  @change=${(e: Event) => {
-                    this.trace = (e.target as HTMLInputElement).checked;
-                    this.traceStatus = '';
-                  }}
-                />${this._t('floorplan.trace')}</label
-              >
-              <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
-            </div>`
-          : ''}
+        ${
+          this.floorplan?.url && this.floorplan.visible !== false
+            ? html`<div class="trace-controls">
+                <label
+                  ><input
+                    type="checkbox"
+                    .checked=${this.trace}
+                    @change=${(e: Event) => {
+                      this.trace = (e.target as HTMLInputElement).checked;
+                      this.traceStatus = '';
+                    }}
+                  />${this._t('floorplan.trace')}</label
+                >
+                <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
+              </div>`
+            : ''
+        }
         <div class="map-shell">
           <canvas id="poly-cv" @click=${this._onCanvasClick}></canvas>
           ${pn === 0 ? html`<span class="map-empty">${this._t('geo.click_the_map_to_add_the')}</span>` : ''}

@@ -133,21 +133,23 @@ export class ZoneEditor extends LitElement {
         </div>
         <button type="button" class="new" @click=${this.beginNew}>＋ ${this._t('zone.new_zone')}</button>
       </div>
-      ${this.floorplan?.url && this.floorplan.visible !== false
-        ? html`<div class="trace-controls">
-            <label
-              ><input
-                type="checkbox"
-                .checked=${this.trace}
-                @change=${(e: Event) => {
-                  this.trace = (e.target as HTMLInputElement).checked;
-                  this.traceStatus = '';
-                }}
-              />${this._t('floorplan.trace')}</label
-            >
-            <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
-          </div>`
-        : ''}
+      ${
+        this.floorplan?.url && this.floorplan.visible !== false
+          ? html`<div class="trace-controls">
+              <label
+                ><input
+                  type="checkbox"
+                  .checked=${this.trace}
+                  @change=${(e: Event) => {
+                    this.trace = (e.target as HTMLInputElement).checked;
+                    this.traceStatus = '';
+                  }}
+                />${this._t('floorplan.trace')}</label
+              >
+              <small role="status">${this._t('floorplan.' + (this.traceStatus || 'trace_hint'))}</small>
+            </div>`
+          : ''
+      }
       <svg
         class=${this.draft ? 'floor active' : 'floor'}
         viewBox=${`0 0 ${this.roomW} ${this.roomD}`}
@@ -161,8 +163,9 @@ export class ZoneEditor extends LitElement {
             <path d="M 50 0 L 0 0 0 50" fill="none" stroke="currentColor" stroke-opacity=".08" stroke-width="1" />
           </pattern>
         </defs>
-        ${background?.status === 'ready'
-          ? svg`<image
+        ${
+          background?.status === 'ready'
+            ? svg`<image
               href=${background.image.src}
               width=${placement.width}
               height=${(placement.width * background.image.naturalHeight) / background.image.naturalWidth}
@@ -170,28 +173,31 @@ export class ZoneEditor extends LitElement {
               transform=${`translate(${placement.x} ${placement.y}) rotate(${(placement.angle * 180) / Math.PI})`}
               pointer-events="none"
             />`
-          : nothing}
+            : nothing
+        }
         <rect width="100%" height="100%" class="background" />
         ${visibleZones.map((zone, index) => {
           const selected = this.draft === zone;
           const color = COLORS[index % COLORS.length];
           return html`
-            ${zone.polygon.length >= 3
-              ? html`<polygon
-                  points=${this.pointString(zone.polygon)}
-                  fill=${color}
-                  fill-opacity=${selected ? '.20' : '.09'}
-                  stroke=${color}
-                  stroke-width=${selected ? '3' : '2'}
-                  vector-effect="non-scaling-stroke"
-                />`
-              : html`<polyline
-                  points=${this.pointString(zone.polygon)}
-                  fill="none"
-                  stroke=${color}
-                  stroke-width="3"
-                  vector-effect="non-scaling-stroke"
-                />`}
+            ${
+              zone.polygon.length >= 3
+                ? html`<polygon
+                    points=${this.pointString(zone.polygon)}
+                    fill=${color}
+                    fill-opacity=${selected ? '.20' : '.09'}
+                    stroke=${color}
+                    stroke-width=${selected ? '3' : '2'}
+                    vector-effect="non-scaling-stroke"
+                  />`
+                : html`<polyline
+                    points=${this.pointString(zone.polygon)}
+                    fill="none"
+                    stroke=${color}
+                    stroke-width="3"
+                    vector-effect="non-scaling-stroke"
+                  />`
+            }
             ${zone.polygon.map(
               (point, pointIndex) => html`
                 <circle
@@ -203,9 +209,11 @@ export class ZoneEditor extends LitElement {
                   stroke-width="2"
                   vector-effect="non-scaling-stroke"
                 />
-                ${selected
-                  ? html`<text x=${point.x} y=${point.y - 12} class="point-label">${pointIndex + 1}</text>`
-                  : nothing}
+                ${
+                  selected
+                    ? html`<text x=${point.x} y=${point.y - 12} class="point-label">${pointIndex + 1}</text>`
+                    : nothing
+                }
               `,
             )}
           `;
@@ -223,44 +231,50 @@ export class ZoneEditor extends LitElement {
         <text x=${this.roomW - 8} y="18" text-anchor="end" class="axis">X → ${this.roomW}cm</text>
         <text x="8" y=${this.roomD - 9} class="axis">Y ↓ ${this.roomD}cm</text>
       </svg>
-      ${this.draft
-        ? html`
-            <div class="form-grid">
-              <label
-                >ID<input
-                  .value=${this.draft.id}
-                  @input=${(event: Event) => this.patch({ id: (event.target as HTMLInputElement).value })}
-              /></label>
-              <label
-                >${this._t('zone.name')}<input
-                  .value=${this.draft.name ?? ''}
-                  @input=${(event: Event) => this.patch({ name: (event.target as HTMLInputElement).value })}
-              /></label>
-              <label
-                >${this._t('zone.dwell_seconds')}<input
-                  type="number"
-                  min="0"
-                  step="1"
-                  .value=${String(this.draft.dwell_s ?? 0)}
-                  @input=${(event: Event) => this.patch({ dwell_s: Number((event.target as HTMLInputElement).value) })}
-              /></label>
-              <div class="vertex-count">${this.draft.polygon.length} ${this._t('zone.vertices')}</div>
-            </div>
-            <div class="actions">
-              <button type="button" @click=${this.undoPoint} ?disabled=${!this.draft.polygon.length}>
-                ↶ ${this._t('zone.undo_point')}
-              </button>
-              <button type="button" @click=${() => this.patch({ polygon: [] })} ?disabled=${!this.draft.polygon.length}>
-                ${this._t('zone.clear')}
-              </button>
-              <button type="button" class="danger" @click=${this.removeZone}>
-                ${this.originalId ? this._t('zone.delete_zone') : this._t('zone.cancel')}
-              </button>
-              <button type="button" class="save" @click=${this.save}>${this._t('zone.save_zone')}</button>
-            </div>
-            ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
-          `
-        : html`<p class="hint">${this._t('zone.select_or_create_a_zone_then')}</p>`}
+      ${
+        this.draft
+          ? html`
+              <div class="form-grid">
+                <label
+                  >ID<input
+                    .value=${this.draft.id}
+                    @input=${(event: Event) => this.patch({ id: (event.target as HTMLInputElement).value })}
+                /></label>
+                <label
+                  >${this._t('zone.name')}<input
+                    .value=${this.draft.name ?? ''}
+                    @input=${(event: Event) => this.patch({ name: (event.target as HTMLInputElement).value })}
+                /></label>
+                <label
+                  >${this._t('zone.dwell_seconds')}<input
+                    type="number"
+                    min="0"
+                    step="1"
+                    .value=${String(this.draft.dwell_s ?? 0)}
+                    @input=${(event: Event) => this.patch({ dwell_s: Number((event.target as HTMLInputElement).value) })}
+                /></label>
+                <div class="vertex-count">${this.draft.polygon.length} ${this._t('zone.vertices')}</div>
+              </div>
+              <div class="actions">
+                <button type="button" @click=${this.undoPoint} ?disabled=${!this.draft.polygon.length}>
+                  ↶ ${this._t('zone.undo_point')}
+                </button>
+                <button
+                  type="button"
+                  @click=${() => this.patch({ polygon: [] })}
+                  ?disabled=${!this.draft.polygon.length}
+                >
+                  ${this._t('zone.clear')}
+                </button>
+                <button type="button" class="danger" @click=${this.removeZone}>
+                  ${this.originalId ? this._t('zone.delete_zone') : this._t('zone.cancel')}
+                </button>
+                <button type="button" class="save" @click=${this.save}>${this._t('zone.save_zone')}</button>
+              </div>
+              ${this.error ? html`<div class="error">${this.error}</div>` : nothing}
+            `
+          : html`<p class="hint">${this._t('zone.select_or_create_a_zone_then')}</p>`
+      }
     `;
   }
 

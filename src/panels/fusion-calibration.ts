@@ -676,9 +676,11 @@ export class FusionCalibrationPanel extends LitElement {
             aria-pressed=${this.mobileFocus ? 'true' : 'false'}
             @click=${this.toggleMobileFocus}
           >
-            ${this.mobileFocus
-              ? this._t('fusioncal.exit_mobile_calibration')
-              : this._t('fusioncal.enter_mobile_calibration')}
+            ${
+              this.mobileFocus
+                ? this._t('fusioncal.exit_mobile_calibration')
+                : this._t('fusioncal.enter_mobile_calibration')
+            }
           </button>
         </div>
         <div class="intro">
@@ -686,26 +688,30 @@ export class FusionCalibrationPanel extends LitElement {
           <strong>${this._t('fusioncal.calibrate_every_radar_from_shared_positions')}</strong>
           <p>${this._t('fusioncal.keep_only_one_test_person_in')}</p>
         </div>
-        ${this.guidedRegions.length < 3
-          ? html`<p role="status">${this._t('fusioncal.few_standing_areas')}</p>`
-          : nothing}
+        ${
+          this.guidedRegions.length < 3
+            ? html`<p role="status">${this._t('fusioncal.few_standing_areas')}</p>`
+            : nothing
+        }
         <div class="guide-card" role="status" aria-live="polite">
           <b>${selectedRegion.label}</b>
           <span>
             <strong>${this._t('fusioncal.move_to_region_p0', { p0: selectedRegion.label })}</strong>
             <small>
-              ${this.capturing
-                ? this._t('fusioncal.capturing_p0_percent_p1_p2_radars_ready', {
-                    p0: Math.round(this.captureProgress * 100),
-                    p1: liveReadyRadars,
-                    p2: this.radars.length,
-                  })
-                : this._t('fusioncal.stand_near_center_then_hold_still', {
-                    p0: selectedRegion.room.x,
-                    p1: selectedRegion.room.y,
-                    p2: selectedCaptured,
-                    p3: this.radars.length,
-                  })}
+              ${
+                this.capturing
+                  ? this._t('fusioncal.capturing_p0_percent_p1_p2_radars_ready', {
+                      p0: Math.round(this.captureProgress * 100),
+                      p1: liveReadyRadars,
+                      p2: this.radars.length,
+                    })
+                  : this._t('fusioncal.stand_near_center_then_hold_still', {
+                      p0: selectedRegion.room.x,
+                      p1: selectedRegion.room.y,
+                      p2: selectedCaptured,
+                      p3: this.radars.length,
+                    })
+              }
             </small>
           </span>
         </div>
@@ -714,39 +720,47 @@ export class FusionCalibrationPanel extends LitElement {
           aria-label=${this._t('fusioncal.guided_capture_floor_plan')}
           @click=${this.onCanvasClick}
         ></canvas>
-        ${ready
-          ? html`<div class="message" role="status">
-              ${this._t('fusioncal.ready_summary', {
-                p0: calibratedRadars,
-                p1: this.radars.length - calibratedRadars,
-              })}
-            </div>`
-          : nothing}
-        ${ready && solutions.some((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
-          ? html`<div class="message">
-              ${this._t('fusioncal.retained_names', {
-                p0: solutions
-                  .filter((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
-                  .map((solution) => solution.radarId)
-                  .join(', '),
-              })}
-            </div>`
-          : nothing}
+        ${
+          ready
+            ? html`<div class="message" role="status">
+                ${this._t('fusioncal.ready_summary', {
+                  p0: calibratedRadars,
+                  p1: this.radars.length - calibratedRadars,
+                })}
+              </div>`
+            : nothing
+        }
+        ${
+          ready && solutions.some((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
+            ? html`<div class="message">
+                ${this._t('fusioncal.retained_names', {
+                  p0: solutions
+                    .filter((solution) => this.solutionMeetsQuality(solution) && solution.retainedCurrent)
+                    .map((solution) => solution.radarId)
+                    .join(', '),
+                })}
+              </div>`
+            : nothing
+        }
         <div class=${`capture-dock ${ready ? 'ready' : ''} ${this.capturing ? 'capturing' : ''}`}>
           <div class="capture-bar">
             <span>${this._t('fusioncal.tap_another_region_or_follow_recommendation')}</span>
             <button class="capture-action" type="button" ?disabled=${this.capturing} @click=${this.beginCapture}>
-              ${this.capturing
-                ? this._t('fusioncal.capturing_p0_percent', { p0: Math.round(this.captureProgress * 100) })
-                : this._t('fusioncal.i_am_ready_capture_all')}
+              ${
+                this.capturing
+                  ? this._t('fusioncal.capturing_p0_percent', { p0: Math.round(this.captureProgress * 100) })
+                  : this._t('fusioncal.i_am_ready_capture_all')
+              }
             </button>
             <button class="mobile-apply" type="button" ?disabled=${!ready} @click=${this.applySolutionsAndExitMobile}>
               ${this.applyLabel || this._t('fusioncal.apply_all_calibrations')}
             </button>
           </div>
-          ${this.capturing
-            ? html`<div class="progress"><i style=${`width:${Math.round(this.captureProgress * 100)}%`}></i></div>`
-            : nothing}
+          ${
+            this.capturing
+              ? html`<div class="progress"><i style=${`width:${Math.round(this.captureProgress * 100)}%`}></i></div>`
+              : nothing
+          }
         </div>
         <div class=${`radar-sample-status ${this.capturing ? 'capturing' : ''}`}>
           ${this.radars.map((radar) => {
@@ -756,19 +770,23 @@ export class FusionCalibrationPanel extends LitElement {
               <span class=${this.capturing && liveSamples >= MIN_CAPTURE_SAMPLES ? 'live-ready' : ''}>
                 <i style=${`background:${COLORS[this.radars.indexOf(radar) % COLORS.length]}`}></i>
                 ${radar.id} ·
-                ${this.capturing
-                  ? this._t('fusioncal.p0_p1_samples', {
-                      p0: Math.min(liveSamples, MIN_CAPTURE_SAMPLES),
-                      p1: MIN_CAPTURE_SAMPLES,
-                    })
-                  : this._t('fusioncal.p0_reference_points', { p0: pointCount })}
+                ${
+                  this.capturing
+                    ? this._t('fusioncal.p0_p1_samples', {
+                        p0: Math.min(liveSamples, MIN_CAPTURE_SAMPLES),
+                        p1: MIN_CAPTURE_SAMPLES,
+                      })
+                    : this._t('fusioncal.p0_reference_points', { p0: pointCount })
+                }
               </span>
             `;
           })}
         </div>
-        ${this.captureMessage
-          ? html`<div class="message" role="status" aria-live="polite">${this.captureMessage}</div>`
-          : nothing}
+        ${
+          this.captureMessage
+            ? html`<div class="message" role="status" aria-live="polite">${this.captureMessage}</div>`
+            : nothing
+        }
         <button
           type="button"
           class="details-toggle"
@@ -790,9 +808,11 @@ export class FusionCalibrationPanel extends LitElement {
             </small>
           </span>
           <b>
-            ${this.detailsExpanded
-              ? this._t('fusioncal.hide_capture_details')
-              : this._t('fusioncal.show_capture_details')}
+            ${
+              this.detailsExpanded
+                ? this._t('fusioncal.hide_capture_details')
+                : this._t('fusioncal.show_capture_details')
+            }
           </b>
         </button>
         <div class=${`calibration-details ${this.detailsExpanded ? 'expanded' : ''}`}>
@@ -810,83 +830,93 @@ export class FusionCalibrationPanel extends LitElement {
               `;
             })}
           </div>
-          ${reviewRadars.length
-            ? html`
-                <div class="installation-review">
-                  <strong>${this._t('fusioncal.review_installation_parameters')}</strong>
-                  <span>
-                    ${this._t('fusioncal.review_p0_radars_before_retrying', {
-                      p0: reviewRadars.map((radar) => radar.id).join(', '),
+          ${
+            reviewRadars.length
+              ? html`
+                  <div class="installation-review">
+                    <strong>${this._t('fusioncal.review_installation_parameters')}</strong>
+                    <span>
+                      ${this._t('fusioncal.review_p0_radars_before_retrying', {
+                        p0: reviewRadars.map((radar) => radar.id).join(', '),
+                      })}
+                    </span>
+                    <small>${this._t('fusioncal.xy_yaw_only_manual_note')}</small>
+                  </div>
+                `
+              : nothing
+          }
+          ${
+            solutions.length
+              ? html`
+                  <div class="results">
+                    ${this.radars.map((radar) => {
+                      const solution = solutions.find((item) => item.radarId === radar.id);
+                      const current = completeCalibration(radar);
+                      const accepted = Boolean(solution && this.solutionMeetsQuality(solution));
+                      const adjustment = solution
+                        ? calculateCalibrationAdjustment(current, solution.calibration)
+                        : undefined;
+                      return html`
+                        <div class="result ${accepted ? '' : 'bad'}">
+                          <header>
+                            <span><strong>${radar.id}</strong><small>${radar.radar_model}</small></span>
+                            <b class="status ${accepted ? 'accepted' : 'review'}">
+                              ${
+                                accepted
+                                  ? this._t('fusioncal.calibration_reference_accepted')
+                                  : this._t('fusioncal.installation_needs_review')
+                              }
+                            </b>
+                          </header>
+                          ${
+                            solution
+                              ? html`
+                                  <div class="residual">
+                                    <strong>${solution.residualBeforeCm} → ${solution.residualAfterCm} cm</strong>
+                                    <small class=${accepted ? '' : 'warning'}>${this.qualityMessage(solution)}</small>
+                                  </div>
+                                  <div class="parameter-grid">
+                                    <div>
+                                      <small>${this._t('fusioncal.current_installation')}</small>
+                                      <span>
+                                        X ${this.formatParameter(current.radar_x)} · Y
+                                        ${this.formatParameter(current.radar_y)} · yaw
+                                        ${this.formatParameter(current.yaw)}°
+                                      </span>
+                                    </div>
+                                    <div>
+                                      <small>${this._t('fusioncal.fitted_reference')}</small>
+                                      <span>
+                                        X ${this.formatParameter(solution.calibration.radar_x)} · Y
+                                        ${this.formatParameter(solution.calibration.radar_y)} · yaw
+                                        ${this.formatParameter(solution.calibration.yaw)}°
+                                      </span>
+                                    </div>
+                                    <div class="adjustment">
+                                      <small>${this._t('fusioncal.suggested_manual_adjustment')}</small>
+                                      <span>
+                                        ΔX ${this.formatAdjustment(adjustment?.radarX ?? 0)} · ΔY
+                                        ${this.formatAdjustment(adjustment?.radarY ?? 0)} · Δyaw
+                                        ${this.formatAdjustment(adjustment?.yaw ?? 0)}°
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <small class="solution-meta">
+                                    ${solution.pointCount} ${this._t('fusioncal.points')} · yaw
+                                    ${solution.calibration.yaw}° ·
+                                    ${this._t('fusioncal.span_p0_cm', { p0: solution.referenceSpanCm })} · max
+                                    ${solution.maxResidualCm} cm
+                                  </small>
+                                `
+                              : html`<span class="missing">${this._t('fusioncal.not_enough_references')}</span>`
+                          }
+                        </div>
+                      `;
                     })}
-                  </span>
-                  <small>${this._t('fusioncal.xy_yaw_only_manual_note')}</small>
-                </div>
-              `
-            : nothing}
-          ${solutions.length
-            ? html`
-                <div class="results">
-                  ${this.radars.map((radar) => {
-                    const solution = solutions.find((item) => item.radarId === radar.id);
-                    const current = completeCalibration(radar);
-                    const accepted = Boolean(solution && this.solutionMeetsQuality(solution));
-                    const adjustment = solution
-                      ? calculateCalibrationAdjustment(current, solution.calibration)
-                      : undefined;
-                    return html`
-                      <div class="result ${accepted ? '' : 'bad'}">
-                        <header>
-                          <span><strong>${radar.id}</strong><small>${radar.radar_model}</small></span>
-                          <b class="status ${accepted ? 'accepted' : 'review'}">
-                            ${accepted
-                              ? this._t('fusioncal.calibration_reference_accepted')
-                              : this._t('fusioncal.installation_needs_review')}
-                          </b>
-                        </header>
-                        ${solution
-                          ? html`
-                              <div class="residual">
-                                <strong>${solution.residualBeforeCm} → ${solution.residualAfterCm} cm</strong>
-                                <small class=${accepted ? '' : 'warning'}>${this.qualityMessage(solution)}</small>
-                              </div>
-                              <div class="parameter-grid">
-                                <div>
-                                  <small>${this._t('fusioncal.current_installation')}</small>
-                                  <span>
-                                    X ${this.formatParameter(current.radar_x)} · Y
-                                    ${this.formatParameter(current.radar_y)} · yaw ${this.formatParameter(current.yaw)}°
-                                  </span>
-                                </div>
-                                <div>
-                                  <small>${this._t('fusioncal.fitted_reference')}</small>
-                                  <span>
-                                    X ${this.formatParameter(solution.calibration.radar_x)} · Y
-                                    ${this.formatParameter(solution.calibration.radar_y)} · yaw
-                                    ${this.formatParameter(solution.calibration.yaw)}°
-                                  </span>
-                                </div>
-                                <div class="adjustment">
-                                  <small>${this._t('fusioncal.suggested_manual_adjustment')}</small>
-                                  <span>
-                                    ΔX ${this.formatAdjustment(adjustment?.radarX ?? 0)} · ΔY
-                                    ${this.formatAdjustment(adjustment?.radarY ?? 0)} · Δyaw
-                                    ${this.formatAdjustment(adjustment?.yaw ?? 0)}°
-                                  </span>
-                                </div>
-                              </div>
-                              <small class="solution-meta">
-                                ${solution.pointCount} ${this._t('fusioncal.points')} · yaw ${solution.calibration.yaw}°
-                                · ${this._t('fusioncal.span_p0_cm', { p0: solution.referenceSpanCm })} · max
-                                ${solution.maxResidualCm} cm
-                              </small>
-                            `
-                          : html`<span class="missing">${this._t('fusioncal.not_enough_references')}</span>`}
-                      </div>
-                    `;
-                  })}
-                </div>
-              `
-            : nothing}
+                  </div>
+                `
+              : nothing
+          }
         </div>
         <div class="calibration-progress">
           ${this._t('fusioncal.p0_p1_radars_ready', { p0: calibratedRadars, p1: this.radars.length })}
@@ -901,9 +931,11 @@ export class FusionCalibrationPanel extends LitElement {
             ${this._t('fusioncal.start_over')}
           </button>
           <button type="button" class="primary" ?disabled=${!ready} @click=${this.applySolutions}>
-            ${ready
-              ? this.applyLabel || this._t('fusioncal.apply_all_calibrations')
-              : this._t('fusioncal.need_3_points_120_cm_span')}
+            ${
+              ready
+                ? this.applyLabel || this._t('fusioncal.apply_all_calibrations')
+                : this._t('fusioncal.need_3_points_120_cm_span')
+            }
           </button>
         </div>
       </section>

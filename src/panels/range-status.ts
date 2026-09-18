@@ -19,9 +19,11 @@ export class RangeStatus extends LitElement {
       </p>
       <p>${t('native_max')}: ${this.maxRangeM !== undefined ? `${this.maxRangeM} m` : t('unknown')}</p>
       <p>${t('native_min_unknown')}</p>
-      ${nativeRangeLimited(this.maxRangeM, this.calibration)
-        ? html`<p class="warning" role="status">${t('limited')}</p>`
-        : ''}
+      ${
+        nativeRangeLimited(this.maxRangeM, this.calibration)
+          ? html`<p class="warning" role="status">${t('limited')}</p>`
+          : ''
+      }
       <p>${t(tunable ? 'noise_preserved' : 'noise_unknown')}</p>
     </div>`;
   }

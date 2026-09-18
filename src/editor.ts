@@ -512,127 +512,133 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
               <b>＋</b><span>${this._t('editor.add_radar')}</span>
             </button>
           </div>
-          ${selectedRadar && selectedAdapter && selectedCalibration
-            ? html`
-                <div class="radar-tab-panel" role="tabpanel" aria-labelledby=${`radar-tab-${selectedIndex}`}>
-                  <section class="radar-editor">
-                    <header>
-                      <span>
-                        <strong>${this._t('editor.radar')} ${selectedIndex + 1}</strong>
-                        <small>${selectedRadar.id} · ${selectedAdapter.info.displayName}</small>
-                      </span>
-                      <button
-                        type="button"
-                        class="remove-button"
-                        ?disabled=${radars.length <= 1}
-                        @click=${() => this._removeFusionRadar(selectedIndex)}
-                      >
-                        ×
-                      </button>
-                    </header>
-                    <div class="two-col">
-                      <div class="field compact">
-                        <label>ID</label>
-                        <input
-                          type="text"
-                          .value=${selectedRadar.id}
-                          @change=${(event: Event) =>
-                            this._updateFusionRadar(selectedIndex, { id: (event.target as HTMLInputElement).value })}
-                        />
-                      </div>
-                      <div class="field compact">
-                        <label>${this._L('editor.model')}</label>
-                        <select
-                          .value=${selectedRadar.radar_model}
-                          @change=${(event: Event) =>
-                            this._updateFusionRadar(selectedIndex, {
-                              radar_model: (event.target as HTMLSelectElement).value,
-                            })}
+          ${
+            selectedRadar && selectedAdapter && selectedCalibration
+              ? html`
+                  <div class="radar-tab-panel" role="tabpanel" aria-labelledby=${`radar-tab-${selectedIndex}`}>
+                    <section class="radar-editor">
+                      <header>
+                        <span>
+                          <strong>${this._t('editor.radar')} ${selectedIndex + 1}</strong>
+                          <small>${selectedRadar.id} · ${selectedAdapter.info.displayName}</small>
+                        </span>
+                        <button
+                          type="button"
+                          class="remove-button"
+                          ?disabled=${radars.length <= 1}
+                          @click=${() => this._removeFusionRadar(selectedIndex)}
                         >
-                          ${spatialModels.map(
-                            (model) =>
-                              html`<option value=${model.id} ?selected=${model.id === selectedRadar.radar_model}>
-                                ${model.label}
+                          ×
+                        </button>
+                      </header>
+                      <div class="two-col">
+                        <div class="field compact">
+                          <label>ID</label>
+                          <input
+                            type="text"
+                            .value=${selectedRadar.id}
+                            @change=${(event: Event) =>
+                              this._updateFusionRadar(selectedIndex, { id: (event.target as HTMLInputElement).value })}
+                          />
+                        </div>
+                        <div class="field compact">
+                          <label>${this._L('editor.model')}</label>
+                          <select
+                            .value=${selectedRadar.radar_model}
+                            @change=${(event: Event) =>
+                              this._updateFusionRadar(selectedIndex, {
+                                radar_model: (event.target as HTMLSelectElement).value,
+                              })}
+                          >
+                            ${spatialModels.map(
+                              (model) =>
+                                html`<option value=${model.id} ?selected=${model.id === selectedRadar.radar_model}>
+                                  ${model.label}
+                                </option>`,
+                            )}
+                          </select>
+                        </div>
+                      </div>
+                      <div class="field">
+                        <label>${this._t('editor.radar_device')}</label>
+                        <select
+                          .value=${selectedRadar.device_id ?? ''}
+                          @change=${(event: Event) => this._fusionDeviceChanged(selectedIndex, event)}
+                        >
+                          <option value="">-- ${this._t('editor.select_device')} --</option>
+                          ${this._devices.map(
+                            (device) =>
+                              html`<option value=${device.id} ?selected=${device.id === selectedRadar.device_id}>
+                                ${device.name_by_user || device.name || 'Unknown device'}
                               </option>`,
                           )}
                         </select>
                       </div>
-                    </div>
-                    <div class="field">
-                      <label>${this._t('editor.radar_device')}</label>
-                      <select
-                        .value=${selectedRadar.device_id ?? ''}
-                        @change=${(event: Event) => this._fusionDeviceChanged(selectedIndex, event)}
-                      >
-                        <option value="">-- ${this._t('editor.select_device')} --</option>
-                        ${this._devices.map(
-                          (device) =>
-                            html`<option value=${device.id} ?selected=${device.id === selectedRadar.device_id}>
-                              ${device.name_by_user || device.name || 'Unknown device'}
-                            </option>`,
-                        )}
-                      </select>
-                    </div>
-                    <div class="field profile-field">
-                      <label>${this._t('editor.calibration_profile')}</label>
-                      <select
-                        .value=${selectedRadar.calibration_profile_id ?? ''}
-                        @change=${(event: Event) => this._profileChanged(selectedIndex, event)}
-                      >
-                        <option value="">${this._t('editor.manual_not_linked')}</option>
-                        ${this._calibrationProfiles
-                          .filter(
-                            (profile) =>
-                              profile.device_id === selectedRadar.device_id &&
-                              profile.radar_model === selectedRadar.radar_model,
-                          )
-                          .map(
-                            (profile) => html`
-                              <option
-                                value=${profile.profile_id}
-                                ?selected=${profile.profile_id === selectedRadar.calibration_profile_id}
-                              >
-                                ${profile.name} · ${profile.radar_model} · v${profile.revision}
-                              </option>
-                            `,
-                          )}
-                      </select>
-                      ${selectedRadar.calibration_profile_id
-                        ? html`<small class="profile-badge">
-                            ${this._t('editor.device_profile_snapshot')} ·
-                            v${selectedRadar.calibration_profile_revision ?? '?'}
-                          </small>`
-                        : nothing}
-                    </div>
-                    ${selectedAdapter
-                      ? html`
-                          <details class="advanced">
-                            <summary>${this._t('editor.entity_mapping')}</summary>
-                            <div class="advanced-fields">
-                              ${selectedAdapter.getEntitySchema().map(
-                                (field) => html`
-                                  <div class="field">
-                                    <label>${this._L(field.labelKey)}${field.required ? '' : ' *'}</label>
-                                    <input
-                                      type="text"
-                                      list="entities-list"
-                                      .value=${String(selectedRadar[field.key] ?? '')}
-                                      @change=${(event: Event) =>
-                                        this._updateFusionRadar(selectedIndex, {
-                                          [field.key]: (event.target as HTMLInputElement).value,
-                                        })}
-                                    />
-                                  </div>
-                                `,
-                              )}
-                            </div>
-                          </details>
-                        `
-                      : nothing}
-                  </section>
-                </div>
-              `
-            : nothing}
+                      <div class="field profile-field">
+                        <label>${this._t('editor.calibration_profile')}</label>
+                        <select
+                          .value=${selectedRadar.calibration_profile_id ?? ''}
+                          @change=${(event: Event) => this._profileChanged(selectedIndex, event)}
+                        >
+                          <option value="">${this._t('editor.manual_not_linked')}</option>
+                          ${this._calibrationProfiles
+                            .filter(
+                              (profile) =>
+                                profile.device_id === selectedRadar.device_id &&
+                                profile.radar_model === selectedRadar.radar_model,
+                            )
+                            .map(
+                              (profile) => html`
+                                <option
+                                  value=${profile.profile_id}
+                                  ?selected=${profile.profile_id === selectedRadar.calibration_profile_id}
+                                >
+                                  ${profile.name} · ${profile.radar_model} · v${profile.revision}
+                                </option>
+                              `,
+                            )}
+                        </select>
+                        ${
+                          selectedRadar.calibration_profile_id
+                            ? html`<small class="profile-badge">
+                                ${this._t('editor.device_profile_snapshot')} ·
+                                v${selectedRadar.calibration_profile_revision ?? '?'}
+                              </small>`
+                            : nothing
+                        }
+                      </div>
+                      ${
+                        selectedAdapter
+                          ? html`
+                              <details class="advanced">
+                                <summary>${this._t('editor.entity_mapping')}</summary>
+                                <div class="advanced-fields">
+                                  ${selectedAdapter.getEntitySchema().map(
+                                    (field) => html`
+                                      <div class="field">
+                                        <label>${this._L(field.labelKey)}${field.required ? '' : ' *'}</label>
+                                        <input
+                                          type="text"
+                                          list="entities-list"
+                                          .value=${String(selectedRadar[field.key] ?? '')}
+                                          @change=${(event: Event) =>
+                                            this._updateFusionRadar(selectedIndex, {
+                                              [field.key]: (event.target as HTMLInputElement).value,
+                                            })}
+                                        />
+                                      </div>
+                                    `,
+                                  )}
+                                </div>
+                              </details>
+                            `
+                          : nothing
+                      }
+                    </section>
+                  </div>
+                `
+              : nothing
+          }
         </div>
         ${this._profileStatus ? html`<div class="profile-status">${this._profileStatus}</div>` : nothing}
 
@@ -865,16 +871,20 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           )}
         </select>
       </div>
-      ${this._deviceStatus !== 'idle'
-        ? html`<div class="match-status ${this._deviceStatus}">
-            <span>${this._deviceStatus === 'loading' ? '···' : this._deviceStatus === 'success' ? '✓' : '!'}</span>
-            ${this._deviceStatus === 'loading'
-              ? this._t('editor.detecting_device_entities')
-              : this._deviceStatus === 'success'
-                ? this._t('editor.matched_p0_configuration_fields', { p0: this._matchedEntities })
-                : this._t('editor.automatic_detection_failed_configure_entities_manually')}
-          </div>`
-        : ''}
+      ${
+        this._deviceStatus !== 'idle'
+          ? html`<div class="match-status ${this._deviceStatus}">
+              <span>${this._deviceStatus === 'loading' ? '···' : this._deviceStatus === 'success' ? '✓' : '!'}</span>
+              ${
+                this._deviceStatus === 'loading'
+                  ? this._t('editor.detecting_device_entities')
+                  : this._deviceStatus === 'success'
+                    ? this._t('editor.matched_p0_configuration_fields', { p0: this._matchedEntities })
+                    : this._t('editor.automatic_detection_failed_configure_entities_manually')
+              }
+            </div>`
+          : ''
+      }
 
       <!-- Room dimensions -->
       <h3><span>3</span>${this._L('editor.room_dimensions')}</h3>
@@ -904,32 +914,34 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
       ${this._floorplanSettings()}
       <!-- Entity fields (model-specific) -->
-      ${adapter
-        ? html` <details
-            class="advanced"
-            ?open=${this._advOpen}
-            @toggle=${(e: Event) => (this._advOpen = (e.target as HTMLDetailsElement).open)}
-          >
-            <summary>
-              <span>${this._t('editor.advanced_assign_entities_manually')}</span>
-              <small>${this._t('editor.troubleshooting')}</small>
-            </summary>
-            <div class="advanced-fields">
-              ${adapter.getEntitySchema().map(
-                (f) =>
-                  html` <div class="field">
-                    <label>${this._L(f.labelKey)}${f.required ? '' : ' *'}</label>
-                    <input
-                      type="text"
-                      list="entities-list"
-                      .value=${(this._config[f.key] ?? '') as string}
-                      @change=${(e: Event) => this._changed(f.key, (e.target as HTMLInputElement).value)}
-                    />
-                  </div>`,
-              )}
-            </div>
-          </details>`
-        : nothing}
+      ${
+        adapter
+          ? html` <details
+              class="advanced"
+              ?open=${this._advOpen}
+              @toggle=${(e: Event) => (this._advOpen = (e.target as HTMLDetailsElement).open)}
+            >
+              <summary>
+                <span>${this._t('editor.advanced_assign_entities_manually')}</span>
+                <small>${this._t('editor.troubleshooting')}</small>
+              </summary>
+              <div class="advanced-fields">
+                ${adapter.getEntitySchema().map(
+                  (f) =>
+                    html` <div class="field">
+                      <label>${this._L(f.labelKey)}${f.required ? '' : ' *'}</label>
+                      <input
+                        type="text"
+                        list="entities-list"
+                        .value=${(this._config[f.key] ?? '') as string}
+                        @change=${(e: Event) => this._changed(f.key, (e.target as HTMLInputElement).value)}
+                      />
+                    </div>`,
+                )}
+              </div>
+            </details>`
+          : nothing
+      }
 
       <datalist id="entities-list">
         ${(this.hass ? Object.keys(this.hass.states) : []).map((id) => html`<option value=${id}></option>`)}

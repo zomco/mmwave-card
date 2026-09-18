@@ -989,11 +989,13 @@ export class MMWaveCard extends LitElement {
             <div class="header-actions">
               <span class="presence-chip ${insideTargets > 0 ? 'active' : this._present ? 'filtered' : ''}">
                 <i></i>
-                ${insideTargets > 0
-                  ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
-                  : this._present
-                    ? this._t('card.outside')
-                    : this._t('card.clear')}
+                ${
+                  insideTargets > 0
+                    ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
+                    : this._present
+                      ? this._t('card.outside')
+                      : this._t('card.clear')
+                }
               </span>
               <button
                 class="icon-button"
@@ -1058,9 +1060,11 @@ export class MMWaveCard extends LitElement {
                 @click=${() => this._gotoTab(index)}
               >
                 <span class="step-icon">
-                  ${this._tab > index
-                    ? html`<ha-icon icon="mdi:check"></ha-icon>`
-                    : html`<ha-icon icon=${step.icon}></ha-icon>`}
+                  ${
+                    this._tab > index
+                      ? html`<ha-icon icon="mdi:check"></ha-icon>`
+                      : html`<ha-icon icon=${step.icon}></ha-icon>`
+                  }
                 </span>
                 <span class="step-copy"><strong>${step.title}</strong><small>${step.description}</small></span>
               </button>
@@ -1074,56 +1078,62 @@ export class MMWaveCard extends LitElement {
           @polygon-point-added=${this._onPolygonPointAdded}
           @capture-requested=${this._onCaptureRequested}
         >
-          ${this._tab === TAB_GEO
-            ? html` <mmwave-geo-panel
-                .floorplan=${this._config.floorplan}
-                .adapter=${this._adapter}
-                .calibration=${this._cal}
-                .lang=${lang}
-                .roomW=${roomW}
-                .roomD=${roomD}
-                .maxRangeM=${this._maxRangeM}
-              >
-              </mmwave-geo-panel>`
-            : nothing}
-          ${this._tab === TAB_YAW
-            ? this._adapter.info.is1DRanging
-              ? html`<p>${this._t('fusioncal.range_only')}</p>`
-              : html`<mmwave-fusion-calibration
+          ${
+            this._tab === TAB_GEO
+              ? html` <mmwave-geo-panel
                   .floorplan=${this._config.floorplan}
-                  .hass=${this._hass}
-                  .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
+                  .adapter=${this._adapter}
+                  .calibration=${this._cal}
                   .lang=${lang}
                   .roomW=${roomW}
                   .roomD=${roomD}
-                  .applyLabel=${this._t('workflow.use_results')}
-                  @fusion-calibration-applied=${(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) => {
-                    const solution = event.detail.solutions[0];
-                    if (!solution) return;
-                    this._onCalibrationChanged(
-                      new CustomEvent('calibration-changed', { detail: solution.calibration }),
-                    );
-                    this._gotoTab(TAB_LIVE);
-                  }}
-                ></mmwave-fusion-calibration>`
-            : nothing}
-          ${this._tab === TAB_LIVE
-            ? html` <mmwave-live-panel
-                .hass=${this._hass}
-                .config=${this._config}
-                .floorplan=${this._config.floorplan}
-                .adapter=${this._adapter}
-                .calibration=${this._cal}
-                .lang=${lang}
-                .roomW=${roomW}
-                .roomD=${roomD}
-                .targets=${this._targets}
-                .present=${this._present}
-                .maxRangeM=${this._maxRangeM}
-                .showStatus=${true}
-              >
-              </mmwave-live-panel>`
-            : nothing}
+                  .maxRangeM=${this._maxRangeM}
+                >
+                </mmwave-geo-panel>`
+              : nothing
+          }
+          ${
+            this._tab === TAB_YAW
+              ? this._adapter.info.is1DRanging
+                ? html`<p>${this._t('fusioncal.range_only')}</p>`
+                : html`<mmwave-fusion-calibration
+                    .floorplan=${this._config.floorplan}
+                    .hass=${this._hass}
+                    .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
+                    .lang=${lang}
+                    .roomW=${roomW}
+                    .roomD=${roomD}
+                    .applyLabel=${this._t('workflow.use_results')}
+                    @fusion-calibration-applied=${(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) => {
+                      const solution = event.detail.solutions[0];
+                      if (!solution) return;
+                      this._onCalibrationChanged(
+                        new CustomEvent('calibration-changed', { detail: solution.calibration }),
+                      );
+                      this._gotoTab(TAB_LIVE);
+                    }}
+                  ></mmwave-fusion-calibration>`
+              : nothing
+          }
+          ${
+            this._tab === TAB_LIVE
+              ? html` <mmwave-live-panel
+                  .hass=${this._hass}
+                  .config=${this._config}
+                  .floorplan=${this._config.floorplan}
+                  .adapter=${this._adapter}
+                  .calibration=${this._cal}
+                  .lang=${lang}
+                  .roomW=${roomW}
+                  .roomD=${roomD}
+                  .targets=${this._targets}
+                  .present=${this._present}
+                  .maxRangeM=${this._maxRangeM}
+                  .showStatus=${true}
+                >
+                </mmwave-live-panel>`
+              : nothing
+          }
         </div>
 
         <footer class="workflow-footer">
@@ -1137,31 +1147,37 @@ export class MMWaveCard extends LitElement {
             </button>
           </div>
           <div class="footer-actions">
-            ${this._tab > TAB_GEO
-              ? html`<button class="secondary-button" type="button" @click=${() => this._gotoTab(this._tab - 1)}>
-                  <ha-icon icon="mdi:chevron-left"></ha-icon>${this._t('card.back')}
-                </button>`
-              : nothing}
-            ${this._tab < TAB_LIVE
-              ? html`<button class="primary-button" type="button" @click=${() => this._gotoTab(this._tab + 1)}>
-                  ${this._t('card.continue')}<ha-icon icon="mdi:chevron-right"></ha-icon>
-                </button>`
-              : html`<button
-                  class="primary-button sync ${this._syncState}"
-                  type="button"
-                  title=${this._syncFailures.length > 0 ? `Not written: ${this._syncFailures.join(', ')}` : nothing}
-                  ?disabled=${this._syncState === 'syncing'}
-                  @click=${this._sync}
-                >
-                  <ha-icon
-                    icon=${this._syncState === 'success'
-                      ? 'mdi:check-circle'
-                      : this._syncState === 'error'
-                        ? 'mdi:alert-circle'
-                        : 'mdi:cloud-upload-outline'}
-                  ></ha-icon>
-                  ${this._syncLabel()}
-                </button>`}
+            ${
+              this._tab > TAB_GEO
+                ? html`<button class="secondary-button" type="button" @click=${() => this._gotoTab(this._tab - 1)}>
+                    <ha-icon icon="mdi:chevron-left"></ha-icon>${this._t('card.back')}
+                  </button>`
+                : nothing
+            }
+            ${
+              this._tab < TAB_LIVE
+                ? html`<button class="primary-button" type="button" @click=${() => this._gotoTab(this._tab + 1)}>
+                    ${this._t('card.continue')}<ha-icon icon="mdi:chevron-right"></ha-icon>
+                  </button>`
+                : html`<button
+                    class="primary-button sync ${this._syncState}"
+                    type="button"
+                    title=${this._syncFailures.length > 0 ? `Not written: ${this._syncFailures.join(', ')}` : nothing}
+                    ?disabled=${this._syncState === 'syncing'}
+                    @click=${this._sync}
+                  >
+                    <ha-icon
+                      icon=${
+                        this._syncState === 'success'
+                          ? 'mdi:check-circle'
+                          : this._syncState === 'error'
+                            ? 'mdi:alert-circle'
+                            : 'mdi:cloud-upload-outline'
+                      }
+                    ></ha-icon>
+                    ${this._syncLabel()}
+                  </button>`
+            }
           </div>
         </footer>
       </ha-card>
@@ -1206,9 +1222,11 @@ export class MMWaveCard extends LitElement {
           <div class="header-actions">
             <span class="presence-chip ${this._fusionTargets.length ? 'active' : ''}">
               <i></i>
-              ${this._fusionTargets.length
-                ? this._t('card.p0_targets', { p0: this._fusionTargets.length })
-                : this._t('card.clear_2')}
+              ${
+                this._fusionTargets.length
+                  ? this._t('card.p0_targets', { p0: this._fusionTargets.length })
+                  : this._t('card.clear_2')
+              }
             </span>
             <button
               class="icon-button"
@@ -1246,39 +1264,51 @@ export class MMWaveCard extends LitElement {
             .replayError=${this._fusionReplayError}
             @fusion-replay-requested=${this._loadFusionReplay}
           ></mmwave-fusion-panel>
-          ${this._selectedFusionEvent
-            ? html`
-                <section class="fusion-playback">
-                  <header>
-                    <strong
-                      >${this._selectedFusionEvent.event_type.toUpperCase()} ·
-                      ${this._selectedFusionEvent.zone_id}</strong
-                    >
-                    <span>${new Date(this._selectedFusionEvent.timestamp * 1000).toLocaleString()}</span>
-                  </header>
-                  ${this._selectedFusionEvent.quality_score != null
-                    ? html`<p class="quality-detail">
-                        ${this._t('card.trajectory_quality')}:
-                        <strong>${this._selectedFusionEvent.quality_score}/100</strong>
-                        ${this._selectedFusionEvent.quality_reason
-                          ? html` · ${this._selectedFusionEvent.quality_reason}`
-                          : nothing}
-                      </p>`
-                    : nothing}
-                  ${this._fusionVideoUrl
-                    ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
-                    : html`<p>
-                        ${this._t('card.no_playable_clip_is_available_yet')}
-                        ${this._selectedFusionEvent.clip_status
-                          ? html` (${this._selectedFusionEvent.clip_status})`
-                          : nothing}
-                        ${this._selectedFusionEvent.clip_error
-                          ? html`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`
-                          : nothing}
-                      </p>`}
-                </section>
-              `
-            : nothing}
+          ${
+            this._selectedFusionEvent
+              ? html`
+                  <section class="fusion-playback">
+                    <header>
+                      <strong
+                        >${this._selectedFusionEvent.event_type.toUpperCase()} ·
+                        ${this._selectedFusionEvent.zone_id}</strong
+                      >
+                      <span>${new Date(this._selectedFusionEvent.timestamp * 1000).toLocaleString()}</span>
+                    </header>
+                    ${
+                      this._selectedFusionEvent.quality_score != null
+                        ? html`<p class="quality-detail">
+                            ${this._t('card.trajectory_quality')}:
+                            <strong>${this._selectedFusionEvent.quality_score}/100</strong>
+                            ${
+                              this._selectedFusionEvent.quality_reason
+                                ? html` · ${this._selectedFusionEvent.quality_reason}`
+                                : nothing
+                            }
+                          </p>`
+                        : nothing
+                    }
+                    ${
+                      this._fusionVideoUrl
+                        ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
+                        : html`<p>
+                            ${this._t('card.no_playable_clip_is_available_yet')}
+                            ${
+                              this._selectedFusionEvent.clip_status
+                                ? html` (${this._selectedFusionEvent.clip_status})`
+                                : nothing
+                            }
+                            ${
+                              this._selectedFusionEvent.clip_error
+                                ? html`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`
+                                : nothing
+                            }
+                          </p>`
+                    }
+                  </section>
+                `
+              : nothing
+          }
         </div>
       </ha-card>
     `;

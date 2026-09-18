@@ -242,20 +242,22 @@ export class FusionWorkflow extends LitElement {
                 </button>`,
             )}
           </div>
-          ${adapter
-            ? html`<mmwave-geo-panel
-                .floorplan=${this.config.floorplan}
-                .adapter=${adapter}
-                .calibration=${this.calibration(radar)}
-                .peerCalibrations=${peers}
-                .showBoundary=${false}
-                .roomW=${Number(this.config.room_w)}
-                .roomD=${Number(this.config.room_d)}
-                .lang=${this.hass.language}
-                .maxRangeM=${adapter.info.maxRangeM}
-                @calibration-changed=${this.changePose}
-              ></mmwave-geo-panel>`
-            : nothing}
+          ${
+            adapter
+              ? html`<mmwave-geo-panel
+                  .floorplan=${this.config.floorplan}
+                  .adapter=${adapter}
+                  .calibration=${this.calibration(radar)}
+                  .peerCalibrations=${peers}
+                  .showBoundary=${false}
+                  .roomW=${Number(this.config.room_w)}
+                  .roomD=${Number(this.config.room_d)}
+                  .lang=${this.hass.language}
+                  .maxRangeM=${adapter.info.maxRangeM}
+                  @calibration-changed=${this.changePose}
+                ></mmwave-geo-panel>`
+              : nothing
+          }
         </section>
         <section ?hidden=${this.step !== 1}>
           <mmwave-fusion-calibration
@@ -272,11 +274,13 @@ export class FusionWorkflow extends LitElement {
         </section>
         <section ?hidden=${this.step !== 2}>
           <p>${this.t('workflow.verify_hint')}</p>
-          ${this.pendingRadars.length
-            ? html`<p class="pending-calibration">
-                ${this.t('fusioncal.pending_names', { p0: this.pendingRadars.join(', ') })}
-              </p>`
-            : nothing}
+          ${
+            this.pendingRadars.length
+              ? html`<p class="pending-calibration">
+                  ${this.t('fusioncal.pending_names', { p0: this.pendingRadars.join(', ') })}
+                </p>`
+              : nothing
+          }
           <mmwave-fusion-panel
             .floorplan=${this.config.floorplan}
             .roomW=${Number(this.config.room_w)}
@@ -288,26 +292,32 @@ export class FusionWorkflow extends LitElement {
           ></mmwave-fusion-panel>
         </section>
         ${this.message ? html`<p role="status">${this.message}</p>` : nothing}
-        ${this.failures.length
-          ? html`<ul role="alert">
-              ${this.failures.map((failure) => html`<li>${failure}</li>`)}
-            </ul>`
-          : nothing}
+        ${
+          this.failures.length
+            ? html`<ul role="alert">
+                ${this.failures.map((failure) => html`<li>${failure}</li>`)}
+              </ul>`
+            : nothing
+        }
       </div>
       <footer>
         <small>${this.dirty ? this.t('workflow.unsaved') : this.t('workflow.draft_hint')}</small>
-        ${this.step > 0
-          ? html`<button type="button" ?disabled=${this.saving} @click=${() => this.step--}>
-              ${this.t('workflow.previous')}
-            </button>`
-          : nothing}
-        ${this.step < 2
-          ? html`<button type="button" class="primary" ?disabled=${this.saving} @click=${() => this.step++}>
-              ${this.t('workflow.next')}
-            </button>`
-          : html`<button type="button" class="primary" ?disabled=${this.saving} @click=${this.save}>
-              ${this.t(this.saving ? 'workflow.saving' : 'workflow.apply_sync')}
-            </button>`}
+        ${
+          this.step > 0
+            ? html`<button type="button" ?disabled=${this.saving} @click=${() => this.step--}>
+                ${this.t('workflow.previous')}
+              </button>`
+            : nothing
+        }
+        ${
+          this.step < 2
+            ? html`<button type="button" class="primary" ?disabled=${this.saving} @click=${() => this.step++}>
+                ${this.t('workflow.next')}
+              </button>`
+            : html`<button type="button" class="primary" ?disabled=${this.saving} @click=${this.save}>
+                ${this.t(this.saving ? 'workflow.saving' : 'workflow.apply_sync')}
+              </button>`
+        }
       </footer>`;
   }
 

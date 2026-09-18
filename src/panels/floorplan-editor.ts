@@ -231,9 +231,11 @@ export class FloorplanEditor extends LitElement {
           />${this.t('locked')}</label
         >
       </div>
-      ${c.url && image?.status !== 'ready'
-        ? html`<p role="status">${this.t(image?.status === 'loading' ? 'loading' : 'error')}</p>`
-        : nothing}
+      ${
+        c.url && image?.status !== 'ready'
+          ? html`<p role="status">${this.t(image?.status === 'loading' ? 'loading' : 'error')}</p>`
+          : nothing
+      }
       <canvas
         aria-label=${this.t('preview')}
         @pointerdown=${this.down}
@@ -284,23 +286,26 @@ export class FloorplanEditor extends LitElement {
           ${this.t('move')}
         </button>
       </div>
-      ${this.mode === 'scale'
-        ? html`<label
-              >${this.t('length')}<input
-                type="number"
-                min="1"
-                .value=${String(this.length)}
-                @input=${(e: Event) => (this.length = Number((e.target as HTMLInputElement).value))}
-            /></label>
-            <button
-              type="button"
-              ?disabled=${this.points.length !== 2 ||
-              !calibratedImageWidth(this.points[0], this.points[1], this.length)}
-              @click=${this.calibrate}
-            >
-              ${this.t('apply_scale')}
-            </button>`
-        : nothing}
+      ${
+        this.mode === 'scale'
+          ? html`<label
+                >${this.t('length')}<input
+                  type="number"
+                  min="1"
+                  .value=${String(this.length)}
+                  @input=${(e: Event) => (this.length = Number((e.target as HTMLInputElement).value))}
+              /></label>
+              <button
+                type="button"
+                ?disabled=${
+                  this.points.length !== 2 || !calibratedImageWidth(this.points[0], this.points[1], this.length)
+                }
+                @click=${this.calibrate}
+              >
+                ${this.t('apply_scale')}
+              </button>`
+          : nothing
+      }
       <div class="numbers">
         ${(
           [

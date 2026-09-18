@@ -624,9 +624,11 @@ export class Installation3D extends LitElement {
           >
           <span
             class="coverage"
-            title=${this._isVerticalFovEstimated
-              ? this._t('install3d.vertical_fov_is_not_specified_showing')
-              : this._t('install3d.nominal_scan_volume_from_the_model')}
+            title=${
+              this._isVerticalFovEstimated
+                ? this._t('install3d.vertical_fov_is_not_specified_showing')
+                : this._t('install3d.nominal_scan_volume_from_the_model')
+            }
           >
             ${this._t('install3d.scan_volume')} · H ${this.adapter?.info.fovDegrees ?? 60}° · V
             ${this._isVerticalFovEstimated ? '≈' : ''}${this._verticalFovDegrees}° ·

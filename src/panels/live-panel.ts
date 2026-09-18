@@ -372,20 +372,24 @@ export class LivePanel extends LitElement {
 
   protected render() {
     return html`
-      ${this.showStatus
-        ? html`<div class="panel-heading">
-            <span class="eyebrow">${this._t('live.step_3_live_test')}</span>
-            <h2>${this._t('live.verify_coverage_and_target_trails')}</h2>
-            <p>${this._t('live.walk_through_the_room_and_confirm')}</p>
-          </div>`
-        : ''}
+      ${
+        this.showStatus
+          ? html`<div class="panel-heading">
+              <span class="eyebrow">${this._t('live.step_3_live_test')}</span>
+              <h2>${this._t('live.verify_coverage_and_target_trails')}</h2>
+              <p>${this._t('live.walk_through_the_room_and_confirm')}</p>
+            </div>`
+          : ''
+      }
       <div class="scene-shell">
         <canvas id="live-cv"></canvas>
         <div class="scene-toolbar">
           <div class="badge ${this._badgeCls()}"><i></i>${this._badgeText()}</div>
-          ${this.showStatus
-            ? html`<button type="button" @click=${this.clearTrail}>${this._t('live.clear_trails')}</button>`
-            : ''}
+          ${
+            this.showStatus
+              ? html`<button type="button" @click=${this.clearTrail}>${this._t('live.clear_trails')}</button>`
+              : ''
+          }
         </div>
         <div class="scene-metrics">
           ${readSceneMetrics(this.hass, this.config, this.adapter, this.lang).map(
@@ -397,51 +401,61 @@ export class LivePanel extends LitElement {
               </div>`,
           )}
         </div>
-        ${!this.present
-          ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
-          : ''}
+        ${
+          !this.present
+            ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
+            : ''
+        }
       </div>
-      ${!this.adapter.info.is1DRanging && this.calibration.polygon.length >= 3
-        ? html`<div class="boundary-legend">
-            <span><i class="boundary-line"></i>${this._t('live.polygon_boundary')}</span>
-            <span><i class="filtered-area"></i>${this._t('live.filtered_area')}</span>
-          </div>`
-        : ''}
-      ${this.showStatus
-        ? html`
-            <div class="target-summary">
-              <div class="summary-head">
-                <strong>${this._t('live.detected_targets')}</strong>
-                <span
-                  >${this.targets.filter((target) => target.room?.inBoundary).length} /
-                  ${this.adapter.info.maxTargets}</span
-                >
+      ${
+        !this.adapter.info.is1DRanging && this.calibration.polygon.length >= 3
+          ? html`<div class="boundary-legend">
+              <span><i class="boundary-line"></i>${this._t('live.polygon_boundary')}</span>
+              <span><i class="filtered-area"></i>${this._t('live.filtered_area')}</span>
+            </div>`
+          : ''
+      }
+      ${
+        this.showStatus
+          ? html`
+              <div class="target-summary">
+                <div class="summary-head">
+                  <strong>${this._t('live.detected_targets')}</strong>
+                  <span
+                    >${this.targets.filter((target) => target.room?.inBoundary).length} /
+                    ${this.adapter.info.maxTargets}</span
+                  >
+                </div>
+                <div class="target-list">
+                  ${
+                    this.targets.length > 0
+                      ? this.targets.map(
+                          (target) => html`
+                            <div
+                              class="target-row ${target.room?.inBoundary ? '' : 'outside'}"
+                              style="--target-color:${targetColor(target.index)}"
+                            >
+                              <span class="target-id"><i></i>${this._t('live.target')} ${target.index + 1}</span>
+                              <span class="target-coord">
+                                ${
+                                  target.room
+                                    ? `X ${Math.round(target.room.roomX)} · Y ${Math.round(target.room.roomY)}${this.adapter.info.hasZAxis ? ` · Z ${Math.round(target.room.roomZ)}` : ''} cm`
+                                    : '—'
+                                }
+                              </span>
+                              <span class="target-state"
+                                >${target.room?.inBoundary ? this._t('live.inside') : this._t('live.outside')}</span
+                              >
+                            </div>
+                          `,
+                        )
+                      : html`<div class="target-empty">${this._t('live.no_target_data_yet')}</div>`
+                  }
+                </div>
               </div>
-              <div class="target-list">
-                ${this.targets.length > 0
-                  ? this.targets.map(
-                      (target) => html`
-                        <div
-                          class="target-row ${target.room?.inBoundary ? '' : 'outside'}"
-                          style="--target-color:${targetColor(target.index)}"
-                        >
-                          <span class="target-id"><i></i>${this._t('live.target')} ${target.index + 1}</span>
-                          <span class="target-coord">
-                            ${target.room
-                              ? `X ${Math.round(target.room.roomX)} · Y ${Math.round(target.room.roomY)}${this.adapter.info.hasZAxis ? ` · Z ${Math.round(target.room.roomZ)}` : ''} cm`
-                              : '—'}
-                          </span>
-                          <span class="target-state"
-                            >${target.room?.inBoundary ? this._t('live.inside') : this._t('live.outside')}</span
-                          >
-                        </div>
-                      `,
-                    )
-                  : html`<div class="target-empty">${this._t('live.no_target_data_yet')}</div>`}
-              </div>
-            </div>
-          `
-        : ''}
+            `
+          : ''
+      }
     `;
   }
 
