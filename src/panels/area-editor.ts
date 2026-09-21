@@ -3,7 +3,13 @@ import { customElement, property, state } from 'lit/decorators.js';
 import { localize } from '../localize/localize';
 import type { FloorplanConfig, OccupancyArea, Vec2 } from '../types';
 import { floorplanImage, floorplanValues } from '../utils/floorplan';
-import { AREA_COLORS, areaWarnings, MIN_AREA_CENTROID_GAP_CM, MIN_AREA_SHORT_SIDE_CM } from '../utils/area-geometry';
+import {
+  AREA_COLORS,
+  areaWarnings,
+  defaultAreaPolygon,
+  MIN_AREA_CENTROID_GAP_CM,
+  MIN_AREA_SHORT_SIDE_CM,
+} from '../utils/area-geometry';
 
 @customElement('mmwave-area-editor')
 export class AreaEditor extends LitElement {
@@ -12,6 +18,7 @@ export class AreaEditor extends LitElement {
   @property({ type: Number }) roomD = 600;
   @property({ attribute: false }) areas: OccupancyArea[] = [{ polygon: [] }, { polygon: [] }, { polygon: [] }];
   @property({ attribute: false }) radar?: { x: number; y: number; yaw: number };
+  @property({ attribute: false }) standPoint?: Vec2;
   @property({ attribute: false }) lang = 'en';
   @state() private selected = 0;
   private floorplanLoaded = () => {
@@ -54,6 +61,11 @@ export class AreaEditor extends LitElement {
     this.patchSelected([]);
   }
 
+  private standHere() {
+    if (!this.standPoint) return;
+    this.patchSelected(defaultAreaPolygon(this.standPoint, this.roomW, this.roomD));
+  }
+
   private pointString(polygon: Vec2[]) {
     return polygon.map((point) => `${point.x},${point.y}`).join(' ');
   }
@@ -67,6 +79,7 @@ export class AreaEditor extends LitElement {
     const warnings = areaWarnings(this.areas.map((area) => area.polygon));
     return html`
       <p class="hint">${this.t('area.hint')}</p>
+      ${this.standPoint ? nothing : html`<p class="need">${this.t('area.stand_need_target')}</p>`}
       <div class="picks">
         ${[0, 1, 2].map(
           (index) =>
@@ -114,12 +127,20 @@ export class AreaEditor extends LitElement {
           `;
         })}
         ${
+          this.standPoint
+            ? svg`<circle cx=${this.standPoint.x} cy=${this.standPoint.y} r="14" fill="none" stroke="white" stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />`
+            : nothing
+        }
+        ${
           this.radar
             ? svg`<g transform=${`translate(${this.radar.x} ${this.radar.y}) rotate(${-this.radar.yaw})`}><circle r="10" fill="#111" /><path d="M 0 0 L -10 22 M 0 0 L 10 22" stroke="#111" fill="none" /></g>`
             : nothing
         }
       </svg>
       <div class="actions">
+        <button type="button" ?disabled=${!this.standPoint} @click=${this.standHere}>
+          ${this.t('area.stand_here')}
+        </button>
         <button type="button" @click=${this.undo}>${this.t('geo.poly_undo')}</button>
         <button type="button" @click=${this.clear}>${this.t('geo.poly_clear')}</button>
       </div>
@@ -140,10 +161,15 @@ export class AreaEditor extends LitElement {
       display: block;
     }
     .hint,
-    .ok {
+    .ok,
+    .need {
       margin: 0 0 0.6rem;
       font-size: 0.85rem;
       opacity: 0.75;
+    }
+    .actions button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
     .picks {
       display: flex;

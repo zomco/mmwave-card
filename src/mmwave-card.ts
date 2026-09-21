@@ -1216,6 +1216,10 @@ export class MMWaveCard extends LitElement {
                           .roomD=${roomD}
                           .areas=${this._areas.map((polygon) => ({ polygon }))}
                           .radar=${{ x: this._cal.radar_x, y: this._cal.radar_y, yaw: this._cal.yaw }}
+                          .standPoint=${(() => {
+                            const target = this._targets.find((item) => item.room?.inBoundary);
+                            return target?.room ? { x: target.room.roomX, y: target.room.roomY } : undefined;
+                          })()}
                           .lang=${lang}
                           @areas-changed=${(event: CustomEvent<OccupancyArea[]>) => {
                             this._areas = [0, 1, 2].map((index) => event.detail[index]?.polygon ?? []);

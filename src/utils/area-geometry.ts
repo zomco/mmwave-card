@@ -4,6 +4,41 @@ import { pointInPolygon } from './transform';
 export const AREA_COLORS = ['#0b825c', '#03a9f4', '#e91e63'] as const;
 export const MIN_AREA_SHORT_SIDE_CM = 150;
 export const MIN_AREA_CENTROID_GAP_CM = 200;
+export const DEFAULT_AREA_SIDE_CM = 180;
+
+export function defaultAreaPolygon(center: Vec2, roomW: number, roomD: number, side = DEFAULT_AREA_SIDE_CM): Vec2[] {
+  const half = side / 2;
+  let x0 = center.x - half;
+  let y0 = center.y - half;
+  let x1 = center.x + half;
+  let y1 = center.y + half;
+  if (x0 < 0) {
+    x1 -= x0;
+    x0 = 0;
+  }
+  if (y0 < 0) {
+    y1 -= y0;
+    y0 = 0;
+  }
+  if (x1 > roomW) {
+    x0 -= x1 - roomW;
+    x1 = roomW;
+  }
+  if (y1 > roomD) {
+    y0 -= y1 - roomD;
+    y1 = roomD;
+  }
+  x0 = Math.max(0, Math.round(x0));
+  y0 = Math.max(0, Math.round(y0));
+  x1 = Math.min(roomW, Math.round(x1));
+  y1 = Math.min(roomD, Math.round(y1));
+  return [
+    { x: x0, y: y0 },
+    { x: x1, y: y0 },
+    { x: x1, y: y1 },
+    { x: x0, y: y1 },
+  ];
+}
 
 export function centroid(polygon: Vec2[]): Vec2 | null {
   if (polygon.length < 3) return null;

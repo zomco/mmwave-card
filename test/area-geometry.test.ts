@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   areaWarnings,
   centroid,
+  defaultAreaPolygon,
   formatPolygon,
   parsePolygon,
   polygonsOverlap,
@@ -40,6 +41,15 @@ describe('area geometry', () => {
   it('computes centroid and short side', () => {
     expect(centroid(desk)).toEqual({ x: 90, y: 90 });
     expect(shortSide(desk)).toBe(180);
+  });
+
+  it('builds a room-clamped default square around a standing point', () => {
+    const poly = defaultAreaPolygon({ x: 100, y: 100 }, 400, 600, 180);
+    expect(shortSide(poly)).toBe(180);
+    expect(centroid(poly)).toEqual({ x: 100, y: 100 });
+    const corner = defaultAreaPolygon({ x: 10, y: 10 }, 400, 600, 180);
+    expect(corner[0]).toEqual({ x: 0, y: 0 });
+    expect(shortSide(corner)).toBe(180);
   });
 
   it('warns when areas are too close or overlap', () => {

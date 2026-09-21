@@ -85,7 +85,9 @@
     "area_n": "Area {n}"
   },
   "area": {
-    "hint": "Click the map to outline up to three occupancy areas (desk, bed, door).",
+    "hint": "Stand at the desk, bed or door and tap I'm here — or click the map to draw the polygon yourself.",
+    "stand_here": "I'm here",
+    "stand_need_target": "Walk into the spot first. The radar needs a target before it can place the area.",
     "area_n": "Area {n}",
     "warn_small": "An area is narrower than {cm} cm — occupancy may flicker.",
     "warn_close": "Area centroids are closer than {cm} cm — exclusive assignment will fight.",
