@@ -721,6 +721,42 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
             />
           </div>
           <div class="field compact">
+            <label>${this._t('editor.duplicate_gate_cm')}</label>
+            <input
+              type="number"
+              min="0"
+              step="5"
+              .value=${String(this._config.fusion?.duplicate_gate_cm ?? fusionDefault('duplicate_gate_cm', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('duplicate_gate_cm', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.duplicate_gate_cm_help')}</small>
+          </div>
+          <div class="field compact">
+            <label>${this._t('editor.range_merge_factor')}</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              .value=${String(this._config.fusion?.range_merge_factor ?? fusionDefault('range_merge_factor', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('range_merge_factor', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.range_merge_factor_help')}</small>
+          </div>
+          <div class="field compact">
+            <label>${this._t('editor.merge_confirm_s')}</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              .value=${String(this._config.fusion?.merge_confirm_s ?? fusionDefault('merge_confirm_s', radars))}
+              @change=${(event: Event) =>
+                this._updateFusionSetting('merge_confirm_s', Number((event.target as HTMLInputElement).value))}
+            />
+            <small>${this._t('editor.merge_confirm_s_help')}</small>
+          </div>
+          <div class="field compact">
             <label>${this._t('editor.recording_score')}</label>
             <input
               type="number"

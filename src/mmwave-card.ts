@@ -277,6 +277,7 @@ export class MMWaveCard extends LitElement {
   private _localObservationBuffer: FusionObservation[] = [];
   private _sourceSignatures = new Map<string, string>();
   private _fusionUnsubscribe?: () => void;
+  private _fusionClipUnsubscribe?: () => void;
   private _fusionConnecting = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
@@ -508,6 +509,12 @@ export class MMWaveCard extends LitElement {
         { type: 'mmwave_fusion/subscribe', fusion_id: fusionId },
       );
       await this._loadFusionEvents();
+      this._fusionClipUnsubscribe = await this._hass.connection.subscribeEvents(
+        (event: { data: Record<string, unknown> }) => {
+          void this._onFusionClipReady(event.data);
+        },
+        'mmwave_fusion_clip_ready',
+      );
     } catch (error) {
       // Home Assistant answers an unregistered command with unknown_command,
       // which is precisely the "integration not installed" case and is worth
@@ -529,7 +536,42 @@ export class MMWaveCard extends LitElement {
   private _disconnectFusionBackend() {
     this._fusionUnsubscribe?.();
     this._fusionUnsubscribe = undefined;
+    this._fusionClipUnsubscribe?.();
+    this._fusionClipUnsubscribe = undefined;
     this._fusionConnecting = false;
+  }
+
+  private async _onFusionClipReady(data: Record<string, unknown>) {
+    const fusionId = this._config.fusion_id || 'home';
+    if (String(data.fusion_id ?? '') !== fusionId) return;
+    const eventId = String(data.event_id ?? '');
+    const clipPath = data.clip_path ? String(data.clip_path) : '';
+    if (!eventId || !clipPath) return;
+    this._fusionEvents = this._fusionEvents.map((item) =>
+      item.event_id === eventId
+        ? {
+            ...item,
+            clip_path: clipPath,
+            clip_status: 'ready',
+            camera_entity_id: data.camera_entity_id ? String(data.camera_entity_id) : item.camera_entity_id,
+          }
+        : item,
+    );
+    if (this._selectedFusionEvent?.event_id !== eventId) {
+      this.requestUpdate();
+      return;
+    }
+    this._selectedFusionEvent = this._fusionEvents.find((item) => item.event_id === eventId);
+    try {
+      const media = await this._hass.callWS<{ url: string }>({
+        type: 'media_source/resolve_media',
+        media_content_id: `media-source://media_source/local/${clipPath}`,
+      });
+      this._fusionVideoUrl = media.url;
+    } catch (error) {
+      console.warn('Failed to resolve fusion clip media', error);
+    }
+    this.requestUpdate();
   }
 
   private _isEditorPreview() {

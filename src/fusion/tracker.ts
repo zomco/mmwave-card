@@ -178,11 +178,7 @@ export class LocalFusionTracker {
       }
       if (nearest.distance <= this.associationGate) {
         usedTracks.add(nearest.track.track_id);
-        this.updateTrack(
-          nearest.track,
-          cluster,
-          Math.max(predictionDt.get(nearest.track.track_id) ?? 0.1, 0.05),
-        );
+        this.updateTrack(nearest.track, cluster, Math.max(predictionDt.get(nearest.track.track_id) ?? 0.1, 0.05));
         return;
       }
       this.birthTrack(cluster, now);
@@ -228,7 +224,9 @@ export class LocalFusionTracker {
       });
       const accepted: FusionObservation[] = [];
       for (const observation of scored) {
-        if (accepted.some((other) => Math.hypot(observation.x - other.x, observation.y - other.y) <= this.duplicateGate)) {
+        if (
+          accepted.some((other) => Math.hypot(observation.x - other.x, observation.y - other.y) <= this.duplicateGate)
+        ) {
           continue;
         }
         accepted.push(observation);

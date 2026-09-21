@@ -78,8 +78,11 @@ fusion:
   rate_hz: 10
   merge_gate_cm: 70
   association_gate_cm: 90
-  track_ttl_s: 1.8
+  track_ttl_s: 2
   confirm_hits: 3
+  duplicate_gate_cm: 50
+  range_merge_factor: 0.08
+  merge_confirm_s: 0.6
 
 quality:
   min_score: 70
