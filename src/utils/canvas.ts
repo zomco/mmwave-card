@@ -13,6 +13,7 @@ import type { FloorplanConfig } from '../types';
  */
 
 import type { Vec2 } from '../types';
+import { AREA_COLORS } from './area-geometry';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -203,6 +204,41 @@ export function drawPolygon(ctx: CanvasRenderingContext2D, poly: Vec2[], m: Canv
       ctx.fill();
     });
   }
+}
+
+export function drawOccupancyAreas(
+  ctx: CanvasRenderingContext2D,
+  areas: Vec2[][],
+  occupied: boolean[],
+  m: CanvasMetrics,
+): void {
+  areas.forEach((poly, index) => {
+    if (poly.length < 2) return;
+    const color = AREA_COLORS[index] ?? AREA_COLORS[0];
+    const pts = poly.map((p) => roomToCanvas(p.x, p.y, m));
+    ctx.save();
+    ctx.beginPath();
+    pts.forEach((p, i) => (i === 0 ? ctx.moveTo(p.cx, p.cy) : ctx.lineTo(p.cx, p.cy)));
+    if (poly.length >= 3) {
+      ctx.closePath();
+      ctx.globalAlpha = occupied[index] ? 0.28 : 0.1;
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+    ctx.globalAlpha = occupied[index] ? 0.95 : 0.5;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = occupied[index] ? 2.4 : 1.5;
+    ctx.stroke();
+    const cx = pts.reduce((s, p) => s + p.cx, 0) / pts.length;
+    const cy = pts.reduce((s, p) => s + p.cy, 0) / pts.length;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = color;
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(index + 1), cx, cy);
+    ctx.restore();
+  });
 }
 
 /** Shade the filtered room area without hiding out-of-bound target markers. */

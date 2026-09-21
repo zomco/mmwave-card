@@ -64,6 +64,8 @@ You can search and confirm the real entity IDs of your radar device on the **"De
 - **`target_n_y_entity`**: [Required] Radar-measured local Y-axis coordinate for target n. Please map for targets 1, 2, and 3.
 - **`target_n_speed_entity`**: [Optional] Target n's speed sensor (Unit: cm/s). If provided, it assists in displaying the target's motion state in the UI.
 - **`polygon_entity`**: [Optional] Text entity representing the boundary polygon configuration. Required if you want to draw and save custom boundary polygons from the UI.
+
+Occupancy areas (desk / bed / door) are drawn on the calibration Live tab and stored on `text.<device>_area_N_polygon`. Occupied bits are `binary_sensor.<device>_area_N_occupied` from the firmware.
 - **`room_w` / `room_d`**: The physical width and depth of the room (Unit: cm), used for scaling during card rendering. This does not affect the calibration data itself. You can modify it according to your actual room size (e.g., `300` or `500`).
 
 ## Coherent target frames and trails

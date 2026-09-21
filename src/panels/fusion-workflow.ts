@@ -121,6 +121,7 @@ export class FusionWorkflow extends LitElement {
       for (const target of rawTargets) {
         const room = applyTransform(target.rawX, target.rawY, target.rawZ, this.calibration(radar));
         if (
+          !room.inBoundary ||
           room.roomX < 0 ||
           room.roomY < 0 ||
           room.roomX > Number(this.config.room_w) ||
@@ -134,6 +135,7 @@ export class FusionWorkflow extends LitElement {
           x: room.roomX,
           y: room.roomY,
           weight: Number(radar.measurement_weight ?? 1),
+          range: Math.hypot(target.rawX, target.rawY),
         });
       }
     }

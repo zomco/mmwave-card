@@ -12,6 +12,10 @@ export interface Vec2 {
   y: number;
 }
 
+export interface OccupancyArea {
+  polygon: Vec2[];
+}
+
 // ── Calibration ───────────────────────────────────────────────────────────────
 
 export interface CalibrationConfig {
@@ -146,6 +150,12 @@ export interface FusionSettings {
   confirm_hits?: number;
   /** Number of distinct radars that must support a track before it is published. */
   min_confirm_sources?: number;
+  /** Same-radar slots closer than this are treated as one person. */
+  duplicate_gate_cm?: number;
+  /** Extra merge allowance as a fraction of radar-local range. */
+  range_merge_factor?: number;
+  /** How long two close confirmed tracks must overlap before they merge. */
+  merge_confirm_s?: number;
 }
 
 export interface TrajectoryQualitySettings {

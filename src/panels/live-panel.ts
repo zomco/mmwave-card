@@ -6,13 +6,14 @@ import { continuesTrail } from '../utils/trail-continuity';
 import { presenceStatus } from '../utils/presence-status';
 import { LitElement, html, css, PropertyValues } from 'lit';
 import { customElement, property, query } from 'lit/decorators.js';
-import type { CalibrationConfig, RadarTarget } from '../types';
+import type { CalibrationConfig, RadarTarget, Vec2 } from '../types';
 import type { RadarModelAdapter } from '../models';
 import {
   setupCanvas,
   fitRoomMetrics,
   drawBase,
   drawBoundaryOverlay,
+  drawOccupancyAreas,
   drawRangeFilter,
   drawRadarFov,
   drawTarget,
@@ -20,6 +21,7 @@ import {
   roomToCanvas,
   type CanvasMetrics,
 } from '../utils/canvas';
+import { AREA_COLORS } from '../utils/area-geometry';
 import { TRAIL_MAX_MS } from '../const';
 import { localize } from '../localize/localize';
 
@@ -92,6 +94,9 @@ export class LivePanel extends LitElement {
   @property({ type: Boolean }) present = false;
   @property({ type: Boolean }) showStatus = false;
   @property({ type: Number }) maxRangeM?: number;
+  @property({ attribute: false }) areas: Vec2[][] = [[], [], []];
+  @property({ attribute: false }) areaOccupied: boolean[] = [false, false, false];
+  @property({ type: Boolean }) privacy = false;
 
   private _trails = new Map<number, TrailPoint[]>();
   private _animatedTargets = new Map<number, AnimatedTarget>();
@@ -246,7 +251,7 @@ export class LivePanel extends LitElement {
       const now = Date.now();
 
       this._advanceTargets(now);
-      this._sampleTrails(this.targets, now);
+      if (!this.privacy) this._sampleTrails(this.targets, now);
 
       drawBase(
         ctx,
@@ -268,8 +273,10 @@ export class LivePanel extends LitElement {
         this.adapter.info.vitalRangeM,
       );
 
-      if (!this.adapter.info.is1DRanging) drawBoundaryOverlay(ctx, this.calibration.polygon, m);
-      else
+      if (!this.adapter.info.is1DRanging) {
+        drawBoundaryOverlay(ctx, this.calibration.polygon, m);
+        drawOccupancyAreas(ctx, this.areas, this.areaOccupied, m);
+      } else
         drawRangeFilter(
           ctx,
           rp.cx,
@@ -283,6 +290,11 @@ export class LivePanel extends LitElement {
           this.calibration.distance_max ?? 0,
           m,
         );
+
+      if (this.privacy) {
+        this._trails.clear();
+        this._animatedTargets.clear();
+      }
 
       // Time-faded trail
       for (const [targetIndex, trail] of this._trails) {
@@ -307,8 +319,8 @@ export class LivePanel extends LitElement {
         ctx.restore();
       }
 
-      // Targets
-      for (const t of this.targets) {
+      // Targets stay on the calibration live tab. Everyday view is occupancy only.
+      for (const t of this.privacy ? [] : this.targets) {
         if (!t.room) continue;
         const animated = this._animatedTargets.get(t.index);
         if (this.adapter.info.is1DRanging) {
@@ -408,10 +420,23 @@ export class LivePanel extends LitElement {
         }
       </div>
       ${
-        !this.adapter.info.is1DRanging && this.calibration.polygon.length >= 3
+        !this.adapter.info.is1DRanging &&
+        (this.calibration.polygon.length >= 3 || this.areas.some((area) => area.length >= 3))
           ? html`<div class="boundary-legend">
-              <span><i class="boundary-line"></i>${this._t('live.polygon_boundary')}</span>
-              <span><i class="filtered-area"></i>${this._t('live.filtered_area')}</span>
+              ${
+                this.calibration.polygon.length >= 3
+                  ? html`<span><i class="boundary-line"></i>${this._t('live.polygon_boundary')}</span>
+                      <span><i class="filtered-area"></i>${this._t('live.filtered_area')}</span>`
+                  : ''
+              }
+              ${this.areas.map((area, index) =>
+                area.length >= 3
+                  ? html`<span
+                      ><i class="area-swatch" style=${`--c:${AREA_COLORS[index]}`}></i
+                      >${this._t('live.area_n', { n: index + 1 })}${this.areaOccupied[index] ? ' ●' : ''}</span
+                    >`
+                  : '',
+              )}
             </div>`
           : ''
       }
@@ -528,6 +553,12 @@ export class LivePanel extends LitElement {
       width: 12px;
       height: 10px;
       background: rgba(100, 116, 139, 0.25);
+    }
+    .area-swatch {
+      width: 12px;
+      height: 10px;
+      background: var(--c);
+      opacity: 0.7;
     }
     .panel-heading {
       margin-bottom: 12px;

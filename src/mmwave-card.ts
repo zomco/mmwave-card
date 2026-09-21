@@ -24,6 +24,7 @@ import { applyTransform } from './utils/transform';
 import { LocalFusionTracker, type FusionObservation } from './fusion/tracker';
 import { parseAtomicTargetFrame } from './fusion/frame';
 import { canvasToRoom, type CanvasMetrics } from './utils/canvas';
+import { formatPolygon, parsePolygon } from './utils/area-geometry';
 import { localize } from './localize/localize';
 import { logoSvg } from './logo';
 import {
@@ -38,6 +39,8 @@ import {
   type FusionReplay,
   type RadarSourceConfig,
   type CalibrationProfile,
+  type OccupancyArea,
+  type Vec2,
   DEFAULT_CARD_CONFIG,
 } from './types';
 import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VERSION } from './const';
@@ -47,6 +50,7 @@ import './panels/geo-panel';
 import './panels/fusion-calibration';
 import type { RadarCalibrationSolution } from './fusion/calibration';
 import './panels/live-panel';
+import './panels/area-editor';
 import './panels/fusion-panel';
 import './panels/fusion-workflow';
 import type { LivePanel } from './panels/live-panel';
@@ -76,6 +80,18 @@ console.info(
 const TAB_GEO = 0;
 const TAB_YAW = 1;
 const TAB_LIVE = 2;
+
+function emptyAreas(): Vec2[][] {
+  return [[], [], []];
+}
+
+function areaPolygonEntity(prefix: string, index: number): string {
+  return `text.${prefix}_area_${index + 1}_polygon`;
+}
+
+function areaOccupiedEntity(prefix: string, index: number): string {
+  return `binary_sensor.${prefix}_area_${index + 1}_occupied`;
+}
 
 function configuredEntityIds(value: unknown, result = new Set<string>()): Set<string> {
   if (typeof value === 'string' && /^[a-z_]+\.[a-z0-9_]+$/.test(value)) result.add(value);
@@ -161,7 +177,7 @@ export class MMWaveCard extends LitElement {
         ...config.fusion,
         min_confirm_sources: config.fusion?.min_confirm_sources ?? (config.radars.length > 1 ? 2 : 1),
         track_ttl_s:
-          config.fusion?.track_ttl_s ?? (config.radars.some((radar) => radar.radar_model === 'r60abd1') ? 3 : 1.2),
+          config.fusion?.track_ttl_s ?? (config.radars.some((radar) => radar.radar_model === 'r60abd1') ? 3 : 2),
       });
       this._fusionTargets = [];
       this._fusionEvents = [];
@@ -196,6 +212,8 @@ export class MMWaveCard extends LitElement {
     defaultCal.radar_x = Math.round(roomW * 0.382);
     defaultCal.radar_y = Math.round(roomD * 0.382);
     this._cal = defaultCal;
+    this._areas = emptyAreas();
+    this._areaOccupied = [false, false, false];
   }
 
   public static async getConfigElement(): Promise<LovelaceCardEditor> {
@@ -223,6 +241,8 @@ export class MMWaveCard extends LitElement {
   @state() private _config!: MMWaveCardConfig;
   @state() private _adapter!: RadarModelAdapter;
   @state() private _cal!: CalibrationConfig;
+  @state() private _areas: Vec2[][] = emptyAreas();
+  @state() private _areaOccupied = [false, false, false];
   @state() private _tab = TAB_GEO;
   @state() private _isCalibrating = false;
   @state() private _fusionCalibrationConfig?: MMWaveCardConfig;
@@ -289,6 +309,13 @@ export class MMWaveCard extends LitElement {
     this._maxRangeM = reading.maxRangeM;
 
     // Apply transform to every target
+    const prefix = this._devicePrefix();
+    if (prefix) {
+      this._areaOccupied = [0, 1, 2].map(
+        (index) => this._hass.states[areaOccupiedEntity(prefix, index)]?.state === 'on',
+      );
+    }
+
     this._targets = reading.targets.map((t) => ({
       ...t,
       room: {
@@ -372,6 +399,7 @@ export class MMWaveCard extends LitElement {
       if (changed) {
         for (const target of reading.targets) {
           const room = applyTransform(target.rawX, target.rawY, target.rawZ, runtime.calibration);
+          if (!room.inBoundary) continue;
           observations.push({
             radarId: runtime.config.id,
             slot: target.index,
@@ -379,6 +407,7 @@ export class MMWaveCard extends LitElement {
             x: room.roomX,
             y: room.roomY,
             weight: Math.max(Number(runtime.config.measurement_weight ?? 1), 0.01),
+            range: Math.hypot(target.rawX, target.rawY),
           });
         }
       }
@@ -808,6 +837,17 @@ export class MMWaveCard extends LitElement {
       cal.polygon = [];
     }
 
+    if (!this._adapter.info.is1DRanging) {
+      const areas = emptyAreas();
+      for (let index = 0; index < 3; index++) {
+        const state = this._hass.states[areaPolygonEntity(prefix, index)]?.state;
+        if (state && state !== 'unknown' && state !== 'unavailable') areas[index] = parsePolygon(state);
+      }
+      this._areas = areas;
+    } else {
+      this._areas = emptyAreas();
+    }
+
     // Clamp to boundaries
     const roomW = (cal.room_w ?? this._config.room_w) as number;
     const roomD = (cal.room_d ?? this._config.room_d) as number;
@@ -918,6 +958,23 @@ export class MMWaveCard extends LitElement {
         failures.push(`${polyEntity} (no such entity)`);
       }
 
+      if (!this._adapter.info.is1DRanging) {
+        for (let index = 0; index < 3; index++) {
+          const entityId = areaPolygonEntity(prefix, index);
+          const value = formatPolygon(this._areas[index] ?? []);
+          if (this._hass.states[entityId] === undefined) {
+            if (value) failures.push(`${entityId} (no such entity)`);
+            continue;
+          }
+          try {
+            await this._hass.callService('text', 'set_value', { entity_id: entityId, value });
+          } catch (err) {
+            failures.push(entityId);
+            console.warn(`Failed to sync ${entityId}`, err);
+          }
+        }
+      }
+
       this._syncFailures = failures;
       this._syncState = failures.length > 0 ? 'error' : 'success';
       if (!failures.length) this._originalCalibration = structuredClone(this._cal);
@@ -987,14 +1044,27 @@ export class MMWaveCard extends LitElement {
               </div>
             </div>
             <div class="header-actions">
-              <span class="presence-chip ${insideTargets > 0 ? 'active' : this._present ? 'filtered' : ''}">
+              <span
+                class="presence-chip ${insideTargets > 0 || this._areaOccupied.some(Boolean) ? 'active' : this._present ? 'filtered' : ''}"
+              >
                 <i></i>
                 ${
-                  insideTargets > 0
-                    ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
-                    : this._present
-                      ? this._t('card.outside')
-                      : this._t('card.clear')
+                  this._areaOccupied.some(Boolean)
+                    ? this._areaOccupied
+                        .map((on, index) =>
+                          on
+                            ? this._adapter.info.is1DRanging
+                              ? this._t(index === 0 ? 'card.near' : 'card.far')
+                              : this._t('live.area_n', { n: index + 1 })
+                            : '',
+                        )
+                        .filter(Boolean)
+                        .join(' · ')
+                    : insideTargets > 0
+                      ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
+                      : this._present
+                        ? this._t('card.outside')
+                        : this._t('card.clear')
                 }
               </span>
               <button
@@ -1023,6 +1093,9 @@ export class MMWaveCard extends LitElement {
               .targets=${this._targets}
               .present=${this._present}
               .maxRangeM=${this._maxRangeM}
+              .areas=${this._areas}
+              .areaOccupied=${this._areaOccupied}
+              .privacy=${true}
             >
             </mmwave-live-panel>
           </div>
@@ -1118,20 +1191,37 @@ export class MMWaveCard extends LitElement {
           ${
             this._tab === TAB_LIVE
               ? html` <mmwave-live-panel
-                  .hass=${this._hass}
-                  .config=${this._config}
-                  .floorplan=${this._config.floorplan}
-                  .adapter=${this._adapter}
-                  .calibration=${this._cal}
-                  .lang=${lang}
-                  .roomW=${roomW}
-                  .roomD=${roomD}
-                  .targets=${this._targets}
-                  .present=${this._present}
-                  .maxRangeM=${this._maxRangeM}
-                  .showStatus=${true}
-                >
-                </mmwave-live-panel>`
+                    .hass=${this._hass}
+                    .config=${this._config}
+                    .floorplan=${this._config.floorplan}
+                    .adapter=${this._adapter}
+                    .calibration=${this._cal}
+                    .lang=${lang}
+                    .roomW=${roomW}
+                    .roomD=${roomD}
+                    .targets=${this._targets}
+                    .present=${this._present}
+                    .maxRangeM=${this._maxRangeM}
+                    .showStatus=${true}
+                    .areas=${this._areas}
+                    .areaOccupied=${this._areaOccupied}
+                  >
+                  </mmwave-live-panel>
+                  ${
+                    this._adapter.info.is1DRanging
+                      ? nothing
+                      : html`<mmwave-area-editor
+                          .floorplan=${this._config.floorplan}
+                          .roomW=${roomW}
+                          .roomD=${roomD}
+                          .areas=${this._areas.map((polygon) => ({ polygon }))}
+                          .radar=${{ x: this._cal.radar_x, y: this._cal.radar_y, yaw: this._cal.yaw }}
+                          .lang=${lang}
+                          @areas-changed=${(event: CustomEvent<OccupancyArea[]>) => {
+                            this._areas = [0, 1, 2].map((index) => event.detail[index]?.polygon ?? []);
+                          }}
+                        ></mmwave-area-editor>`
+                  }`
               : nothing
           }
         </div>

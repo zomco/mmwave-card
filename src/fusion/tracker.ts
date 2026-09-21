@@ -7,6 +7,7 @@ export interface FusionObservation {
   x: number;
   y: number;
   weight: number;
+  range?: number;
 }
 
 interface Cluster {
@@ -86,25 +87,37 @@ function minimumCostAssignment(costs: number[][]): Array<[number, number]> {
 
 export class LocalFusionTracker {
   private tracks = new Map<string, MutableTrack>();
+  private mergeSince = new Map<string, number>();
   private readonly associationGate: number;
   private readonly mergeGate: number;
   private readonly ttlMs: number;
   private readonly confirmHits: number;
   private readonly minConfirmSources: number;
+  private readonly duplicateGate: number;
+  private readonly rangeMergeFactor: number;
+  private readonly mergeConfirmMs: number;
 
   constructor(settings: FusionSettings = {}) {
     this.associationGate = Math.max(settings.association_gate_cm ?? 90, 10);
     this.mergeGate = Math.max(settings.merge_gate_cm ?? 70, 10);
-    this.ttlMs = Math.max(settings.track_ttl_s ?? 1.2, 0.2) * 1000;
+    this.ttlMs = Math.max(settings.track_ttl_s ?? 2, 0.2) * 1000;
     this.confirmHits = Math.max(settings.confirm_hits ?? 2, 1);
     this.minConfirmSources = Math.max(settings.min_confirm_sources ?? 1, 1);
+    this.duplicateGate = Math.max(settings.duplicate_gate_cm ?? 50, 0);
+    this.rangeMergeFactor = Math.max(settings.range_merge_factor ?? 0.08, 0);
+    this.mergeConfirmMs = Math.max(settings.merge_confirm_s ?? 0.6, 0) * 1000;
   }
 
   public reset() {
     this.tracks.clear();
+    this.mergeSince.clear();
   }
 
   public step(observations: FusionObservation[], now = Date.now()): FusionTarget[] {
+    for (const [trackId, track] of this.tracks) {
+      if (now - track.last_seen > this.ttlMs) this.tracks.delete(trackId);
+    }
+
     const predictionDt = new Map<string, number>();
     for (const track of this.tracks.values()) {
       const dt = Math.min(Math.max((now - track.updated_at) / 1000, 0), 0.5);
@@ -114,7 +127,7 @@ export class LocalFusionTracker {
       predictionDt.set(track.track_id, dt);
     }
 
-    const clusters = this.cluster(observations);
+    const clusters = this.cluster(this.dedupeSameRadar(observations));
     const tracks = [...this.tracks.values()];
     const trackCount = tracks.length;
     const clusterCount = clusters.length;
@@ -140,24 +153,7 @@ export class LocalFusionTracker {
       const track = tracks[trackIndex];
       usedTracks.add(track.track_id);
       usedClusters.add(clusterIndex);
-      const cluster = clusters[clusterIndex];
-      const dt = Math.max(predictionDt.get(track.track_id) ?? 0.1, 0.05);
-      const residualX = cluster.x - track.x;
-      const residualY = cluster.y - track.y;
-      const sourceBonus = Math.min(cluster.sources.length - 1, 3);
-      const alpha = 0.56 + sourceBonus * 0.06;
-      const beta = 0.1 + sourceBonus * 0.02;
-      track.x += alpha * residualX;
-      track.y += alpha * residualY;
-      track.vx += (beta * residualX) / dt;
-      track.vy += (beta * residualY) / dt;
-      track.last_seen = cluster.timestamp;
-      track.sources = cluster.sources;
-      cluster.sources.forEach((source) => track.seenSources.add(source));
-      track.hits += Math.max(cluster.sources.length, 1);
-      track.confirmed = track.hits >= this.confirmHits && track.seenSources.size >= this.minConfirmSources;
-      const confidenceCeiling = track.seenSources.size >= this.minConfirmSources ? 1 : 0.74;
-      track.confidence = Math.min(confidenceCeiling, track.confidence + 0.1 + sourceBonus * 0.08);
+      this.updateTrack(track, clusters[clusterIndex], Math.max(predictionDt.get(track.track_id) ?? 0.1, 0.05));
     }
 
     for (const track of this.tracks.values()) {
@@ -167,30 +163,33 @@ export class LocalFusionTracker {
       }
     }
 
+    const preexisting = new Set(this.tracks.keys());
     clusters.forEach((cluster, index) => {
       if (usedClusters.has(index)) return;
-      const hits = Math.max(cluster.sources.length, 1);
-      const track: MutableTrack = {
-        track_id: uuid(),
-        x: cluster.x,
-        y: cluster.y,
-        vx: 0,
-        vy: 0,
-        confidence: Math.min(0.9, 0.35 + cluster.sources.length * 0.18),
-        sources: cluster.sources,
-        started_at: cluster.timestamp,
-        last_seen: cluster.timestamp,
-        updated_at: now,
-        hits,
-        confirmed: hits >= this.confirmHits && cluster.sources.length >= this.minConfirmSources,
-        seenSources: new Set(cluster.sources),
-      };
-      this.tracks.set(track.track_id, track);
+      const nearest = this.nearestTrack(cluster, predictionDt, preexisting);
+      if (!nearest) {
+        this.birthTrack(cluster, now);
+        return;
+      }
+      if (usedTracks.has(nearest.track.track_id)) {
+        if (nearest.distance <= this.mergeGate) return;
+        this.birthTrack(cluster, now);
+        return;
+      }
+      if (nearest.distance <= this.associationGate) {
+        usedTracks.add(nearest.track.track_id);
+        this.updateTrack(
+          nearest.track,
+          cluster,
+          Math.max(predictionDt.get(nearest.track.track_id) ?? 0.1, 0.05),
+        );
+        return;
+      }
+      this.birthTrack(cluster, now);
     });
 
-    for (const [trackId, track] of this.tracks) {
-      if (now - track.last_seen > this.ttlMs) this.tracks.delete(trackId);
-    }
+    this.mergeCloseTracks(now);
+
     return [...this.tracks.values()]
       .filter((track) => track.confirmed)
       .map(({ updated_at: _u, hits: _h, confirmed: _c, seenSources, ...track }) => ({
@@ -199,15 +198,147 @@ export class LocalFusionTracker {
       }));
   }
 
+  private pairMergeGate(observation: FusionObservation, cluster: Cluster): number {
+    const ranges = [observation.range ?? 0, ...cluster.observations.map((item) => item.range ?? 0)];
+    return this.mergeGate + this.rangeMergeFactor * Math.max(...ranges);
+  }
+
+  private dedupeSameRadar(observations: FusionObservation[]): FusionObservation[] {
+    if (this.duplicateGate <= 0 || observations.length < 2) return observations;
+    const grouped = new Map<string, FusionObservation[]>();
+    for (const observation of observations) {
+      const group = grouped.get(observation.radarId) ?? [];
+      group.push(observation);
+      grouped.set(observation.radarId, group);
+    }
+    const kept: FusionObservation[] = [];
+    for (const group of grouped.values()) {
+      if (group.length === 1) {
+        kept.push(group[0]);
+        continue;
+      }
+      const scored = [...group].sort((left, right) => {
+        const score = (observation: FusionObservation) => {
+          if (!this.tracks.size) return observation.weight;
+          return -Math.min(
+            ...[...this.tracks.values()].map((track) => Math.hypot(observation.x - track.x, observation.y - track.y)),
+          );
+        };
+        return score(right) - score(left);
+      });
+      const accepted: FusionObservation[] = [];
+      for (const observation of scored) {
+        if (accepted.some((other) => Math.hypot(observation.x - other.x, observation.y - other.y) <= this.duplicateGate)) {
+          continue;
+        }
+        accepted.push(observation);
+      }
+      kept.push(...accepted);
+    }
+    return kept;
+  }
+
+  private updateTrack(track: MutableTrack, cluster: Cluster, dt: number) {
+    const residualX = cluster.x - track.x;
+    const residualY = cluster.y - track.y;
+    const sourceBonus = Math.min(cluster.sources.length - 1, 3);
+    const alpha = 0.35 + sourceBonus * 0.05;
+    const beta = 0.08 + sourceBonus * 0.02;
+    track.x += alpha * residualX;
+    track.y += alpha * residualY;
+    track.vx += (beta * residualX) / dt;
+    track.vy += (beta * residualY) / dt;
+    track.last_seen = cluster.timestamp;
+    track.sources = cluster.sources;
+    cluster.sources.forEach((source) => track.seenSources.add(source));
+    track.hits += Math.max(cluster.sources.length, 1);
+    track.confirmed = track.hits >= this.confirmHits && track.seenSources.size >= this.minConfirmSources;
+    const confidenceCeiling = track.seenSources.size >= this.minConfirmSources ? 1 : 0.74;
+    track.confidence = Math.min(confidenceCeiling, track.confidence + 0.1 + sourceBonus * 0.08);
+  }
+
+  private birthTrack(cluster: Cluster, now: number) {
+    const hits = Math.max(cluster.sources.length, 1);
+    const track: MutableTrack = {
+      track_id: uuid(),
+      x: cluster.x,
+      y: cluster.y,
+      vx: 0,
+      vy: 0,
+      confidence: Math.min(0.9, 0.35 + cluster.sources.length * 0.18),
+      sources: cluster.sources,
+      started_at: cluster.timestamp,
+      last_seen: cluster.timestamp,
+      updated_at: now,
+      hits,
+      confirmed: hits >= this.confirmHits && cluster.sources.length >= this.minConfirmSources,
+      seenSources: new Set(cluster.sources),
+    };
+    this.tracks.set(track.track_id, track);
+  }
+
+  private nearestTrack(
+    cluster: Cluster,
+    predictionDt: Map<string, number>,
+    allowed: Set<string>,
+  ): { track: MutableTrack; distance: number } | undefined {
+    let best: { track: MutableTrack; distance: number } | undefined;
+    for (const track of this.tracks.values()) {
+      if (!allowed.has(track.track_id)) continue;
+      const distance = Math.hypot(track.x - cluster.x, track.y - cluster.y);
+      const gate = this.associationGate + Math.hypot(track.vx, track.vy) * (predictionDt.get(track.track_id) ?? 0);
+      if (distance <= gate && (!best || distance < best.distance)) best = { track, distance };
+    }
+    return best;
+  }
+
+  private mergeCloseTracks(now: number) {
+    if (this.mergeConfirmMs <= 0) {
+      this.mergeSince.clear();
+      return;
+    }
+    const confirmed = [...this.tracks.values()].filter((track) => track.confirmed);
+    const close = new Set<string>();
+    const consumed = new Set<string>();
+    for (let index = 0; index < confirmed.length; index++) {
+      const left = confirmed[index];
+      if (consumed.has(left.track_id)) continue;
+      for (const right of confirmed.slice(index + 1)) {
+        if (consumed.has(right.track_id)) continue;
+        const distance = Math.hypot(left.x - right.x, left.y - right.y);
+        if (distance > this.mergeGate) continue;
+        const pair = [left.track_id, right.track_id].sort().join('|');
+        close.add(pair);
+        const firstSeen = this.mergeSince.get(pair) ?? now;
+        if (!this.mergeSince.has(pair)) this.mergeSince.set(pair, now);
+        if (now - firstSeen < this.mergeConfirmMs) continue;
+        const older = left.started_at <= right.started_at ? left : right;
+        const newer = older === left ? right : left;
+        newer.sources.forEach((source) => older.seenSources.add(source));
+        older.sources = [...new Set([...older.sources, ...newer.sources])];
+        older.hits += newer.hits;
+        older.confidence = Math.max(older.confidence, newer.confidence);
+        this.tracks.delete(newer.track_id);
+        consumed.add(newer.track_id);
+        consumed.add(older.track_id);
+        break;
+      }
+    }
+    for (const pair of this.mergeSince.keys()) {
+      const [leftId, rightId] = pair.split('|');
+      if (!close.has(pair) || !this.tracks.has(leftId) || !this.tracks.has(rightId)) this.mergeSince.delete(pair);
+    }
+  }
+
   private cluster(observations: FusionObservation[]): Cluster[] {
     const clusters: Cluster[] = [];
     for (const observation of [...observations].sort((a, b) => b.weight - a.weight)) {
       let best: Cluster | undefined;
-      let bestDistance = this.mergeGate;
+      let bestDistance = Number.POSITIVE_INFINITY;
       for (const cluster of clusters) {
         if (cluster.sources.includes(observation.radarId)) continue;
         const distance = Math.hypot(observation.x - cluster.x, observation.y - cluster.y);
-        if (distance <= bestDistance) {
+        if (distance <= this.pairMergeGate(observation, cluster) && distance < bestDistance) {
           best = cluster;
           bestDistance = distance;
         }

@@ -81,7 +81,16 @@
     "outside": "Outside",
     "no_target_data_yet": "No target data yet",
     "polygon_boundary": "Polygon boundary",
-    "filtered_area": "Shaded: filtered out"
+    "filtered_area": "Shaded: filtered out",
+    "area_n": "Area {n}"
+  },
+  "area": {
+    "hint": "Click the map to outline up to three occupancy areas (desk, bed, door).",
+    "area_n": "Area {n}",
+    "warn_small": "An area is narrower than {cm} cm — occupancy may flicker.",
+    "warn_close": "Area centroids are closer than {cm} cm — exclusive assignment will fight.",
+    "warn_overlap": "Areas overlap. A still target stays in the last area until it leaves the hysteresis band.",
+    "ok": "Areas look separable."
   },
   "actions": {
     "save": "Save",
@@ -213,6 +222,8 @@
     "p0_target_p1": "{p0} target{p1}",
     "outside": "Outside",
     "clear": "Clear",
+    "near": "Near",
+    "far": "Far",
     "open_calibration": "Open calibration",
     "open_calibration_2": "Open calibration",
     "back_to_radar_view": "Back to radar view",

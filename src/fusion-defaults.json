@@ -19,9 +19,12 @@
     "rate_hz": 10.0,
     "association_gate_cm": 90.0,
     "merge_gate_cm": 70.0,
-    "track_ttl_s": 1.2,
+    "track_ttl_s": 2.0,
     "confirm_hits": 2,
-    "min_confirm_sources": 2
+    "min_confirm_sources": 2,
+    "duplicate_gate_cm": 50.0,
+    "range_merge_factor": 0.08,
+    "merge_confirm_s": 0.6
   },
   "quality": {
     "min_score": 70,

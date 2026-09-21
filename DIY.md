@@ -80,6 +80,14 @@ room_d: 400
 LD2451, LD2452, LD2453 and LD2454 take the same shape — only `radar_model` and
 the entity prefixes change.
 
+### Occupancy areas
+
+On 2-D/3-D models the calibration **Live** tab can draw up to three occupancy
+areas. Sync writes `text.<prefix>_area_1_polygon` … `_area_3_polygon`. The card
+warns if centroids are closer than 2 m or a short side is under 1.5 m. Occupied
+state comes from `binary_sensor.<prefix>_area_N_occupied` on the device — the
+card does not compute it.
+
 ### Atomic target frames
 
 Multi-target models can publish all targets in one versioned JSON entity

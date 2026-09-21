@@ -81,7 +81,16 @@
     "outside": "边界外",
     "no_target_data_yet": "当前没有目标数据",
     "polygon_boundary": "多边形边界",
-    "filtered_area": "灰色区域：已过滤"
+    "filtered_area": "灰色区域：已过滤",
+    "area_n": "区域 {n}"
+  },
+  "area": {
+    "hint": "在地图上画出最多三个占位区域（书桌、床、门口）。",
+    "area_n": "区域 {n}",
+    "warn_small": "有区域短边小于 {cm} cm，占位可能抖动。",
+    "warn_close": "区域质心距离小于 {cm} cm，互斥分配会来回抢。",
+    "warn_overlap": "区域有重叠。静止目标会留在上次区域，直到走出迟滞带。",
+    "ok": "区域间距看起来够用。"
   },
   "actions": {
     "save": "保存",
@@ -211,6 +220,8 @@
     "p0_target_p1": "{p0} 个目标",
     "outside": "边界外",
     "clear": "无人",
+    "near": "近",
+    "far": "远",
     "open_calibration": "打开校准",
     "open_calibration_2": "打开校准",
     "back_to_radar_view": "返回雷达视图",
