@@ -23,6 +23,7 @@ export function mapFusionEvent(row: Record<string, unknown>): FusionEvent {
     x: Number(row.x),
     y: Number(row.y),
     clip_path: row.clip_path ? String(row.clip_path) : undefined,
+    snapshot_path: row.snapshot_path ? String(row.snapshot_path) : undefined,
     camera_entity_id: row.camera_entity_id ? String(row.camera_entity_id) : undefined,
     clip_status: row.clip_status ? (String(row.clip_status) as FusionEvent['clip_status']) : undefined,
     clip_provider: row.clip_provider ? (String(row.clip_provider) as FusionEvent['clip_provider']) : undefined,
@@ -41,6 +42,33 @@ export function mapFusionEvent(row: Record<string, unknown>): FusionEvent {
     review_summary: row.review_summary ? String(row.review_summary) : undefined,
     review_error: row.review_error ? String(row.review_error) : undefined,
   };
+}
+
+export function applySnapshotReady(events: FusionEvent[], data: Record<string, unknown>): FusionEvent[] {
+  const eventId = String(data.event_id ?? '');
+  const snapshotPath = data.snapshot_path ? String(data.snapshot_path) : '';
+  if (!eventId || !snapshotPath) return events;
+  return events.map((item) =>
+    item.event_id === eventId
+      ? {
+          ...item,
+          snapshot_path: snapshotPath,
+          camera_entity_id: data.camera_entity_id ? String(data.camera_entity_id) : item.camera_entity_id,
+        }
+      : item,
+  );
+}
+
+export function filterFusionEvents(
+  events: FusionEvent[],
+  filter: { eventType?: string; zoneId?: string; since?: number },
+): FusionEvent[] {
+  return events.filter((item) => {
+    if (filter.eventType && item.event_type !== filter.eventType) return false;
+    if (filter.zoneId && item.zone_id !== filter.zoneId) return false;
+    if (filter.since != null && item.timestamp < filter.since) return false;
+    return true;
+  });
 }
 
 export function applyClipReview(events: FusionEvent[], data: Record<string, unknown>): FusionEvent[] {

@@ -245,14 +245,15 @@ export class ZoneEditor extends LitElement {
                     .value=${this.draft.name ?? ''}
                     @input=${(event: Event) => this.patch({ name: (event.target as HTMLInputElement).value })}
                 /></label>
-                <label
+                <label class="dwell"
                   >${this._t('zone.dwell_seconds')}<input
                     type="number"
                     min="0"
                     step="1"
                     .value=${String(this.draft.dwell_s ?? 0)}
                     @input=${(event: Event) => this.patch({ dwell_s: Number((event.target as HTMLInputElement).value) })}
-                /></label>
+                  /><small class="hint">${this._t('zone.dwell_seconds_help')}</small></label
+                >
                 <div class="vertex-count">${this.draft.polygon.length} ${this._t('zone.vertices')}</div>
               </div>
               <div class="actions">
@@ -403,6 +404,9 @@ export class ZoneEditor extends LitElement {
       gap: 4px;
       color: var(--secondary-text-color);
       font-size: 9px;
+    }
+    .form-grid label.dwell {
+      grid-column: 1 / -1;
     }
     .form-grid input {
       min-width: 0;

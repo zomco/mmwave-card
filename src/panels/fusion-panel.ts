@@ -1,5 +1,5 @@
 import type { FloorplanConfig } from '../types';
-import { LitElement, css, html, PropertyValues } from 'lit';
+import { LitElement, css, html, nothing, PropertyValues } from 'lit';
 import { localize } from '../localize/localize';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import type { RadarModelAdapter } from '../models';
@@ -26,7 +26,7 @@ import {
   type CanvasMetrics,
 } from '../utils/canvas';
 import { FUSION_TRAIL_MAX_MS } from '../const';
-import { calibrationIssue } from '../fusion/events';
+import { calibrationIssue, filterFusionEvents } from '../fusion/events';
 
 interface TrailPoint {
   x: number;
@@ -62,6 +62,7 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) targets: FusionTarget[] = [];
   @property({ attribute: false }) zones: FusionZoneConfig[] = [];
   @property({ attribute: false }) events: FusionEvent[] = [];
+  @property({ attribute: false }) thumbUrls: Record<string, string> = {};
   @property({ attribute: false }) historyTrack: FusionHistoryPoint[] = [];
   @property({ attribute: false }) selectedEventId = '';
   @property({ attribute: false }) lang = 'en';
@@ -77,6 +78,9 @@ export class FusionPanel extends LitElement {
   @property({ attribute: false }) replay?: FusionReplay;
   @property({ type: Boolean }) replayLoading = false;
   @property({ attribute: false }) replayError: '' | 'unsupported' | 'failed' = '';
+  @state() private eventTypeFilter = '';
+  @state() private zoneFilter = '';
+  @state() private sinceHours: 0 | 1 | 24 = 0;
   @state() private showReplay = false;
   @state() private replayMinutes = 5;
   @state() private playing = false;
@@ -467,6 +471,7 @@ export class FusionPanel extends LitElement {
         otherwise read the previous window's numbers and believe them.
       -->
       <div class="replay-bar" data-span-s=${replay ? Math.round(span) : 0}>
+        <span class="heatmap-note">${this._t('fusion.replay_hint')}</span>
         <div class="windows">
           ${windows.map(
             ([minutes, label]) => html`
@@ -546,6 +551,7 @@ export class FusionPanel extends LitElement {
     ];
     return html`
       <div class="heatmap-bar">
+        <span class="heatmap-note">${this._t('fusion.heatmap_hint')}</span>
         <div class="windows">
           ${windows.map(
             ([hours, label]) => html`
@@ -594,10 +600,11 @@ export class FusionPanel extends LitElement {
       const issue = calibrationIssue(radar);
       return issue ? [{ radar, issue }] : [];
     });
-    const scoredEvents = this.events.filter(
-      (event) => event.event_type === 'trajectory' || event.event_type === 'traverse',
-    );
-    const recentEvents = scoredEvents.length ? scoredEvents : this.events;
+    const recentEvents = filterFusionEvents(this.events, {
+      eventType: this.eventTypeFilter || undefined,
+      zoneId: this.zoneFilter || undefined,
+      since: this.sinceHours ? Date.now() / 1000 - this.sinceHours * 3600 : undefined,
+    });
     return html`
       <div class="scene-toolbar">
         <span class="status ${this.backendState}">
@@ -674,31 +681,87 @@ export class FusionPanel extends LitElement {
           `,
         )}
       </div>
-      ${
-        recentEvents.length
-          ? html`
-              <div class="events">
-                <strong>${this._t('fusion.recent_events')}</strong>
-                ${recentEvents.slice(0, 8).map(
-                  (event) => html`
-                    <button
-                      type="button"
-                      class=${event.event_id === this.selectedEventId ? 'selected' : ''}
-                      @click=${() => this.selectEvent(event)}
-                    >
-                      <span>
-                        ${event.event_type.toUpperCase()} · ${event.zone_id}
-                        ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
-                      </span>
-                      <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
-                      <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
-                    </button>
-                  `,
-                )}
-              </div>
-            `
-          : ''
-      }
+      <div class="events">
+        <strong>${this._t('fusion.recent_events')}</strong>
+        <p class="heatmap-note">${this._t('fusion.event_search_hint')}</p>
+        <div class="event-filters">
+          ${['', 'enter', 'dwell', 'traverse', 'trajectory'].map(
+            (type) => html`
+              <button
+                type="button"
+                class=${this.eventTypeFilter === type ? 'selected' : ''}
+                @click=${() => (this.eventTypeFilter = type)}
+              >
+                ${type ? type : this._t('fusion.filter_all')}
+              </button>
+            `,
+          )}
+        </div>
+        <div class="event-filters">
+          <button
+            type="button"
+            class=${this.zoneFilter === '' ? 'selected' : ''}
+            @click=${() => (this.zoneFilter = '')}
+          >
+            ${this._t('fusion.filter_all_zones')}
+          </button>
+          ${this.zones.map(
+            (zone) => html`
+              <button
+                type="button"
+                class=${this.zoneFilter === zone.id ? 'selected' : ''}
+                @click=${() => (this.zoneFilter = zone.id)}
+              >
+                ${zone.name || zone.id}
+              </button>
+            `,
+          )}
+        </div>
+        <div class="event-filters">
+          ${(
+            [
+              [0, 'fusion.window_all'],
+              [1, 'fusion.window_hour'],
+              [24, 'fusion.window_day'],
+            ] as const
+          ).map(
+            ([hours, key]) => html`
+              <button
+                type="button"
+                class=${this.sinceHours === hours ? 'selected' : ''}
+                @click=${() => (this.sinceHours = hours)}
+              >
+                ${this._t(key)}
+              </button>
+            `,
+          )}
+        </div>
+        ${
+          recentEvents.length
+            ? recentEvents.slice(0, 24).map(
+                (event) => html`
+                  <button
+                    type="button"
+                    class=${event.event_id === this.selectedEventId ? 'selected' : ''}
+                    @click=${() => this.selectEvent(event)}
+                  >
+                    ${
+                      this.thumbUrls[event.event_id]
+                        ? html`<img class="thumb" src=${this.thumbUrls[event.event_id]} alt="" />`
+                        : nothing
+                    }
+                    <span>
+                      ${event.event_type.toUpperCase()} · ${event.zone_id}
+                      ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
+                    </span>
+                    <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
+                    <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
+                  </button>
+                `,
+              )
+            : html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
+        }
+      </div>
     `;
   }
 
@@ -784,6 +847,10 @@ export class FusionPanel extends LitElement {
       align-items: center;
       gap: 8px;
       margin-top: 8px;
+    }
+    .replay-bar > .heatmap-note:first-child,
+    .heatmap-bar > .heatmap-note:first-child {
+      flex: 1 1 100%;
     }
     .windows {
       display: inline-flex;
@@ -937,7 +1004,27 @@ export class FusionPanel extends LitElement {
       color: var(--primary-text-color);
       font-size: 10px;
     }
-    .events button {
+    .event-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .event-filters button {
+      padding: 3px 8px;
+      border: 1px solid var(--divider-color);
+      border-radius: 999px;
+      color: var(--secondary-text-color);
+      background: transparent;
+      font: inherit;
+      font-size: 9px;
+      cursor: pointer;
+    }
+    .event-filters button.selected {
+      color: #fff;
+      background: #0b825c;
+      border-color: #0b825c;
+    }
+    .events > button {
       display: grid;
       grid-template-columns: 1fr auto auto;
       align-items: center;
@@ -951,9 +1038,19 @@ export class FusionPanel extends LitElement {
       text-align: left;
       cursor: pointer;
     }
-    .events button.selected {
+    .events > button:has(img) {
+      grid-template-columns: auto 1fr auto auto;
+    }
+    .events > button.selected {
       border-color: #0b825c;
       background: rgba(11, 130, 92, 0.08);
+    }
+    .events .thumb {
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+      border-radius: 4px;
+      background: rgba(128, 128, 128, 0.12);
     }
     .events small {
       color: var(--secondary-text-color);

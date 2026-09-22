@@ -7,6 +7,7 @@ import { getModelList, getAdapter } from './models';
 import { entityAliases, localize } from './localize/localize';
 import type {
   CalibrationProfile,
+  FusionCameraConfig,
   FusionSettings,
   MMWaveCardConfig,
   RadarSourceConfig,
@@ -75,7 +76,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @state() private _advOpen = false;
   @state() private _deviceStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @state() private _matchedEntities = 0;
-  @state() private _fusionJsonError = '';
   @state() private _calibrationProfiles: CalibrationProfile[] = [];
   @state() private _selectedFusionRadar = 0;
   @state() private _profileStatus = '';
@@ -286,17 +286,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
   }
 
-  private _updateFusionJson(key: 'zones' | 'cameras', event: Event) {
-    try {
-      const value = JSON.parse((event.target as HTMLTextAreaElement).value) as unknown;
-      if (!Array.isArray(value)) throw new Error('Value must be a JSON array');
-      this._fusionJsonError = '';
-      this._changed(key, value);
-    } catch (error) {
-      this._fusionJsonError = error instanceof Error ? error.message : String(error);
-    }
-  }
-
   private _updateFusionSetting(key: keyof FusionSettings, value: number) {
     this._changed('fusion', { ...(this._config.fusion ?? {}), [key]: value });
   }
@@ -307,6 +296,49 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _fusionZonesChanged(event: CustomEvent<MMWaveCardConfig['zones']>) {
     this._changed('zones', event.detail ?? []);
+  }
+
+  private _patchCameras(cameras: FusionCameraConfig[]) {
+    this._changed('cameras', cameras);
+  }
+
+  private _addCamera() {
+    this._patchCameras([
+      ...(this._config.cameras ?? []),
+      {
+        entity_id: '',
+        event_types: ['enter', 'dwell', 'traverse'],
+        lookback: 5,
+        duration: 10,
+        cooldown_s: 60,
+      },
+    ]);
+  }
+
+  private _patchCamera(index: number, patch: Partial<FusionCameraConfig>) {
+    const cameras = [...(this._config.cameras ?? [])];
+    cameras[index] = { ...cameras[index], ...patch };
+    this._patchCameras(cameras);
+  }
+
+  private _toggleCameraEvent(index: number, eventType: 'enter' | 'dwell' | 'traverse' | 'exit') {
+    const camera = this._config.cameras?.[index];
+    const current = new Set<string>(camera?.event_types ?? ['enter', 'dwell', 'traverse']);
+    if (current.has(eventType)) current.delete(eventType);
+    else current.add(eventType);
+    this._patchCamera(index, {
+      event_types: (['enter', 'dwell', 'traverse', 'exit'] as const).filter((type) => current.has(type)),
+    });
+  }
+
+  private _toggleCameraZone(index: number, zoneId: string) {
+    const allIds = (this._config.zones ?? []).map((zone) => zone.id);
+    const camera = this._config.cameras?.[index];
+    const current = new Set(camera?.zones?.length ? camera.zones : allIds);
+    if (current.has(zoneId)) current.delete(zoneId);
+    else current.add(zoneId);
+    const zones = [...current];
+    this._patchCamera(index, { zones: zones.length === allIds.length ? [] : zones });
   }
 
   private async _deviceDropdownChanged(e: Event) {
@@ -832,15 +864,106 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
           .lang=${this.hass.language}
           @zones-changed=${this._fusionZonesChanged}
         ></mmwave-zone-editor>
-        <div class="json-field">
-          <label>Cameras JSON</label>
-          <textarea
-            rows="7"
-            .value=${JSON.stringify(this._config.cameras ?? [], null, 2)}
-            @change=${(event: Event) => this._updateFusionJson('cameras', event)}
-          ></textarea>
-        </div>
-        ${this._fusionJsonError ? html`<div class="json-error">${this._fusionJsonError}</div>` : nothing}
+        <p class="section-help">${this._t('editor.cameras_help')}</p>
+        ${(this._config.cameras ?? []).map((camera, index) => {
+          const eventTypes = new Set(camera.event_types ?? ['enter', 'dwell', 'traverse']);
+          const zoneIds = new Set(camera.zones ?? []);
+          return html`
+            <div class="camera-card">
+              <div class="field compact">
+                <label>${this._t('editor.camera_entity')}</label>
+                <input
+                  list="camera-entities-list"
+                  .value=${camera.entity_id}
+                  @change=${(event: Event) =>
+                    this._patchCamera(index, { entity_id: (event.target as HTMLInputElement).value })}
+                />
+              </div>
+              <div class="checks">
+                <span>${this._t('editor.keep_media_for')}</span>
+                ${(['enter', 'dwell', 'traverse'] as const).map(
+                  (type) => html`
+                    <label class="check-row">
+                      <input
+                        type="checkbox"
+                        .checked=${eventTypes.has(type)}
+                        @change=${() => this._toggleCameraEvent(index, type)}
+                      />
+                      <span>${type}</span>
+                    </label>
+                  `,
+                )}
+              </div>
+              ${
+                (this._config.zones ?? []).length
+                  ? html`
+                      <div class="checks">
+                        <span>${this._t('editor.camera_zones')}</span>
+                        ${(this._config.zones ?? []).map(
+                          (zone) => html`
+                            <label class="check-row">
+                              <input
+                                type="checkbox"
+                                .checked=${zoneIds.size === 0 || zoneIds.has(zone.id)}
+                                @change=${() => this._toggleCameraZone(index, zone.id)}
+                              />
+                              <span>${zone.name || zone.id}</span>
+                            </label>
+                          `,
+                        )}
+                      </div>
+                    `
+                  : html`<p class="section-help">${this._t('editor.camera_zones_all')}</p>`
+              }
+              <div class="rules-grid">
+                <div class="field compact">
+                  <label>${this._t('editor.lookback_s')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="30"
+                    .value=${String(camera.lookback ?? 5)}
+                    @change=${(event: Event) =>
+                      this._patchCamera(index, { lookback: Number((event.target as HTMLInputElement).value) })}
+                  />
+                </div>
+                <div class="field compact">
+                  <label>${this._t('editor.duration_s')}</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="60"
+                    .value=${String(camera.duration ?? 10)}
+                    @change=${(event: Event) =>
+                      this._patchCamera(index, { duration: Number((event.target as HTMLInputElement).value) })}
+                  />
+                </div>
+                <div class="field compact">
+                  <label>${this._t('editor.cooldown_s')}</label>
+                  <input
+                    type="number"
+                    min="0"
+                    .value=${String(camera.cooldown_s ?? 60)}
+                    @change=${(event: Event) =>
+                      this._patchCamera(index, { cooldown_s: Number((event.target as HTMLInputElement).value) })}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                @click=${() => this._patchCameras((this._config.cameras ?? []).filter((_, i) => i !== index))}
+              >
+                ${this._t('editor.remove_camera')}
+              </button>
+            </div>
+          `;
+        })}
+        <button type="button" @click=${this._addCamera}>${this._t('editor.add_camera')}</button>
+        <datalist id="camera-entities-list">
+          ${Object.keys(this.hass.states)
+            .filter((id) => id.startsWith('camera.'))
+            .map((id) => html`<option value=${id}></option>`)}
+        </datalist>
 
         <datalist id="entities-list">
           ${Object.keys(this.hass.states).map((id) => html`<option value=${id}></option>`)}
@@ -1040,6 +1163,26 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     }
     .check-row input {
       accent-color: var(--mmwave-primary);
+    }
+    .camera-card {
+      display: grid;
+      gap: 8px;
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid var(--mmwave-line);
+      border-radius: 12px;
+    }
+    .checks {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+    }
+    .camera-card .check-row {
+      margin-top: 0;
+      padding: 6px 8px;
     }
     .radar-workspace,
     .radar-tab-panel {

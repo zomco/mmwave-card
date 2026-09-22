@@ -23,7 +23,7 @@ import { getAdapter, type RadarModelAdapter } from './models';
 import { applyTransform } from './utils/transform';
 import { LocalFusionTracker, type FusionObservation } from './fusion/tracker';
 import { parseAtomicTargetFrame } from './fusion/frame';
-import { applyClipReview, mapFusionEvent } from './fusion/events';
+import { applyClipReview, applySnapshotReady, mapFusionEvent } from './fusion/events';
 import { canvasToRoom, type CanvasMetrics } from './utils/canvas';
 import { formatPolygon, parsePolygon } from './utils/area-geometry';
 import { localize } from './localize/localize';
@@ -189,6 +189,8 @@ export class MMWaveCard extends LitElement {
       this._fusionReplay = undefined;
       this._fusionReplayError = '';
       this._fusionVideoUrl = '';
+      this._fusionSnapshotUrl = '';
+      this._fusionThumbUrls = {};
       this._localObservationBuffer = [];
       this._sourceSignatures.clear();
       this._fusionBackendState = 'connecting';
@@ -266,6 +268,8 @@ export class MMWaveCard extends LitElement {
   @state() private _fusionHistoryTrack: FusionHistoryPoint[] = [];
   @state() private _selectedFusionEvent?: FusionEvent;
   @state() private _fusionVideoUrl = '';
+  @state() private _fusionThumbUrls: Record<string, string> = {};
+  @state() private _fusionSnapshotUrl = '';
   @state() private _fusionHeatmap?: FusionHeatmap;
   @state() private _fusionHeatmapLoading = false;
   @state() private _fusionHeatmapError: '' | 'unsupported' | 'failed' = '';
@@ -280,6 +284,7 @@ export class MMWaveCard extends LitElement {
   private _fusionUnsubscribe?: () => void;
   private _fusionClipUnsubscribe?: () => void;
   private _fusionReviewUnsubscribe?: () => void;
+  private _fusionSnapshotUnsubscribe?: () => void;
   private _fusionConnecting = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
@@ -524,6 +529,12 @@ export class MMWaveCard extends LitElement {
         },
         'mmwave_fusion_clip_reviewed',
       );
+      this._fusionSnapshotUnsubscribe = await this._hass.connection.subscribeEvents(
+        (event: { data: Record<string, unknown> }) => {
+          void this._onFusionSnapshotReady(event.data);
+        },
+        'mmwave_fusion_snapshot_ready',
+      );
     } catch (error) {
       // Home Assistant answers an unregistered command with unknown_command,
       // which is precisely the "integration not installed" case and is worth
@@ -549,6 +560,8 @@ export class MMWaveCard extends LitElement {
     this._fusionClipUnsubscribe = undefined;
     this._fusionReviewUnsubscribe?.();
     this._fusionReviewUnsubscribe = undefined;
+    this._fusionSnapshotUnsubscribe?.();
+    this._fusionSnapshotUnsubscribe = undefined;
     this._fusionConnecting = false;
   }
 
@@ -583,6 +596,32 @@ export class MMWaveCard extends LitElement {
       console.warn('Failed to resolve fusion clip media', error);
     }
     this.requestUpdate();
+  }
+
+  private async _onFusionSnapshotReady(data: Record<string, unknown>) {
+    const fusionId = this._config.fusion_id || 'home';
+    if (String(data.fusion_id ?? '') !== fusionId) return;
+    this._fusionEvents = applySnapshotReady(this._fusionEvents, data);
+    const eventId = String(data.event_id ?? '');
+    const snapshotPath = data.snapshot_path ? String(data.snapshot_path) : '';
+    if (eventId && snapshotPath) await this._resolveFusionThumb(eventId, snapshotPath);
+    if (this._selectedFusionEvent?.event_id === eventId) {
+      this._selectedFusionEvent = this._fusionEvents.find((item) => item.event_id === eventId);
+      if (snapshotPath && !this._fusionVideoUrl) this._fusionSnapshotUrl = this._fusionThumbUrls[eventId] ?? '';
+    }
+    this.requestUpdate();
+  }
+
+  private async _resolveFusionThumb(eventId: string, snapshotPath: string) {
+    try {
+      const media = await this._hass.callWS<{ url: string }>({
+        type: 'media_source/resolve_media',
+        media_content_id: `media-source://media_source/local/${snapshotPath}`,
+      });
+      this._fusionThumbUrls = { ...this._fusionThumbUrls, [eventId]: media.url };
+    } catch (error) {
+      console.warn('Failed to resolve fusion snapshot', error);
+    }
   }
 
   private _onFusionClipReviewed(data: Record<string, unknown>) {
@@ -675,6 +714,8 @@ export class MMWaveCard extends LitElement {
         limit: 100,
       });
       this._fusionEvents = rows.map(mapFusionEvent);
+      const thumbs = this._fusionEvents.filter((item) => item.snapshot_path).slice(0, 24);
+      await Promise.all(thumbs.map((item) => this._resolveFusionThumb(item.event_id, item.snapshot_path as string)));
     } catch (error) {
       console.info('MMWave Fusion history is not available', error);
     }
@@ -730,6 +771,7 @@ export class MMWaveCard extends LitElement {
   private async _selectFusionEvent(event: CustomEvent<FusionEvent>) {
     this._selectedFusionEvent = event.detail;
     this._fusionVideoUrl = '';
+    this._fusionSnapshotUrl = '';
     try {
       await this._loadFusionEvents();
       const selected = this._fusionEvents.find((item) => item.event_id === event.detail.event_id) ?? event.detail;
@@ -745,6 +787,12 @@ export class MMWaveCard extends LitElement {
           media_content_id: `media-source://media_source/local/${selected.clip_path}`,
         });
         this._fusionVideoUrl = media.url;
+      } else if (selected.snapshot_path) {
+        const media = await this._hass.callWS<{ url: string }>({
+          type: 'media_source/resolve_media',
+          media_content_id: `media-source://media_source/local/${selected.snapshot_path}`,
+        });
+        this._fusionSnapshotUrl = media.url;
       }
     } catch (error) {
       console.warn('Failed to load fused trajectory event', error);
@@ -1383,6 +1431,7 @@ export class MMWaveCard extends LitElement {
             .targets=${this._fusionTargets}
             .zones=${this._config.zones ?? []}
             .events=${this._fusionEvents}
+            .thumbUrls=${this._fusionThumbUrls}
             .historyTrack=${this._fusionHistoryTrack}
             .selectedEventId=${this._selectedFusionEvent?.event_id ?? ''}
             .lang=${lang}
@@ -1439,19 +1488,21 @@ export class MMWaveCard extends LitElement {
                     ${
                       this._fusionVideoUrl
                         ? html`<video controls preload="metadata" .src=${this._fusionVideoUrl}></video>`
-                        : html`<p>
-                            ${this._t('card.no_playable_clip_is_available_yet')}
-                            ${
-                              this._selectedFusionEvent.clip_status
-                                ? html` (${this._selectedFusionEvent.clip_status})`
-                                : nothing
-                            }
-                            ${
-                              this._selectedFusionEvent.clip_error
-                                ? html`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`
-                                : nothing
-                            }
-                          </p>`
+                        : this._fusionSnapshotUrl
+                          ? html`<img class="fusion-still" src=${this._fusionSnapshotUrl} alt="" />`
+                          : html`<p>
+                              ${this._t('card.no_playable_clip_is_available_yet')}
+                              ${
+                                this._selectedFusionEvent.clip_status
+                                  ? html` (${this._selectedFusionEvent.clip_status})`
+                                  : nothing
+                              }
+                              ${
+                                this._selectedFusionEvent.clip_error
+                                  ? html`<br /><span class="clip-error">${this._selectedFusionEvent.clip_error}</span>`
+                                  : nothing
+                              }
+                            </p>`
                     }
                   </section>
                 `
@@ -1737,12 +1788,14 @@ export class MMWaveCard extends LitElement {
       color: var(--error-color, #e53935);
       overflow-wrap: anywhere;
     }
-    .fusion-playback video {
+    .fusion-playback video,
+    .fusion-playback .fusion-still {
       display: block;
       width: 100%;
       max-height: 360px;
       border-radius: 8px;
       background: #000;
+      object-fit: contain;
     }
     .workflow-header {
       justify-content: flex-start;

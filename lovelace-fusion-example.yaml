@@ -52,9 +52,12 @@ radars:
       pitch: 0
       roll: 0
 
+# Apartment: lobby / corridor / stairwell zones belong here.
+# Indoor bathrooms and desks stay on single-radar Occupied, not fusion.
 zones:
   - id: sofa
     name: Sofa
+    # Seconds. Loitering (garage / roof): 300. A few seconds is just enter.
     dwell_s: 10
     polygon:
       - { x: 80, y: 300 }
@@ -65,8 +68,8 @@ zones:
 cameras:
   - entity_id: camera.living_room
     zones: [sofa]
-    # Only a complete, quality-approved crossing starts a recording.
-    event_types: [traverse]
+    # Local stills and clips for fuzzy review. Not NVR timeline search.
+    event_types: [enter, dwell, traverse]
     lookback: 5
     duration: 10
     cooldown_s: 60

@@ -233,6 +233,7 @@ export interface FusionEvent {
   x: number;
   y: number;
   clip_path?: string;
+  snapshot_path?: string;
   camera_entity_id?: string;
   clip_status?: 'requested' | 'waiting' | 'extracting' | 'ready' | 'failed';
   clip_provider?: 'ha_live';
