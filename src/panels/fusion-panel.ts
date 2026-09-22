@@ -26,6 +26,7 @@ import {
   type CanvasMetrics,
 } from '../utils/canvas';
 import { FUSION_TRAIL_MAX_MS } from '../const';
+import { calibrationIssue } from '../fusion/events';
 
 interface TrailPoint {
   x: number;
@@ -41,6 +42,7 @@ export interface FusionRadarVisual {
   observations?: number;
   inRoomRatio?: number;
   calibrationWarning?: boolean;
+  stale?: boolean;
 }
 
 const PALETTE = ['#ff9800', '#03a9f4', '#e91e63', '#8bc34a', '#9c27b0', '#00bcd4'];
@@ -431,6 +433,7 @@ export class FusionPanel extends LitElement {
   }
 
   private eventStatus(event: FusionEvent): string {
+    if (event.review_verdict) return this._t(`fusion.review_${event.review_verdict}`);
     if (event.clip_path) return '▶';
     if (event.clip_status === 'failed') return this._t('fusion.clip_failed');
     if (event.clip_status === 'waiting' || event.clip_status === 'extracting') {
@@ -587,7 +590,10 @@ export class FusionPanel extends LitElement {
 
   protected render() {
     const onlineRadars = this.radars.filter((radar) => radar.available).length;
-    const calibrationWarnings = this.radars.filter((radar) => radar.calibrationWarning);
+    const radarIssues = this.radars.flatMap((radar) => {
+      const issue = calibrationIssue(radar);
+      return issue ? [{ radar, issue }] : [];
+    });
     const scoredEvents = this.events.filter(
       (event) => event.event_type === 'trajectory' || event.event_type === 'traverse',
     );
@@ -635,20 +641,23 @@ export class FusionPanel extends LitElement {
           <span class="radar-count">${onlineRadars}/${this.radars.length} ${this._t('fusion.radars_online')}</span>
         </span>
       </div>
+      ${this.backendState === 'online' ? html`<p class="assist-hint">${this._t('fusion.assist_hint')}</p>` : ''}
       <div class="scene">
         <canvas id="fusion-cv"></canvas>
       </div>
       ${this.showReplay ? this.renderReplayBar() : ''} ${this.showHeatmap ? this.renderHeatmapLegend() : ''}
       ${
-        calibrationWarnings.length
+        radarIssues.length
           ? html`<div class="calibration-warning">
-              ${this._t('fusion.calibration_warning')}:
-              ${calibrationWarnings
-                .map((radar) => {
-                  const ratio = radar.inRoomRatio == null ? '?' : `${Math.round(radar.inRoomRatio * 100)}%`;
-                  return `${radar.config.id} (${ratio})`;
-                })
-                .join(', ')}
+              ${radarIssues.map(
+                ({ radar, issue }) => html`
+                  <div>
+                    <strong>${radar.config.id}</strong>
+                    ${radar.inRoomRatio == null ? '' : html` (${Math.round(radar.inRoomRatio * 100)}%)`} ·
+                    ${this._t(`fusion.calibration_hint_${issue}`)}
+                  </div>
+                `,
+              )}
             </div>`
           : ''
       }
@@ -860,7 +869,15 @@ export class FusionPanel extends LitElement {
       gap: 6px;
       margin-top: 8px;
     }
+    .assist-hint {
+      margin: 8px 0 0;
+      color: var(--secondary-text-color);
+      font-size: 10px;
+      line-height: 1.45;
+    }
     .calibration-warning {
+      display: grid;
+      gap: 6px;
       margin-top: 8px;
       padding: 7px 9px;
       border: 1px solid color-mix(in srgb, var(--warning-color, #ff9800) 45%, transparent);
@@ -868,6 +885,7 @@ export class FusionPanel extends LitElement {
       color: var(--warning-color, #ff9800);
       background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent);
       font-size: 9px;
+      line-height: 1.45;
     }
     .summary > div:first-child {
       display: flex;

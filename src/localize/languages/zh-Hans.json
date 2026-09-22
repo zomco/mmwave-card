@@ -54,7 +54,9 @@
     "walk_to_the_marked_position": "请走到已标记的位置",
     "i_am_ready_capture_position": "我已站好，捕获雷达位置",
     "choose_a_position_on_the_map": "请先在地图上选择位置",
-    "start_over": "重新校准"
+    "start_over": "重新校准",
+    "troubleshoot_title": "实时的点看起来不对时",
+    "troubleshoot_body": "点镜像说明偏航角差 180°；点和移动方向成直角说明差 90°。请重新捕获两个参考点，不要手改数字。二维雷达不能从平面点反推俯仰或横滚。"
   },
   "live": {
     "title": "房间俯视图",
@@ -245,7 +247,8 @@
     "p0_targets": "{p0} 个目标",
     "clear_2": "无人",
     "trajectory_quality": "轨迹质量",
-    "no_playable_clip_is_available_yet": "该事件没有可播放片段，或录像仍在生成。"
+    "no_playable_clip_is_available_yet": "该事件没有可播放片段，或录像仍在生成。",
+    "clip_review": "摄像头复核"
   },
   "fusion": {
     "filtered": "已过滤",
@@ -286,7 +289,15 @@
     "replay_summary": "{tracks} 条轨迹 · {points} 个点",
     "replay_thinned": "已抽稀至 {hz} Hz",
     "replay_failed": "回放查询失败",
-    "replay_needs_newer_backend": "回放需要更新版本的 mmwave-fusion 集成"
+    "replay_needs_newer_backend": "回放需要更新版本的 mmwave-fusion 集成",
+    "assist_hint": "可选：在对话代理中勾选 MMWave Fusion LLM API，即可用 Assist 询问占用和事件。雷达轨迹始终匿名。",
+    "calibration_hint_not_reporting": "没有上报。先检查供电、Wi-Fi 和 UART 接线。",
+    "calibration_hint_stale_frames": "ESP 在线但数据帧停了。通常需要给雷达整体断电重上。",
+    "calibration_hint_outside_room": "不到两成的点落在房间内。多半是偏航角差了 90° 或 180°，或原点墙角填错。请到偏航校准页重做，不要手改数字。",
+    "review_person": "有人",
+    "review_pet": "宠物",
+    "review_false_positive": "误报",
+    "review_uncertain": "无法判断"
   },
   "workflow": {
     "editor_calibration_title": "安装与校准已移到卡片右上角",

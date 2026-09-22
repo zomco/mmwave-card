@@ -243,6 +243,9 @@ export interface FusionEvent {
   quality_reason?: string;
   recording_decision?: 'eligible' | 'rejected_quality';
   recording_decisions?: RecordingDecision[];
+  review_verdict?: 'person' | 'pet' | 'false_positive' | 'uncertain';
+  review_summary?: string;
+  review_error?: string;
 }
 
 export interface FusionHistoryPoint {

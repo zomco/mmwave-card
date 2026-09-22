@@ -277,6 +277,10 @@ export class YawPanel extends LitElement {
         <span>${resText}</span>
         ${yw.sub > 0 ? html`<button type="button" @click=${this._restart}>${this._t('yaw.start_over')}</button>` : ''}
       </div>
+      <div class="troubleshoot">
+        <strong>${this._t('yaw.troubleshoot_title')}</strong>
+        <p>${this._t('yaw.troubleshoot_body')}</p>
+      </div>
     `;
   }
 
@@ -483,6 +487,24 @@ export class YawPanel extends LitElement {
       background: rgba(128, 128, 128, 0.09);
       font-size: 9px;
       cursor: pointer;
+    }
+    .troubleshoot {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(128, 128, 128, 0.04);
+      color: var(--secondary-text-color);
+    }
+    .troubleshoot strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--primary-text-color);
+      font-size: 10px;
+    }
+    .troubleshoot p {
+      margin: 0;
+      font-size: 10px;
+      line-height: 1.45;
     }
     .result-line {
       font-size: 11px;

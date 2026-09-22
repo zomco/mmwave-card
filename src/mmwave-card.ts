@@ -23,6 +23,7 @@ import { getAdapter, type RadarModelAdapter } from './models';
 import { applyTransform } from './utils/transform';
 import { LocalFusionTracker, type FusionObservation } from './fusion/tracker';
 import { parseAtomicTargetFrame } from './fusion/frame';
+import { applyClipReview, mapFusionEvent } from './fusion/events';
 import { canvasToRoom, type CanvasMetrics } from './utils/canvas';
 import { formatPolygon, parsePolygon } from './utils/area-geometry';
 import { localize } from './localize/localize';
@@ -278,6 +279,7 @@ export class MMWaveCard extends LitElement {
   private _sourceSignatures = new Map<string, string>();
   private _fusionUnsubscribe?: () => void;
   private _fusionClipUnsubscribe?: () => void;
+  private _fusionReviewUnsubscribe?: () => void;
   private _fusionConnecting = false;
 
   // ── Panel refs (for imperative calls) ────────────────────────────────────
@@ -502,6 +504,7 @@ export class MMWaveCard extends LitElement {
             observations: health.get(radar.config.id)?.observations,
             inRoomRatio: health.get(radar.config.id)?.in_room_ratio,
             calibrationWarning: health.get(radar.config.id)?.calibration_warning,
+            stale: health.get(radar.config.id)?.stale,
           }));
           this._fusionBackendState = 'online';
           this.requestUpdate();
@@ -514,6 +517,12 @@ export class MMWaveCard extends LitElement {
           void this._onFusionClipReady(event.data);
         },
         'mmwave_fusion_clip_ready',
+      );
+      this._fusionReviewUnsubscribe = await this._hass.connection.subscribeEvents(
+        (event: { data: Record<string, unknown> }) => {
+          this._onFusionClipReviewed(event.data);
+        },
+        'mmwave_fusion_clip_reviewed',
       );
     } catch (error) {
       // Home Assistant answers an unregistered command with unknown_command,
@@ -538,6 +547,8 @@ export class MMWaveCard extends LitElement {
     this._fusionUnsubscribe = undefined;
     this._fusionClipUnsubscribe?.();
     this._fusionClipUnsubscribe = undefined;
+    this._fusionReviewUnsubscribe?.();
+    this._fusionReviewUnsubscribe = undefined;
     this._fusionConnecting = false;
   }
 
@@ -570,6 +581,17 @@ export class MMWaveCard extends LitElement {
       this._fusionVideoUrl = media.url;
     } catch (error) {
       console.warn('Failed to resolve fusion clip media', error);
+    }
+    this.requestUpdate();
+  }
+
+  private _onFusionClipReviewed(data: Record<string, unknown>) {
+    const fusionId = this._config.fusion_id || 'home';
+    if (String(data.fusion_id ?? '') !== fusionId) return;
+    this._fusionEvents = applyClipReview(this._fusionEvents, data);
+    const eventId = String(data.event_id ?? '');
+    if (this._selectedFusionEvent?.event_id === eventId) {
+      this._selectedFusionEvent = this._fusionEvents.find((item) => item.event_id === eventId);
     }
     this.requestUpdate();
   }
@@ -652,32 +674,7 @@ export class MMWaveCard extends LitElement {
         fusion_id: this._config.fusion_id || 'home',
         limit: 100,
       });
-      this._fusionEvents = rows.map((row) => ({
-        event_id: String(row.event_id),
-        fusion_id: String(row.fusion_id),
-        track_id: String(row.track_id),
-        event_type: row.event_type as FusionEvent['event_type'],
-        zone_id: String(row.zone_id),
-        timestamp: Number(row.ts),
-        x: Number(row.x),
-        y: Number(row.y),
-        clip_path: row.clip_path ? String(row.clip_path) : undefined,
-        camera_entity_id: row.camera_entity_id ? String(row.camera_entity_id) : undefined,
-        clip_status: row.clip_status ? (String(row.clip_status) as FusionEvent['clip_status']) : undefined,
-        clip_provider: row.clip_provider ? (String(row.clip_provider) as FusionEvent['clip_provider']) : undefined,
-        clip_file_size: row.clip_file_size ? Number(row.clip_file_size) : undefined,
-        clip_error: row.clip_error ? String(row.clip_error) : undefined,
-        metadata:
-          row.metadata && typeof row.metadata === 'object' ? (row.metadata as Record<string, unknown>) : undefined,
-        quality_score: row.quality_score == null ? undefined : Number(row.quality_score),
-        quality_reason: row.quality_reason ? String(row.quality_reason) : undefined,
-        recording_decision: row.recording_decision
-          ? (String(row.recording_decision) as FusionEvent['recording_decision'])
-          : undefined,
-        recording_decisions: Array.isArray(row.recording_decisions)
-          ? (row.recording_decisions as FusionEvent['recording_decisions'])
-          : undefined,
-      }));
+      this._fusionEvents = rows.map(mapFusionEvent);
     } catch (error) {
       console.info('MMWave Fusion history is not available', error);
     }
@@ -1423,6 +1420,21 @@ export class MMWaveCard extends LitElement {
                             }
                           </p>`
                         : nothing
+                    }
+                    ${
+                      this._selectedFusionEvent.review_verdict
+                        ? html`<p class="quality-detail">
+                            ${this._t('card.clip_review')}:
+                            <strong>${this._t(`fusion.review_${this._selectedFusionEvent.review_verdict}`)}</strong>
+                            ${
+                              this._selectedFusionEvent.review_summary
+                                ? html` · ${this._selectedFusionEvent.review_summary}`
+                                : nothing
+                            }
+                          </p>`
+                        : this._selectedFusionEvent.review_error
+                          ? html`<p class="clip-error">${this._selectedFusionEvent.review_error}</p>`
+                          : nothing
                     }
                     ${
                       this._fusionVideoUrl

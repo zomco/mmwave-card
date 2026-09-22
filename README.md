@@ -115,6 +115,13 @@ The two are released independently, so the integration stamps `api_version` on
 every push and the card reports a backend that is too old instead of
 half-working.
 
+Optional AI stays off until you turn it on in Home Assistant. Enable the
+**MMWave Fusion** LLM API on a conversation agent to ask Assist about occupancy
+and events (tracks stay anonymous). If an AI Task entity is set on the
+integration, traverse clips get a person / pet / false-positive label that the
+event list shows. Yaw calibration and fusion warnings spell out the usual
+90°/180° mistakes; they do not need a model.
+
 The visual editor keeps radar binding, exact installation values, and the
 shared 3-D placement scene in one setup step organized as one tab per radar.
 Only the active radar's form and synchronized 3-D model are shown; adding a

@@ -54,7 +54,9 @@
     "walk_to_the_marked_position": "Walk to the marked position",
     "i_am_ready_capture_position": "I am ready — capture position",
     "choose_a_position_on_the_map": "Choose a position on the map first",
-    "start_over": "Start over"
+    "start_over": "Start over",
+    "troubleshoot_title": "If the live point looks wrong",
+    "troubleshoot_body": "Mirrored motion means yaw is 180° off. Motion at right angles means 90° off. Recapture the two points rather than editing the number by hand. 2D radars cannot infer pitch or roll from floor points."
   },
   "live": {
     "title": "Room Top-Down View",
@@ -247,7 +249,8 @@
     "p0_targets": "{p0} targets",
     "clear_2": "Clear",
     "trajectory_quality": "Trajectory quality",
-    "no_playable_clip_is_available_yet": "No playable clip is available yet, or recording is still in progress."
+    "no_playable_clip_is_available_yet": "No playable clip is available yet, or recording is still in progress.",
+    "clip_review": "Camera review"
   },
   "fusion": {
     "filtered": "Filtered",
@@ -288,7 +291,15 @@
     "replay_summary": "{tracks} tracks · {points} points",
     "replay_thinned": "thinned to {hz} Hz",
     "replay_failed": "Replay query failed",
-    "replay_needs_newer_backend": "Replay needs a newer mmwave-fusion integration"
+    "replay_needs_newer_backend": "Replay needs a newer mmwave-fusion integration",
+    "assist_hint": "Optional: enable the MMWave Fusion LLM API on a conversation agent to ask Assist about occupancy and events. Radar tracks stay anonymous.",
+    "calibration_hint_not_reporting": "Not reporting. Check power, Wi-Fi and the UART wiring first.",
+    "calibration_hint_stale_frames": "The ESP is reachable but frames have stopped. A full power cycle usually fixes this.",
+    "calibration_hint_outside_room": "Fewer than 20% of detections land inside the room. Yaw is usually 90° or 180° off, or the origin corner is wrong. Recalibrate from the yaw tab; do not edit numbers by hand.",
+    "review_person": "Person",
+    "review_pet": "Pet",
+    "review_false_positive": "False positive",
+    "review_uncertain": "Uncertain"
   },
   "workflow": {
     "editor_calibration_title": "Installation and calibration are on the card",
