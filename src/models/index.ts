@@ -24,6 +24,7 @@ import { ld2410Adapter } from './ld2410';
 import { ld2411sAdapter } from './ld2411s';
 import { ld2454Adapter } from './ld2454';
 import { ld2412Adapter } from './ld2412';
+import { ld2460Adapter } from './ld2460';
 
 /**
  * Central registry: model ID → adapter.
@@ -47,6 +48,7 @@ export const RADAR_MODELS: Record<string, RadarModelAdapter> = {
   ld2411s: ld2411sAdapter,
   ld2454: ld2454Adapter,
   ld2412: ld2412Adapter,
+  ld2460: ld2460Adapter,
 };
 
 export function getAdapter(modelId: string): RadarModelAdapter | undefined {

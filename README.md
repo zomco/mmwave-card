@@ -68,7 +68,7 @@ A mirrored dot means yaw is 180° out; a dot moving at right angles to you means
 
 ## Supported models
 
-Sixteen adapters are registered. Range-only models report distance without
+Seventeen adapters are registered. Range-only models report distance without
 direction, so they render as an arc rather than a point and cannot take part in
 multi-radar fusion.
 
@@ -80,6 +80,7 @@ multi-radar fusion.
 | Hi-Link LD2452                                  | 24 GHz | 3       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
 | Hi-Link LD2453                                  | 24 GHz | 3       | 6 m   | 80°  | ❌     | ❌        | ❌         | ❌    | ✅     |
 | Hi-Link LD2454                                  | 24 GHz | 3       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
+| Hi-Link LD2460                                  | 24 GHz | 5       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
 | Hi-Link LD6002                                  | 60 GHz | 1       | 6 m   | 120° | ❌     | ✅        | ✅         | ❌    | ❌     |
 | Hi-Link LD2410                                  | 24 GHz | 1       | 8 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
 | Hi-Link LD2410B                                 | 24 GHz | 1       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |

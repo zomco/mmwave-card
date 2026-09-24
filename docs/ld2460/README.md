@@ -1,0 +1,79 @@
+# LD2460 Lovelace Configuration Guide
+
+[中文文档 (Chinese)](./README_CN.md)
+
+This guide explains how to use the configuration file located in `tests/ld2460.yaml` within Home Assistant.
+
+## 1. Introduction
+
+`ld2460.yaml` contains the basic Lovelace card configuration for the Hi-Link HLK-LD2460 mmWave 2T4R multi-target trajectory tracking radar using [mmwave-card](https://github.com/zomco/mmwave-card). It enables visual real-time tracking of up to 5 targets and geometric boundary calibration display for this radar in Home Assistant.
+
+## 2. Prerequisites
+
+Before applying this configuration, ensure that:
+1. You have correctly installed `mmwave-card` (installation via HACS or manual frontend resource configuration is recommended).
+2. Your LD2460 radar device is successfully integrated into Home Assistant via ESPHome or other methods.
+
+## 3. How to Use
+
+You can add this configuration to your Home Assistant dashboard using two main methods:
+
+### Method A: Via UI Editor (Recommended)
+
+1. Go to Home Assistant and open the dashboard where you want to add the card.
+2. Click **"Edit Dashboard"** (the pencil icon) in the top right corner.
+3. Click **"Add Card"** in the bottom right corner.
+4. Scroll to the very bottom of the card list popup and select **"Manual"**.
+5. Copy the contents from `tests/ld2460.yaml` and paste them into the code editor.
+6. Modify the entity IDs according to your actual setup (see "Modifying Entity IDs" below), and then click "Save".
+
+### Method B: Via YAML Mode
+
+If you manage Lovelace using YAML mode (`ui-lovelace.yaml`), copy the configuration directly into the cards array of the appropriate view:
+```yaml
+cards:
+  - type: custom:mmwave-card
+    radar_model: ld2460
+    presence_entity: binary_sensor.ld2460_presence
+    frame_entity: sensor.ld2460_target_frame
+    target_1_x_entity: sensor.ld2460_target_1_x
+    target_1_y_entity: sensor.ld2460_target_1_y
+    target_1_speed_entity: sensor.ld2460_target_1_speed
+    target_2_x_entity: sensor.ld2460_target_2_x
+    target_2_y_entity: sensor.ld2460_target_2_y
+    target_2_speed_entity: sensor.ld2460_target_2_speed
+    target_3_x_entity: sensor.ld2460_target_3_x
+    target_3_y_entity: sensor.ld2460_target_3_y
+    target_3_speed_entity: sensor.ld2460_target_3_speed
+    target_4_x_entity: sensor.ld2460_target_4_x
+    target_4_y_entity: sensor.ld2460_target_4_y
+    target_4_speed_entity: sensor.ld2460_target_4_speed
+    target_5_x_entity: sensor.ld2460_target_5_x
+    target_5_y_entity: sensor.ld2460_target_5_y
+    target_5_speed_entity: sensor.ld2460_target_5_speed
+    polygon_entity: text.ld2460_polygon_config
+    room_w: 400
+    room_d: 600
+```
+
+## 4. Modifying Entity IDs
+
+All `entity_id`s in the configuration (such as `binary_sensor.ld2460_presence`) are examples. If your device has different names in Home Assistant, please make sure to replace them with **your actual entity IDs**.
+
+You can search and confirm the real entity IDs of your radar device on the **"Developer Tools" -> "States"** page in Home Assistant.
+
+## 5. Configuration Options
+
+- **`type`**: `custom:mmwave-card` (Fixed value, calls this custom card plugin)
+- **`radar_model`**: `ld2460` (Fixed value, specifies the radar model used)
+- **`presence_entity`**: [Required] Binary sensor indicating whether any target is detected.
+- **`frame_entity`**: [Optional] Atomic target frame text sensor publishing JSON frames from the firmware. Preferred over split X/Y sensors to avoid diagonal skew.
+- **`target_n_x_entity`**: [Required for target 1 if frame_entity is omitted] Radar-measured local X-axis coordinate for target n (supports targets 1 through 5).
+- **`target_n_y_entity`**: [Required for target 1 if frame_entity is omitted] Radar-measured local Y-axis coordinate for target n (supports targets 1 through 5).
+- **`target_n_speed_entity`**: [Optional] Target n's speed sensor. If provided, it assists in displaying the target's motion state in the UI.
+- **`polygon_entity`**: [Optional] Text entity representing the boundary polygon configuration. Required if you want to draw and save custom boundary polygons from the UI.
+- **`room_w` / `room_d`**: Physical room dimensions (width and depth in cm) for canvas scaling.
+
+## Coherent target frames and trails
+
+Set `frame_entity` to the ESPHome Target Frame text sensor (see `tests/ld2460.yaml`) to consume X/Y coordinates from the same UART frame. When configured, invalid or empty frames clear targets instead of falling back to independently updated axis sensors. Legacy configurations without this entity still use the individual sensors.
