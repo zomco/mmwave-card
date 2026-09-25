@@ -436,6 +436,14 @@ export class FusionPanel extends LitElement {
     return reason ? this._t(`fusion_reason.${reason}`) : this._t('fusion.filtered');
   }
 
+  private eventTypeLabel(type: string): string {
+    return this._t(`fusion.event_${type}`);
+  }
+
+  private zoneLabel(zoneId: string): string {
+    return this.zones.find((zone) => zone.id === zoneId)?.name || zoneId;
+  }
+
   private eventStatus(event: FusionEvent): string {
     if (event.review_verdict) return this._t(`fusion.review_${event.review_verdict}`);
     if (event.clip_path) return '▶';
@@ -692,7 +700,7 @@ export class FusionPanel extends LitElement {
                 class=${this.eventTypeFilter === type ? 'selected' : ''}
                 @click=${() => (this.eventTypeFilter = type)}
               >
-                ${type ? type : this._t('fusion.filter_all')}
+                ${type ? this.eventTypeLabel(type) : this._t('fusion.filter_all')}
               </button>
             `,
           )}
@@ -751,7 +759,7 @@ export class FusionPanel extends LitElement {
                         : nothing
                     }
                     <span>
-                      ${event.event_type.toUpperCase()} · ${event.zone_id}
+                      ${this.eventTypeLabel(event.event_type)} · ${this.zoneLabel(event.zone_id)}
                       ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
                     </span>
                     <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>

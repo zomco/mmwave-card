@@ -889,7 +889,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
                         .checked=${eventTypes.has(type)}
                         @change=${() => this._toggleCameraEvent(index, type)}
                       />
-                      <span>${type}</span>
+                      <span>${this._t(`fusion.event_${type}`)}</span>
                     </label>
                   `,
                 )}

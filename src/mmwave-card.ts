@@ -1452,8 +1452,11 @@ export class MMWaveCard extends LitElement {
                   <section class="fusion-playback">
                     <header>
                       <strong
-                        >${this._selectedFusionEvent.event_type.toUpperCase()} ·
-                        ${this._selectedFusionEvent.zone_id}</strong
+                        >${this._t(`fusion.event_${this._selectedFusionEvent.event_type}`)} ·
+                        ${
+                          (this._config.zones ?? []).find((zone) => zone.id === this._selectedFusionEvent?.zone_id)
+                            ?.name || this._selectedFusionEvent.zone_id
+                        }</strong
                       >
                       <span>${new Date(this._selectedFusionEvent.timestamp * 1000).toLocaleString()}</span>
                     </header>
