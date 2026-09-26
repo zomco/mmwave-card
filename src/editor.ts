@@ -149,6 +149,36 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
   }
 
+  private _radarModelChanged(newModel: string) {
+    const oldAdapter = this._config.radar_model ? getAdapter(this._config.radar_model) : undefined;
+    const newAdapter = getAdapter(newModel);
+    const updated: Record<string, unknown> = { ...this._config, radar_model: newModel };
+
+    if (newAdapter && oldAdapter && oldAdapter.info.id !== newAdapter.info.id) {
+      const newKeys = new Set(newAdapter.getEntitySchema().map((f) => f.key));
+      for (const field of oldAdapter.getEntitySchema()) {
+        if (!newKeys.has(field.key)) {
+          delete updated[field.key];
+        }
+      }
+      if (updated.polygon_entity === 'text.r60abd1_polygon_config' && newModel !== 'r60abd1') {
+        delete updated.polygon_entity;
+      }
+      if (typeof updated.x_entity === 'string' && updated.x_entity.includes('r60abd1') && newModel !== 'r60abd1') {
+        delete updated.x_entity;
+      }
+      if (typeof updated.y_entity === 'string' && updated.y_entity.includes('r60abd1') && newModel !== 'r60abd1') {
+        delete updated.y_entity;
+      }
+      if (typeof updated.z_entity === 'string' && updated.z_entity.includes('r60abd1') && newModel !== 'r60abd1') {
+        delete updated.z_entity;
+      }
+    }
+
+    this._config = updated as MMWaveCardConfig;
+    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+  }
+
   private _setMode(mode: 'single' | 'fusion') {
     if (mode === 'fusion') {
       const first: RadarSourceConfig = {
@@ -418,6 +448,23 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         } else if (id.startsWith('text.') && matchesConcept(id, name, 'polygon')) {
           configPatch.polygon_entity = id;
         }
+      }
+
+      if (Object.keys(configPatch).some((k) => k.startsWith('target_'))) {
+        const cleaned = { ...this._config };
+        if (typeof cleaned.x_entity === 'string' && cleaned.x_entity.includes('r60abd1')) {
+          delete cleaned.x_entity;
+        }
+        if (typeof cleaned.y_entity === 'string' && cleaned.y_entity.includes('r60abd1')) {
+          delete cleaned.y_entity;
+        }
+        if (typeof cleaned.z_entity === 'string' && cleaned.z_entity.includes('r60abd1')) {
+          delete cleaned.z_entity;
+        }
+        if (cleaned.polygon_entity === 'text.r60abd1_polygon_config') {
+          delete cleaned.polygon_entity;
+        }
+        this._config = cleaned;
       }
 
       if (Object.keys(configPatch).length > 0) {
@@ -1008,7 +1055,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         <label>${this._L('editor.model')}</label>
         <select
           .value=${modelId}
-          @change=${(e: Event) => this._changed('radar_model', (e.target as HTMLSelectElement).value)}
+          @change=${(e: Event) => this._radarModelChanged((e.target as HTMLSelectElement).value)}
         >
           <option value="" disabled>${this._L('editor.model')}…</option>
           ${models.map((m) => html` <option value=${m.id} ?selected=${m.id === modelId}>${m.label}</option>`)}

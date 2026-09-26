@@ -410,11 +410,6 @@ export const DEFAULT_CARD_CONFIG: Partial<MMWaveCardConfig> = {
   room_w: 400,
   room_d: 600,
   device_id: '',
-  presence_entity: 'binary_sensor.r60abd1_presence',
-  x_entity: 'sensor.r60abd1_x',
-  y_entity: 'sensor.r60abd1_y',
-  z_entity: 'sensor.r60abd1_z',
-  polygon_entity: 'text.r60abd1_polygon_config',
 };
 
 // ── Yaw calibration sub-state ─────────────────────────────────────────────────
