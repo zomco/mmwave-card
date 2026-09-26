@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { LitElement, css, html, svg, nothing } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import { localize } from '../localize/localize';
@@ -77,32 +78,40 @@ export class AreaEditor extends LitElement {
         : undefined;
     const placement = floorplanValues(this.floorplan ?? { url: '' }, this.roomW);
     const warnings = areaWarnings(this.areas.map((area) => area.polygon));
+    const selectedPoints = this.areas[this.selected]?.polygon.length ?? 0;
     return html`
-      <p class="hint">${this.t('area.hint')}</p>
-      ${this.standPoint ? nothing : html`<p class="need">${this.t('area.stand_need_target')}</p>`}
-      <div class="picks">
-        ${[0, 1, 2].map(
-          (index) =>
-            html`<button
-              type="button"
-              class=${this.selected === index ? 'on' : ''}
-              style=${`--c:${AREA_COLORS[index]}`}
-              @click=${() => (this.selected = index)}
-            >
-              ${this.t('area.area_n', { n: index + 1 })}
-              <small>${this.areas[index]?.polygon.length ?? 0}</small>
-            </button>`,
-        )}
-      </div>
-      <svg
-        class="floor"
-        viewBox=${`0 0 ${this.roomW} ${this.roomD}`}
-        style=${`aspect-ratio:${this.roomW}/${this.roomD}`}
-        @click=${this.addPoint}
-      >
-        ${
-          background?.status === 'ready'
-            ? svg`<image
+      <details class="area-disclosure">
+        <summary><span>${this.t('area.title')}</span><small>${this.t('geo.optional')}</small></summary>
+        <div class="area-content">
+          <p class="purpose">${this.t('area.purpose')}</p>
+          <p class="hint">${this.t('area.hint')}</p>
+          ${this.standPoint ? nothing : html`<p class="need">${this.t('area.stand_need_target')}</p>`}
+          <div class="picks">
+            ${[0, 1, 2].map(
+              (index) =>
+                html`<button
+                  type="button"
+                  aria-pressed=${this.selected === index ? 'true' : 'false'}
+                  class=${this.selected === index ? 'on' : ''}
+                  style=${`--c:${AREA_COLORS[index]}`}
+                  @click=${() => (this.selected = index)}
+                >
+                  ${this.t('area.area_n', { n: index + 1 })}
+                  <small
+                    >${this.t((this.areas[index]?.polygon.length ?? 0) >= 3 ? 'area.configured' : (this.areas[index]?.polygon.length ?? 0) > 0 ? 'area.drawing' : 'area.empty', { n: this.areas[index]?.polygon.length ?? 0 })}</small
+                  >
+                </button>`,
+            )}
+          </div>
+          <svg
+            class="floor"
+            viewBox=${`0 0 ${this.roomW} ${this.roomD}`}
+            style=${`aspect-ratio:${this.roomW}/${this.roomD}`}
+            @click=${this.addPoint}
+          >
+            ${
+              background?.status === 'ready'
+                ? svg`<image
               href=${background.image.src}
               width=${placement.width}
               height=${(placement.width * background.image.naturalHeight) / background.image.naturalWidth}
@@ -110,14 +119,14 @@ export class AreaEditor extends LitElement {
               transform=${`translate(${placement.x} ${placement.y}) rotate(${(placement.angle * 180) / Math.PI})`}
               pointer-events="none"
             />`
-            : nothing
-        }
-        <rect width="100%" height="100%" fill="transparent" />
-        ${this.areas.map((area, index) => {
-          const color = AREA_COLORS[index];
-          const selected = this.selected === index;
-          if (!area.polygon.length) return nothing;
-          return svg`
+                : nothing
+            }
+            <rect width="100%" height="100%" fill="transparent" />
+            ${this.areas.map((area, index) => {
+              const color = AREA_COLORS[index];
+              const selected = this.selected === index;
+              if (!area.polygon.length) return nothing;
+              return svg`
             ${
               area.polygon.length >= 3
                 ? svg`<polygon points=${this.pointString(area.polygon)} fill=${color} fill-opacity=${selected ? '.22' : '.08'} stroke=${color} stroke-width=${selected ? 3 : 2} vector-effect="non-scaling-stroke" />`
@@ -125,87 +134,106 @@ export class AreaEditor extends LitElement {
             }
             ${area.polygon.map((point) => svg`<circle cx=${point.x} cy=${point.y} r="7" fill=${color} stroke="white" stroke-width="2" vector-effect="non-scaling-stroke" />`)}
           `;
-        })}
-        ${
-          this.standPoint
-            ? svg`<circle cx=${this.standPoint.x} cy=${this.standPoint.y} r="14" fill="none" stroke="white" stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />`
-            : nothing
-        }
-        ${
-          this.radar
-            ? svg`<g transform=${`translate(${this.radar.x} ${this.radar.y}) rotate(${-this.radar.yaw})`}><circle r="10" fill="#111" /><path d="M 0 0 L -10 22 M 0 0 L 10 22" stroke="#111" fill="none" /></g>`
-            : nothing
-        }
-      </svg>
-      <div class="actions">
-        <button type="button" ?disabled=${!this.standPoint} @click=${this.standHere}>
-          ${this.t('area.stand_here')}
-        </button>
-        <button type="button" @click=${this.undo}>${this.t('geo.poly_undo')}</button>
-        <button type="button" @click=${this.clear}>${this.t('geo.poly_clear')}</button>
-      </div>
-      ${
-        warnings.length
-          ? html`<div class="warn">
-              ${warnings.some((w) => w.startsWith('small')) ? html`<p>${this.t('area.warn_small', { cm: MIN_AREA_SHORT_SIDE_CM })}</p>` : nothing}
-              ${warnings.some((w) => w.startsWith('close')) ? html`<p>${this.t('area.warn_close', { cm: MIN_AREA_CENTROID_GAP_CM })}</p>` : nothing}
-              ${warnings.some((w) => w.startsWith('overlap')) ? html`<p>${this.t('area.warn_overlap')}</p>` : nothing}
-            </div>`
-          : html`<p class="ok">${this.t('area.ok')}</p>`
-      }
+            })}
+            ${
+              this.standPoint
+                ? svg`<circle cx=${this.standPoint.x} cy=${this.standPoint.y} r="14" fill="none" stroke="white" stroke-width="2" stroke-dasharray="4 3" vector-effect="non-scaling-stroke" />`
+                : nothing
+            }
+            ${
+              this.radar
+                ? svg`<g transform=${`translate(${this.radar.x} ${this.radar.y}) rotate(${-this.radar.yaw})`}><circle r="10" fill="#111" /><path d="M 0 0 L -10 22 M 0 0 L 10 22" stroke="#111" fill="none" /></g>`
+                : nothing
+            }
+          </svg>
+          <div class="actions">
+            <button type="button" ?disabled=${!this.standPoint} @click=${this.standHere}>
+              ${this.t('area.stand_here')}
+            </button>
+            <button type="button" ?disabled=${selectedPoints === 0} @click=${this.undo}>
+              ${this.t('geo.poly_undo')}
+            </button>
+            <button type="button" ?disabled=${selectedPoints === 0} @click=${this.clear}>
+              ${this.t('geo.poly_clear')}
+            </button>
+          </div>
+          ${
+            warnings.length
+              ? html`<div class="warn">
+                  ${warnings.some((w) => w.startsWith('small')) ? html`<p>${this.t('area.warn_small', { cm: MIN_AREA_SHORT_SIDE_CM })}</p>` : nothing}
+                  ${warnings.some((w) => w.startsWith('close')) ? html`<p>${this.t('area.warn_close', { cm: MIN_AREA_CENTROID_GAP_CM })}</p>` : nothing}
+                  ${warnings.some((w) => w.startsWith('overlap')) ? html`<p>${this.t('area.warn_overlap')}</p>` : nothing}
+                </div>`
+              : this.areas.filter((area) => area.polygon.length >= 3).length >= 2
+                ? html`<p class="ok">${this.t('area.ok')}</p>`
+                : nothing
+          }
+        </div>
+      </details>
     `;
   }
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    .hint,
-    .ok,
-    .need {
-      margin: 0 0 0.6rem;
-      font-size: 0.85rem;
-      opacity: 0.75;
-    }
-    .actions button:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .picks {
-      display: flex;
-      gap: 0.4rem;
-      margin-bottom: 0.6rem;
-    }
-    .picks button {
-      flex: 1;
-      border: 1px solid var(--c);
-      background: transparent;
-      color: inherit;
-      border-radius: 8px;
-      padding: 0.4rem;
-      cursor: pointer;
-    }
-    .picks button.on {
-      background: color-mix(in srgb, var(--c) 18%, transparent);
-    }
-    .picks small {
-      display: block;
-      opacity: 0.6;
-    }
-    .floor {
-      width: 100%;
-      background: var(--secondary-background-color, #111);
-      border-radius: 12px;
-      cursor: crosshair;
-    }
-    .actions {
-      display: flex;
-      gap: 0.4rem;
-      margin: 0.5rem 0;
-    }
-    .warn {
-      color: var(--warning-color, #f59e0b);
-      font-size: 0.85rem;
-    }
-  `;
+  static styles = [
+    css`
+      :host {
+        display: block;
+      }
+      .purpose {
+        margin: 0 0 12px;
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--primary-text-color);
+      }
+      .hint,
+      .ok,
+      .need {
+        margin: 0 0 0.6rem;
+        font-size: 0.85rem;
+        opacity: 0.75;
+      }
+      .actions button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .picks {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 0.6rem;
+      }
+      .picks button {
+        flex: 1;
+        border: 1px solid var(--c);
+        background: transparent;
+        color: inherit;
+        border-radius: var(--mmwave-control-radius);
+        padding: 0.4rem;
+        cursor: pointer;
+      }
+      .picks button.on {
+        background: color-mix(in srgb, var(--c) 18%, transparent);
+      }
+      .picks small {
+        display: block;
+        opacity: 0.6;
+      }
+      .floor {
+        width: 100%;
+        background: var(--secondary-background-color, #f6f8f7);
+        border: 1px solid var(--mmwave-control-border);
+        border-radius: 12px;
+        cursor: crosshair;
+      }
+      .actions {
+        display: flex;
+        gap: 8px;
+        margin: 12px 0;
+        flex-wrap: wrap;
+      }
+      .warn {
+        color: var(--warning-color, #f59e0b);
+        font-size: 0.85rem;
+      }
+    `,
+    controlStyles,
+  ];
 }

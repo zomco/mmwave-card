@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -84,7 +85,7 @@ export class FusionWorkflow extends LitElement {
       return solution ? { ...radar, calibration: solution.calibration, residual_cm: solution.residualAfterCm } : radar;
     });
     this.resetPreview();
-    this.step = 2;
+    this.step = 0;
   }
 
   private resetPreview() {
@@ -217,7 +218,7 @@ export class FusionWorkflow extends LitElement {
         ><b>${this.step + 1} / 3</b>
       </header>
       <nav aria-label=${this.t('card.calibration_steps')}>
-        ${['card.installation', 'card.direction', 'card.live_test'].map(
+        ${['card.installation', 'card.boundary', 'card.live_test'].map(
           (key, index) =>
             html`<button
               type="button"
@@ -230,7 +231,7 @@ export class FusionWorkflow extends LitElement {
         )}
       </nav>
       <div class="body" ?inert=${this.saving}>
-        <section ?hidden=${this.step !== 0}>
+        <section ?hidden=${this.step === 2}>
           <div class="radar-tabs" role="tablist" aria-label=${this.t('editor.radar_installation_tabs')}>
             ${this.draft.map(
               (item, index) =>
@@ -251,7 +252,8 @@ export class FusionWorkflow extends LitElement {
                   .adapter=${adapter}
                   .calibration=${this.calibration(radar)}
                   .peerCalibrations=${peers}
-                  .showBoundary=${false}
+                  .showBoundary=${this.step === 1}
+                  .showInstallation=${this.step === 0}
                   .roomW=${Number(this.config.room_w)}
                   .roomD=${Number(this.config.room_d)}
                   .lang=${this.hass.language}
@@ -261,18 +263,21 @@ export class FusionWorkflow extends LitElement {
               : nothing
           }
         </section>
-        <section ?hidden=${this.step !== 1}>
-          <mmwave-fusion-calibration
-            .floorplan=${this.config.floorplan}
-            .hass=${this.hass}
-            .radars=${this.draft}
-            .roomW=${Number(this.config.room_w)}
-            .roomD=${Number(this.config.room_d)}
-            .lang=${this.hass.language}
-            .applyLabel=${this.t('workflow.use_results')}
-            @fusion-calibration-applied=${this.useSolutions}
-            @calibration-capture-started=${() => (this.hasCapture = true)}
-          ></mmwave-fusion-calibration>
+        <section ?hidden=${this.step !== 0}>
+          <details class="direction-adjustment">
+            <summary><span>${this.t('card.direction')}</span><small>${this.t('geo.optional')}</small></summary>
+            <mmwave-fusion-calibration
+              .floorplan=${this.config.floorplan}
+              .hass=${this.hass}
+              .radars=${this.draft}
+              .roomW=${Number(this.config.room_w)}
+              .roomD=${Number(this.config.room_d)}
+              .lang=${this.hass.language}
+              .applyLabel=${this.t('workflow.use_results')}
+              @fusion-calibration-applied=${this.useSolutions}
+              @calibration-capture-started=${() => (this.hasCapture = true)}
+            ></mmwave-fusion-calibration>
+          </details>
         </section>
         <section ?hidden=${this.step !== 2}>
           <p>${this.t('workflow.verify_hint')}</p>
@@ -323,136 +328,139 @@ export class FusionWorkflow extends LitElement {
       </footer>`;
   }
 
-  static styles = css`
-    :host {
-      --primary-color: var(--mmwave-primary, #0b825c);
-      display: block;
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-      border-radius: 16px;
-      overflow: hidden;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    [hidden] {
-      display: none !important;
-    }
-    header,
-    nav,
-    footer {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px;
-      border-bottom: 1px solid var(--divider-color);
-    }
-    header > span {
-      display: grid;
-      gap: 4px;
-      flex: 1;
-    }
-    small {
-      color: var(--secondary-text-color);
-      font-size: 11px;
-    }
-    header > b {
-      font-size: 12px;
-    }
-    button {
-      min-height: 44px;
-      border: 1px solid var(--divider-color);
-      border-radius: 10px;
-      padding: 8px 12px;
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color);
-      cursor: pointer;
-      font: inherit;
-      font-size: 12px;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    button[aria-current='step'],
-    button[aria-selected='true'] {
-      color: var(--primary-color);
-      border-color: var(--primary-color);
-      background: color-mix(in srgb, var(--primary-color) 9%, transparent);
-    }
-    nav > button {
-      flex: 1;
-    }
-    .body {
-      padding: 12px;
-      min-width: 0;
-    }
-    .radar-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .radar-tabs button {
-      display: grid;
-      gap: 3px;
-      min-width: 76px;
-    }
-    p,
-    li {
-      font-size: 12px;
-      line-height: 1.5;
-      overflow-wrap: anywhere;
-    }
-    ul {
-      padding-left: 20px;
-      color: var(--error-color);
-    }
-    footer {
-      position: sticky;
-      bottom: 0;
-      background: var(--card-background-color, #fff);
-      border-top: 1px solid var(--divider-color);
-      border-bottom: 0;
-      flex-wrap: wrap;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      z-index: 2;
-    }
-    footer > small {
-      flex: 1;
-      min-width: 100px;
-    }
-    .primary {
-      background: var(--primary-color);
-      color: var(--text-primary-color, #fff);
-    }
-    @media (max-width: 600px) {
+  static styles = [
+    css`
       :host {
-        position: fixed;
-        inset: 0;
-        z-index: 1000;
-        height: 100dvh;
-        overflow-y: auto;
-        border-radius: 0;
-        overscroll-behavior: contain;
-      }
-      header {
-        position: sticky;
-        top: 0;
+        --primary-color: var(--mmwave-primary, #0b825c);
+        display: block;
+        color: var(--primary-text-color);
         background: var(--card-background-color, #fff);
-        z-index: 3;
-        padding-top: calc(12px + env(safe-area-inset-top));
+        border-radius: 16px;
+        overflow: hidden;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      header,
+      nav,
+      footer {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px;
+        border-bottom: 1px solid var(--divider-color);
+      }
+      header > span {
+        display: grid;
+        gap: 4px;
+        flex: 1;
+      }
+      small {
+        color: var(--secondary-text-color);
+        font-size: 11px;
+      }
+      header > b {
+        font-size: 12px;
+      }
+      button {
+        min-height: 44px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--mmwave-control-radius);
+        padding: 8px 12px;
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color);
+        cursor: pointer;
+        font: inherit;
+        font-size: 12px;
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      button[aria-current='step'],
+      button[aria-selected='true'] {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+        background: color-mix(in srgb, var(--primary-color) 9%, transparent);
+      }
+      nav > button {
+        flex: 1;
+      }
+      .body {
+        padding: 12px;
+        min-width: 0;
+      }
+      .radar-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .radar-tabs button {
+        display: grid;
+        gap: 3px;
+        min-width: 76px;
+      }
+      p,
+      li {
+        font-size: 12px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+      }
+      ul {
+        padding-left: 20px;
+        color: var(--error-color);
       }
       footer {
         position: sticky;
         bottom: 0;
-      }
-      .body {
-        min-height: calc(100dvh - 240px);
+        background: var(--card-background-color, #fff);
+        border-top: 1px solid var(--divider-color);
+        border-bottom: 0;
+        flex-wrap: wrap;
+        padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        z-index: 2;
       }
       footer > small {
-        flex-basis: 100%;
+        flex: 1;
+        min-width: 100px;
       }
-    }
-  `;
+      .primary {
+        background: var(--primary-color);
+        color: var(--text-primary-color, #fff);
+      }
+      @media (max-width: 600px) {
+        :host {
+          position: fixed;
+          inset: 0;
+          z-index: 1000;
+          height: 100dvh;
+          overflow-y: auto;
+          border-radius: 0;
+          overscroll-behavior: contain;
+        }
+        header {
+          position: sticky;
+          top: 0;
+          background: var(--card-background-color, #fff);
+          z-index: 3;
+          padding-top: calc(12px + env(safe-area-inset-top));
+        }
+        footer {
+          position: sticky;
+          bottom: 0;
+        }
+        .body {
+          min-height: calc(100dvh - 240px);
+        }
+        footer > small {
+          flex-basis: 100%;
+        }
+      }
+    `,
+    controlStyles,
+  ];
 }

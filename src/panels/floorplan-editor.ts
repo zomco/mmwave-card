@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { LitElement, html, css, nothing, type PropertyValues } from 'lit';
 import { customElement, property, query, state } from 'lit/decorators.js';
 import type { HomeAssistant } from 'custom-card-helpers';
@@ -190,239 +191,297 @@ export class FloorplanEditor extends LitElement {
       locked = c.locked !== false;
     const image = c.url ? floorplanImage(c.url, this.loaded) : undefined;
     return html`<details @toggle=${() => this.draw()}>
-      <summary>${this.t('title')}</summary>
-      <label
-        >${this.t('upload')}<input
-          type="file"
-          accept="image/png,image/jpeg,image/gif"
-          ?disabled=${this.uploading}
-          @change=${this.upload}
-      /></label>
-      ${this.uploading ? html`<p role="status">${this.t('uploading')}</p>` : nothing}
-      ${this.uploadError ? html`<p role="alert">${this.t('upload_error')}</p>` : nothing}
-      <label
-        >${this.t('url')}<input
-          type="text"
-          placeholder="/local/floorplans/room.png"
-          .value=${c.url}
-          @change=${(e: Event) => {
-            this.points = [];
-            this.change({ url: (e.target as HTMLInputElement).value.trim() });
-          }}
-      /></label>
-      <p>${this.t('source_hint')}</p>
-      <div class="options">
-        <label
-          ><input
-            type="checkbox"
-            .checked=${c.visible !== false}
-            @change=${(e: Event) => this.change({ visible: (e.target as HTMLInputElement).checked })}
-          />${this.t('visible')}</label
-        >
-        <label
-          ><input
-            type="checkbox"
-            .checked=${locked}
-            @change=${(e: Event) => {
-              this.mode = 'move';
-              this.points = [];
-              this.change({ locked: (e.target as HTMLInputElement).checked });
-            }}
-          />${this.t('locked')}</label
-        >
-      </div>
-      ${
-        c.url && image?.status !== 'ready'
-          ? html`<p role="status">${this.t(image?.status === 'loading' ? 'loading' : 'error')}</p>`
-          : nothing
-      }
-      <canvas
-        aria-label=${this.t('preview')}
-        @pointerdown=${this.down}
-        @pointermove=${this.move}
-        @pointerup=${this.up}
-        @pointercancel=${this.cancel}
-      ></canvas>
-      <p>
-        ${this.t(
-          locked
-            ? 'unlock_hint'
-            : this.mode === 'move'
-              ? 'drag_hint'
-              : this.mode === 'scale'
-                ? 'scale_hint'
-                : 'origin_hint',
-        )}
-      </p>
-      <div class="options">
-        <button
-          type="button"
-          ?disabled=${locked || image?.status !== 'ready'}
-          @click=${() => {
-            this.mode = 'scale';
-            this.points = [];
-          }}
-        >
-          ${this.t('scale')}
-        </button>
-        <button
-          type="button"
-          ?disabled=${locked || image?.status !== 'ready'}
-          @click=${() => {
-            this.mode = 'origin';
-            this.points = [];
-          }}
-        >
-          ${this.t('origin')}
-        </button>
-        <button
-          type="button"
-          ?disabled=${locked}
-          @click=${() => {
-            this.mode = 'move';
-            this.points = [];
-          }}
-        >
-          ${this.t('move')}
-        </button>
-      </div>
-      ${
-        this.mode === 'scale'
-          ? html`<label
-                >${this.t('length')}<input
-                  type="number"
-                  min="1"
-                  .value=${String(this.length)}
-                  @input=${(e: Event) => (this.length = Number((e.target as HTMLInputElement).value))}
-              /></label>
-              <button
-                type="button"
-                ?disabled=${
-                  this.points.length !== 2 || !calibratedImageWidth(this.points[0], this.points[1], this.length)
-                }
-                @click=${this.calibrate}
-              >
-                ${this.t('apply_scale')}
-              </button>`
-          : nothing
-      }
-      <div class="numbers">
-        ${(
-          [
-            ['width_cm', v.width, 'width'],
-            ['offset_x_cm', v.x, 'x'],
-            ['offset_y_cm', v.y, 'y'],
-            ['rotation', c.rotation ?? 0, 'rotation'],
-          ] as const
-        ).map(
-          ([key, value, label]) =>
-            html` <label
-              >${this.t(label)}<input
-                type="number"
-                ?disabled=${locked}
-                step="0.1"
-                .value=${String(Math.round(value * 10) / 10)}
+      <summary><span>${this.t('title')}</span></summary>
+      <div class="floorplan-content">
+        <section class="source-section">
+          <h4>${this.t('source_section')}</h4>
+          <label
+            >${this.t('upload')}<input
+              type="file"
+              accept="image/png,image/jpeg,image/gif"
+              ?disabled=${this.uploading}
+              @change=${this.upload}
+          /></label>
+          ${this.uploading ? html`<p role="status">${this.t('uploading')}</p>` : nothing}
+          ${this.uploadError ? html`<p role="alert">${this.t('upload_error')}</p>` : nothing}
+          <label
+            >${this.t('url')}<input
+              type="text"
+              placeholder="/local/floorplans/room.png"
+              .value=${c.url}
+              @change=${(e: Event) => {
+                this.points = [];
+                this.change({ url: (e.target as HTMLInputElement).value.trim() });
+              }}
+          /></label>
+          <p>${this.t('source_hint')}</p>
+        </section>
+        <section class="placement-section">
+          <h4>${this.t('placement_section')}</h4>
+          <div class="options">
+            <label
+              ><input
+                type="checkbox"
+                .checked=${c.visible !== false}
+                @change=${(e: Event) => this.change({ visible: (e.target as HTMLInputElement).checked })}
+              />${this.t('visible')}</label
+            >
+            <label
+              ><input
+                type="checkbox"
+                .checked=${locked}
                 @change=${(e: Event) => {
-                  const n = Number((e.target as HTMLInputElement).value);
-                  if (Number.isFinite(n) && (key !== 'width_cm' || n > 0)) this.change({ [key]: n });
+                  this.mode = 'move';
+                  this.points = [];
+                  this.change({ locked: (e.target as HTMLInputElement).checked });
                 }}
-            /></label>`,
-        )}
+              />${this.t('locked')}</label
+            >
+          </div>
+          ${
+            c.url && image?.status !== 'ready'
+              ? html`<p role="status">${this.t(image?.status === 'loading' ? 'loading' : 'error')}</p>`
+              : nothing
+          }
+          <canvas
+            aria-label=${this.t('preview')}
+            @pointerdown=${this.down}
+            @pointermove=${this.move}
+            @pointerup=${this.up}
+            @pointercancel=${this.cancel}
+          ></canvas>
+          <p>
+            ${this.t(
+              locked
+                ? 'unlock_hint'
+                : this.mode === 'move'
+                  ? 'drag_hint'
+                  : this.mode === 'scale'
+                    ? 'scale_hint'
+                    : 'origin_hint',
+            )}
+          </p>
+          <div class="options">
+            <button
+              type="button"
+              ?disabled=${locked || image?.status !== 'ready'}
+              aria-pressed=${this.mode === 'scale' ? 'true' : 'false'}
+              @click=${() => {
+                this.mode = 'scale';
+                this.points = [];
+              }}
+            >
+              ${this.t('scale')}
+            </button>
+            <button
+              type="button"
+              ?disabled=${locked || image?.status !== 'ready'}
+              aria-pressed=${this.mode === 'origin' ? 'true' : 'false'}
+              @click=${() => {
+                this.mode = 'origin';
+                this.points = [];
+              }}
+            >
+              ${this.t('origin')}
+            </button>
+            <button
+              type="button"
+              ?disabled=${locked}
+              aria-pressed=${this.mode === 'move' ? 'true' : 'false'}
+              @click=${() => {
+                this.mode = 'move';
+                this.points = [];
+              }}
+            >
+              ${this.t('move')}
+            </button>
+          </div>
+          ${
+            this.mode === 'scale'
+              ? html`<label
+                    >${this.t('length')}<input
+                      type="number"
+                      min="1"
+                      .value=${String(this.length)}
+                      @input=${(e: Event) => (this.length = Number((e.target as HTMLInputElement).value))}
+                  /></label>
+                  <button
+                    type="button"
+                    ?disabled=${
+                      this.points.length !== 2 || !calibratedImageWidth(this.points[0], this.points[1], this.length)
+                    }
+                    @click=${this.calibrate}
+                  >
+                    ${this.t('apply_scale')}
+                  </button>`
+              : nothing
+          }
+        </section>
+        <section class="adjust-section">
+          <h4>${this.t('adjust_section')}</h4>
+          <div class="numbers">
+            ${(
+              [
+                ['width_cm', v.width, 'width'],
+                ['offset_x_cm', v.x, 'x'],
+                ['offset_y_cm', v.y, 'y'],
+                ['rotation', c.rotation ?? 0, 'rotation'],
+              ] as const
+            ).map(
+              ([key, value, label]) =>
+                html` <label
+                  >${this.t(label)}<input
+                    type="number"
+                    ?disabled=${locked}
+                    step="0.1"
+                    .value=${String(Math.round(value * 10) / 10)}
+                    @change=${(e: Event) => {
+                      const n = Number((e.target as HTMLInputElement).value);
+                      if (Number.isFinite(n) && (key !== 'width_cm' || n > 0)) this.change({ [key]: n });
+                    }}
+                /></label>`,
+            )}
+          </div>
+          <label
+            >${this.t('opacity')}<input
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              .value=${String(v.opacity)}
+              @input=${(e: Event) => this.change({ opacity: Number((e.target as HTMLInputElement).value) })}
+          /></label>
+        </section>
       </div>
-      <label
-        >${this.t('opacity')}<input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          .value=${String(v.opacity)}
-          @input=${(e: Event) => this.change({ opacity: Number((e.target as HTMLInputElement).value) })}
-      /></label>
     </details>`;
   }
-  static styles = css`
-    :host {
-      display: block;
-      min-width: 0;
-    }
-    details {
-      border: 1px solid var(--divider-color, #ddd);
-      border-radius: 12px;
-      padding: 12px;
-      margin: 12px 0;
-    }
-    summary {
-      cursor: pointer;
-      font-weight: 600;
-    }
-    label {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      margin: 10px 0;
-      font-size: 12px;
-      min-width: 0;
-    }
-    input {
-      box-sizing: border-box;
-      width: 100%;
-      min-width: 0;
-      font: inherit;
-      font-size: 16px;
-      padding: 7px;
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-      border: 1px solid var(--divider-color, #ddd);
-      border-radius: 6px;
-    }
-    input[type='checkbox'] {
-      width: auto;
-    }
-    input[type='range'] {
-      padding: 0;
-      accent-color: var(--mmwave-primary, #408564);
-    }
-    .options {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    .options label {
-      flex-direction: row;
-      align-items: center;
-    }
-    .numbers {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0 10px;
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      touch-action: none;
-      box-shadow: inset 0 0 0 1px var(--divider-color, #ddd);
-      box-sizing: border-box;
-      border-radius: 8px;
-    }
-    button {
-      font: inherit;
-      font-size: 12px;
-      min-height: 36px;
-      padding: 6px 10px;
-      cursor: pointer;
-      border-radius: 7px;
-      border: 1px solid var(--divider-color, #ddd);
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: default;
-    }
-    p {
-      font-size: 12px;
-      color: var(--secondary-text-color);
-      line-height: 1.5;
-    }
-  `;
+  static styles = [
+    css`
+      :host {
+        display: block;
+        min-width: 0;
+      }
+      .floorplan-content {
+        display: grid;
+        gap: 16px;
+        min-width: 0;
+      }
+      section {
+        min-width: 0;
+      }
+      section + section {
+        border-top: 1px solid var(--mmwave-control-border);
+        padding-top: 16px;
+      }
+      h4 {
+        margin: 0 0 8px;
+        font-size: 12px;
+      }
+      input[type='file'] {
+        font-size: 12px;
+        padding: 8px;
+      }
+      input[type='file']::file-selector-button {
+        font: inherit;
+        padding: 8px 12px;
+        margin-right: 8px;
+        border: 0;
+        border-radius: var(--mmwave-control-radius);
+        color: white;
+        background: var(--mmwave-accent);
+        cursor: pointer;
+      }
+      button[aria-pressed='true']:not(:disabled) {
+        color: var(--mmwave-accent);
+        border-color: var(--mmwave-accent);
+        background: color-mix(in srgb, var(--mmwave-accent) 10%, transparent);
+      }
+      .placement-section > .options {
+        gap: 8px;
+      }
+      .placement-section > .options button {
+        flex: 1;
+      }
+      details {
+        border: 1px solid var(--divider-color, #ddd);
+        border-radius: 12px;
+        padding: 12px;
+        margin: 12px 0;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        margin: 10px 0;
+        font-size: 12px;
+        min-width: 0;
+      }
+      input {
+        box-sizing: border-box;
+        width: 100%;
+        min-width: 0;
+        font: inherit;
+        font-size: 16px;
+        padding: 7px;
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+        border: 1px solid var(--divider-color, #ddd);
+        border-radius: var(--mmwave-control-radius);
+      }
+      input[type='checkbox'] {
+        width: auto;
+      }
+      input[type='range'] {
+        padding: 0;
+        accent-color: var(--mmwave-primary, #0b825c);
+      }
+      .options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .options label {
+        flex-direction: row;
+        align-items: center;
+      }
+      .numbers {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0 10px;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        touch-action: none;
+        box-shadow: inset 0 0 0 1px var(--divider-color, #ddd);
+        box-sizing: border-box;
+        border-radius: 8px;
+      }
+      button {
+        font: inherit;
+        font-size: 12px;
+        min-height: 36px;
+        padding: 6px 10px;
+        cursor: pointer;
+        border-radius: var(--mmwave-control-radius);
+        border: 1px solid var(--divider-color, #ddd);
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+      }
+      button:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+      p {
+        font-size: 12px;
+        color: var(--secondary-text-color);
+        line-height: 1.5;
+      }
+    `,
+    controlStyles,
+  ];
 }

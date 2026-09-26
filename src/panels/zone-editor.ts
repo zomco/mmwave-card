@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { tracePoint } from '../utils/floorplan-trace';
 import type { FloorplanConfig } from '../types';
 import { floorplanImage, floorplanValues } from '../utils/floorplan';
@@ -279,177 +280,180 @@ export class ZoneEditor extends LitElement {
     `;
   }
 
-  static styles = css`
-    .trace-controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin: 8px 0;
-      font-size: 12px;
-    }
-    .trace-controls label {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .trace-controls input {
-      width: auto;
-      accent-color: var(--mmwave-primary, #408564);
-    }
-    .trace-controls small {
-      color: var(--secondary-text-color);
-    }
-
-    :host {
-      display: block;
-    }
-    .toolbar,
-    .actions {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .toolbar {
-      justify-content: space-between;
-      margin-bottom: 7px;
-    }
-    .zone-tabs {
-      display: flex;
-      gap: 5px;
-      min-width: 0;
-      overflow-x: auto;
-    }
-    button {
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
-      border-radius: 7px;
-      padding: 7px 9px;
-      color: var(--secondary-text-color);
-      background: var(--card-background-color, #fff);
-      font-size: 9px;
-      cursor: pointer;
-    }
-    .zone-tabs button {
-      border-left: 4px solid var(--zone-color);
-      white-space: nowrap;
-    }
-    .zone-tabs button.active,
-    button.save {
-      color: white;
-      background: #0b825c;
-    }
-    button.new {
-      color: #0b825c;
-      white-space: nowrap;
-    }
-    button.danger {
-      color: var(--error-color, #e53935);
-    }
-    button:disabled {
-      opacity: 0.35;
-      cursor: default;
-    }
-    .floor {
-      box-sizing: border-box;
-      width: 100%;
-      min-height: 180px;
-      max-height: 520px;
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
-      border-radius: 10px;
-      color: var(--secondary-text-color);
-      background: rgba(128, 128, 128, 0.035);
-    }
-    .floor.active {
-      cursor: crosshair;
-    }
-    .background {
-      fill: url(#zone-grid);
-    }
-    .point-label,
-    .axis,
-    .radar text {
-      fill: var(--secondary-text-color);
-      font: 700 10px system-ui;
-      text-anchor: middle;
-      pointer-events: none;
-    }
-    .axis {
-      font-size: 9px;
-      text-anchor: start;
-    }
-    .radar {
-      pointer-events: none;
-    }
-    .radar circle {
-      fill: rgba(3, 169, 244, 0.15);
-      stroke: #03a9f4;
-      stroke-width: 2;
-      vector-effect: non-scaling-stroke;
-    }
-    .radar path {
-      fill: none;
-      stroke: #03a9f4;
-      stroke-width: 2;
-      stroke-dasharray: 4 3;
-      vector-effect: non-scaling-stroke;
-    }
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-      margin-top: 8px;
-    }
-    .form-grid label {
-      display: grid;
-      gap: 4px;
-      color: var(--secondary-text-color);
-      font-size: 9px;
-    }
-    .form-grid label.dwell {
-      grid-column: 1 / -1;
-    }
-    .form-grid input {
-      min-width: 0;
-      padding: 6px 7px;
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
-      border-radius: 7px;
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-      font-size: 10px;
-    }
-    .vertex-count {
-      display: grid;
-      place-items: center;
-      align-self: end;
-      min-height: 29px;
-      border-radius: 7px;
-      color: #0b825c;
-      background: rgba(11, 130, 92, 0.08);
-      font-size: 9px;
-      font-weight: 700;
-    }
-    .actions {
-      justify-content: flex-end;
-      flex-wrap: wrap;
-      margin-top: 8px;
-    }
-    .hint,
-    .error {
-      margin: 7px 1px 0;
-      font-size: 9px;
-    }
-    .hint {
-      color: var(--secondary-text-color);
-    }
-    .error {
-      color: var(--error-color, #e53935);
-    }
-    @media (max-width: 500px) {
-      .form-grid {
-        grid-template-columns: 1fr;
+  static styles = [
+    css`
+      .trace-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+        font-size: 12px;
       }
-    }
-  `;
+      .trace-controls label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .trace-controls input {
+        width: auto;
+        accent-color: var(--mmwave-primary, #0b825c);
+      }
+      .trace-controls small {
+        color: var(--secondary-text-color);
+      }
+
+      :host {
+        display: block;
+      }
+      .toolbar,
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toolbar {
+        justify-content: space-between;
+        margin-bottom: 7px;
+      }
+      .zone-tabs {
+        display: flex;
+        gap: 5px;
+        min-width: 0;
+        overflow-x: auto;
+      }
+      button {
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
+        border-radius: var(--mmwave-control-radius);
+        padding: 7px 9px;
+        color: var(--secondary-text-color);
+        background: var(--card-background-color, #fff);
+        font-size: 9px;
+        cursor: pointer;
+      }
+      .zone-tabs button {
+        border-left: 4px solid var(--zone-color);
+        white-space: nowrap;
+      }
+      .zone-tabs button.active,
+      button.save {
+        color: white;
+        background: var(--mmwave-accent);
+      }
+      button.new {
+        color: var(--mmwave-accent);
+        white-space: nowrap;
+      }
+      button.danger {
+        color: var(--error-color, #e53935);
+      }
+      button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .floor {
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 180px;
+        max-height: 520px;
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
+        border-radius: 10px;
+        color: var(--secondary-text-color);
+        background: rgba(128, 128, 128, 0.035);
+      }
+      .floor.active {
+        cursor: crosshair;
+      }
+      .background {
+        fill: url(#zone-grid);
+      }
+      .point-label,
+      .axis,
+      .radar text {
+        fill: var(--secondary-text-color);
+        font: 700 10px system-ui;
+        text-anchor: middle;
+        pointer-events: none;
+      }
+      .axis {
+        font-size: 9px;
+        text-anchor: start;
+      }
+      .radar {
+        pointer-events: none;
+      }
+      .radar circle {
+        fill: rgba(3, 169, 244, 0.15);
+        stroke: #03a9f4;
+        stroke-width: 2;
+        vector-effect: non-scaling-stroke;
+      }
+      .radar path {
+        fill: none;
+        stroke: #03a9f4;
+        stroke-width: 2;
+        stroke-dasharray: 4 3;
+        vector-effect: non-scaling-stroke;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+        margin-top: 8px;
+      }
+      .form-grid label {
+        display: grid;
+        gap: 4px;
+        color: var(--secondary-text-color);
+        font-size: 9px;
+      }
+      .form-grid label.dwell {
+        grid-column: 1 / -1;
+      }
+      .form-grid input {
+        min-width: 0;
+        padding: 6px 7px;
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
+        border-radius: var(--mmwave-control-radius);
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+        font-size: 10px;
+      }
+      .vertex-count {
+        display: grid;
+        place-items: center;
+        align-self: end;
+        min-height: 29px;
+        border-radius: 7px;
+        color: var(--mmwave-accent);
+        background: rgba(11, 130, 92, 0.08);
+        font-size: 9px;
+        font-weight: 700;
+      }
+      .actions {
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .hint,
+      .error {
+        margin: 7px 1px 0;
+        font-size: 9px;
+      }
+      .hint {
+        color: var(--secondary-text-color);
+      }
+      .error {
+        color: var(--error-color, #e53935);
+      }
+      @media (max-width: 500px) {
+        .form-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+    controlStyles,
+  ];
 }
 
 declare global {

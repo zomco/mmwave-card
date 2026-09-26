@@ -14,7 +14,7 @@
     "pitch": "Pitch",
     "roll": "Roll",
     "geo_note": "Origin: top-left corner. X → right. Y ↓ down (toward foot of bed).\nYaw = angle of radar forward axis from Y-axis, clockwise positive.\nPitch/Roll: 0 for horizontal mount; enter tilt angle or read from IMU.",
-    "boundary": "Room Boundary (optional)",
+    "boundary": "Boundary filter (optional)",
     "poly_hint_none": "Click canvas to draw boundary (≥ 3 points)",
     "poly_hint_ok": "Boundary active — {n} vertices",
     "poly_undo": "Undo",
@@ -87,14 +87,19 @@
     "area_n": "Area {n}"
   },
   "area": {
-    "hint": "Stand at the desk, bed or door and tap I'm here — or click the map to draw the polygon yourself.",
+    "hint": "Select an area and tap at least three corners, or stand at its location and use “I’m here” to create it.",
     "stand_here": "I'm here",
     "stand_need_target": "Walk into the spot first. The radar needs a target before it can place the area.",
     "area_n": "Area {n}",
     "warn_small": "An area is narrower than {cm} cm — occupancy may flicker.",
     "warn_close": "Area centroids are closer than {cm} cm — exclusive assignment will fight.",
     "warn_overlap": "Areas overlap. A still target stays in the last area until it leaves the hysteresis band.",
-    "ok": "Areas look separable."
+    "ok": "Areas look separable.",
+    "title": "Area occupancy",
+    "purpose": "Check occupancy at the bed, desk or doorway separately, without changing the detection boundary.",
+    "empty": "Not set",
+    "drawing": "Drawing · {n} points",
+    "configured": "Configured"
   },
   "actions": {
     "save": "Save",
@@ -260,7 +265,9 @@
     "clear_2": "Clear",
     "trajectory_quality": "Trajectory quality",
     "no_playable_clip_is_available_yet": "No playable clip is available yet, or recording is still in progress.",
-    "clip_review": "Camera review"
+    "clip_review": "Camera review",
+    "boundary": "Boundary filter",
+    "boundary_description": "Set detection limits and areas"
   },
   "fusion": {
     "filtered": "Filtered",
@@ -328,7 +335,7 @@
     "discard_confirm": "Leave and discard unapplied installation changes and capture samples?",
     "preview_readonly": "Save and exit the card editor, then open calibration from the card’s top-right control.",
     "backend_required": "Update and connect the fusion backend before calibrating multiple radars.",
-    "use_results": "Use results and verify",
+    "use_results": "Use installation adjustment",
     "verify_hint": "This temporary fusion preview uses your draft installation. Walk through the room alone and check target merging and continuity, then apply and sync. This preview stores no tracks or recordings; the running backend continues using its saved settings.",
     "preview_status": "Calibration draft",
     "saving": "Applying…",
@@ -494,7 +501,10 @@
     "trace": "Snap to walls",
     "trace_hint": "Tap near wall corners to trace; undo to correct a point.",
     "trace_snapped": "Snapped to image edge",
-    "trace_unavailable": "Use an uploaded image for snapping; manual tracing is still available."
+    "trace_unavailable": "Use an uploaded image for snapping; manual tracing is still available.",
+    "source_section": "Image source",
+    "placement_section": "Image placement",
+    "adjust_section": "Numeric adjustment"
   },
   "metrics": {
     "heart": "Heart rate",

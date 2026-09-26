@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import type { FloorplanConfig } from '../types';
 import { LitElement, css, html, nothing, PropertyValues } from 'lit';
 import { localize } from '../localize/localize';
@@ -689,388 +690,397 @@ export class FusionPanel extends LitElement {
           `,
         )}
       </div>
-      <div class="events">
-        <strong>${this._t('fusion.recent_events')}</strong>
-        <p class="heatmap-note">${this._t('fusion.event_search_hint')}</p>
-        <div class="event-filters">
-          ${['', 'enter', 'dwell', 'traverse', 'trajectory'].map(
-            (type) => html`
-              <button
-                type="button"
-                class=${this.eventTypeFilter === type ? 'selected' : ''}
-                @click=${() => (this.eventTypeFilter = type)}
-              >
-                ${type ? this.eventTypeLabel(type) : this._t('fusion.filter_all')}
-              </button>
-            `,
-          )}
-        </div>
-        <div class="event-filters">
-          <button
-            type="button"
-            class=${this.zoneFilter === '' ? 'selected' : ''}
-            @click=${() => (this.zoneFilter = '')}
-          >
-            ${this._t('fusion.filter_all_zones')}
-          </button>
-          ${this.zones.map(
-            (zone) => html`
-              <button
-                type="button"
-                class=${this.zoneFilter === zone.id ? 'selected' : ''}
-                @click=${() => (this.zoneFilter = zone.id)}
-              >
-                ${zone.name || zone.id}
-              </button>
-            `,
-          )}
-        </div>
-        <div class="event-filters">
-          ${(
-            [
-              [0, 'fusion.window_all'],
-              [1, 'fusion.window_hour'],
-              [24, 'fusion.window_day'],
-            ] as const
-          ).map(
-            ([hours, key]) => html`
-              <button
-                type="button"
-                class=${this.sinceHours === hours ? 'selected' : ''}
-                @click=${() => (this.sinceHours = hours)}
-              >
-                ${this._t(key)}
-              </button>
-            `,
-          )}
-        </div>
-        ${
-          recentEvents.length
-            ? recentEvents.slice(0, 24).map(
-                (event) => html`
+      ${
+        this.backendState !== 'preview'
+          ? html`<details class="event-disclosure">
+              <summary><span>${this._t('fusion.recent_events')}</span><small>${this.events.length}</small></summary>
+              <div class="events">
+                <p class="heatmap-note">${this._t('fusion.event_search_hint')}</p>
+                <div class="event-filters">
+                  ${['', 'enter', 'dwell', 'traverse', 'trajectory'].map(
+                    (type) => html`
+                      <button
+                        type="button"
+                        class=${this.eventTypeFilter === type ? 'selected' : ''}
+                        @click=${() => (this.eventTypeFilter = type)}
+                      >
+                        ${type ? this.eventTypeLabel(type) : this._t('fusion.filter_all')}
+                      </button>
+                    `,
+                  )}
+                </div>
+                <div class="event-filters">
                   <button
                     type="button"
-                    class=${event.event_id === this.selectedEventId ? 'selected' : ''}
-                    @click=${() => this.selectEvent(event)}
+                    class=${this.zoneFilter === '' ? 'selected' : ''}
+                    @click=${() => (this.zoneFilter = '')}
                   >
-                    ${
-                      this.thumbUrls[event.event_id]
-                        ? html`<img class="thumb" src=${this.thumbUrls[event.event_id]} alt="" />`
-                        : nothing
-                    }
-                    <span>
-                      ${this.eventTypeLabel(event.event_type)} · ${this.zoneLabel(event.zone_id)}
-                      ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
-                    </span>
-                    <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
-                    <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
+                    ${this._t('fusion.filter_all_zones')}
                   </button>
-                `,
-              )
-            : html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
-        }
-      </div>
+                  ${this.zones.map(
+                    (zone) => html`
+                      <button
+                        type="button"
+                        class=${this.zoneFilter === zone.id ? 'selected' : ''}
+                        @click=${() => (this.zoneFilter = zone.id)}
+                      >
+                        ${zone.name || zone.id}
+                      </button>
+                    `,
+                  )}
+                </div>
+                <div class="event-filters">
+                  ${(
+                    [
+                      [0, 'fusion.window_all'],
+                      [1, 'fusion.window_hour'],
+                      [24, 'fusion.window_day'],
+                    ] as const
+                  ).map(
+                    ([hours, key]) => html`
+                      <button
+                        type="button"
+                        class=${this.sinceHours === hours ? 'selected' : ''}
+                        @click=${() => (this.sinceHours = hours)}
+                      >
+                        ${this._t(key)}
+                      </button>
+                    `,
+                  )}
+                </div>
+                ${
+                  recentEvents.length
+                    ? recentEvents.slice(0, 24).map(
+                        (event) => html`
+                          <button
+                            type="button"
+                            class=${event.event_id === this.selectedEventId ? 'selected' : ''}
+                            @click=${() => this.selectEvent(event)}
+                          >
+                            ${
+                              this.thumbUrls[event.event_id]
+                                ? html`<img class="thumb" src=${this.thumbUrls[event.event_id]} alt="" />`
+                                : nothing
+                            }
+                            <span>
+                              ${this.eventTypeLabel(event.event_type)} · ${this.zoneLabel(event.zone_id)}
+                              ${event.quality_score == null ? '' : ` · ${event.quality_score}/100`}
+                            </span>
+                            <small>${new Date(event.timestamp * 1000).toLocaleString()}</small>
+                            <em class=${event.clip_status === 'failed' ? 'failed' : ''}>${this.eventStatus(event)}</em>
+                          </button>
+                        `,
+                      )
+                    : html`<span class="heatmap-note">${this._t('fusion.replay_empty')}</span>`
+                }
+              </div>
+            </details>`
+          : nothing
+      }
     `;
   }
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    .scene {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--divider-color);
-      border-radius: 12px;
-      background: rgba(128, 128, 128, 0.035);
-    }
-    canvas {
-      display: block;
-      width: 100%;
-    }
-    .scene-toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 7px;
-      padding: 0 2px;
-    }
-    .toolbar-actions {
-      display: flex;
-      flex: 1 1 auto;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 5px;
-    }
-    .coverage-toggle {
-      padding: 4px 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 999px;
-      color: var(--secondary-text-color);
-      background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-      font: inherit;
-      font-size: 9px;
-      cursor: pointer;
-    }
-    .coverage-toggle.active {
-      border-color: #0b825c;
-      color: #0b825c;
-      background: color-mix(in srgb, #0b825c 12%, var(--card-background-color, #fff));
-    }
-    .replay-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .play {
-      width: 26px;
-      height: 22px;
-      padding: 0;
-      border: 1px solid var(--divider-color);
-      border-radius: 999px;
-      color: var(--primary-text-color);
-      background: transparent;
-      font-size: 9px;
-      cursor: pointer;
-    }
-    .scrub {
-      flex: 1 1 120px;
-      min-width: 100px;
-      accent-color: #0b825c;
-    }
-    .clock {
-      color: var(--secondary-text-color);
-      font:
-        9px ui-monospace,
-        monospace;
-    }
-    .heatmap-bar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    .replay-bar > .heatmap-note:first-child,
-    .heatmap-bar > .heatmap-note:first-child {
-      flex: 1 1 100%;
-    }
-    .windows {
-      display: inline-flex;
-      overflow: hidden;
-      border: 1px solid var(--divider-color);
-      border-radius: 999px;
-    }
-    .windows button {
-      padding: 3px 10px;
-      border: none;
-      color: var(--secondary-text-color);
-      background: transparent;
-      font: inherit;
-      font-size: 9px;
-      cursor: pointer;
-    }
-    .windows button + button {
-      border-left: 1px solid var(--divider-color);
-    }
-    .windows button.selected {
-      color: #fff;
-      background: #0b825c;
-    }
-    .windows button[disabled] {
-      cursor: progress;
-      opacity: 0.5;
-    }
-    .ramp {
-      display: inline-flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .ramp i {
-      width: 14px;
-      height: 8px;
-      border-radius: 2px;
-    }
-    .ramp small,
-    .heatmap-note {
-      color: var(--secondary-text-color);
-      font-size: 9px;
-    }
-    .status,
-    .radar-count {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 999px;
-      color: var(--secondary-text-color);
-      background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-      font-size: 9px;
-      backdrop-filter: blur(6px);
-    }
-    .status i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #9ca3af;
-    }
-    .status.online {
-      color: #0b825c;
-    }
-    .status.online i {
-      background: #0b825c;
-      box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.14);
-    }
-    .status.fallback {
-      color: var(--warning-color, #ff9800);
-    }
-    .status.fallback i {
-      background: var(--warning-color, #ff9800);
-    }
-    .status.error {
-      color: var(--error-color, #e53935);
-    }
-    .status.error i {
-      background: var(--error-color, #e53935);
-    }
-    .summary {
-      display: grid;
-      gap: 6px;
-      margin-top: 8px;
-    }
-    .assist-hint {
-      margin: 8px 0 0;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-      line-height: 1.45;
-    }
-    .calibration-warning {
-      display: grid;
-      gap: 6px;
-      margin-top: 8px;
-      padding: 7px 9px;
-      border: 1px solid color-mix(in srgb, var(--warning-color, #ff9800) 45%, transparent);
-      border-radius: 8px;
-      color: var(--warning-color, #ff9800);
-      background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent);
-      font-size: 9px;
-      line-height: 1.45;
-    }
-    .summary > div:first-child {
-      display: flex;
-      align-items: baseline;
-      gap: 6px;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-    }
-    .summary > div:first-child strong {
-      color: var(--primary-text-color);
-      font-size: 18px;
-    }
-    .track {
-      display: grid;
-      grid-template-columns: auto auto 1fr auto;
-      align-items: center;
-      gap: 7px;
-      padding: 7px 9px;
-      border-radius: 9px;
-      background: color-mix(in srgb, var(--track-color) 7%, transparent);
-      color: var(--primary-text-color);
-      font:
-        10px ui-monospace,
-        monospace;
-    }
-    .track i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--track-color);
-    }
-    .track small {
-      overflow: hidden;
-      color: var(--secondary-text-color);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .track em {
-      color: var(--track-color);
-      font-style: normal;
-      font-weight: 700;
-    }
-    .events {
-      display: grid;
-      gap: 5px;
-      margin-top: 12px;
-    }
-    .events > strong {
-      color: var(--primary-text-color);
-      font-size: 10px;
-    }
-    .event-filters {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-    .event-filters button {
-      padding: 3px 8px;
-      border: 1px solid var(--divider-color);
-      border-radius: 999px;
-      color: var(--secondary-text-color);
-      background: transparent;
-      font: inherit;
-      font-size: 9px;
-      cursor: pointer;
-    }
-    .event-filters button.selected {
-      color: #fff;
-      background: #0b825c;
-      border-color: #0b825c;
-    }
-    .events > button {
-      display: grid;
-      grid-template-columns: 1fr auto auto;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 9px;
-      border: 1px solid var(--divider-color);
-      border-radius: 8px;
-      color: var(--primary-text-color);
-      background: rgba(128, 128, 128, 0.035);
-      font-size: 9px;
-      text-align: left;
-      cursor: pointer;
-    }
-    .events > button:has(img) {
-      grid-template-columns: auto 1fr auto auto;
-    }
-    .events > button.selected {
-      border-color: #0b825c;
-      background: rgba(11, 130, 92, 0.08);
-    }
-    .events .thumb {
-      width: 36px;
-      height: 36px;
-      object-fit: cover;
-      border-radius: 4px;
-      background: rgba(128, 128, 128, 0.12);
-    }
-    .events small {
-      color: var(--secondary-text-color);
-    }
-    .events em {
-      color: #0b825c;
-      font-style: normal;
-    }
-    .events em.failed {
-      color: var(--error-color, #e53935);
-    }
-  `;
+  static styles = [
+    css`
+      :host {
+        display: block;
+      }
+      .scene {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--divider-color);
+        border-radius: 12px;
+        background: rgba(128, 128, 128, 0.035);
+      }
+      canvas {
+        display: block;
+        width: 100%;
+      }
+      .scene-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 7px;
+        padding: 0 2px;
+      }
+      .toolbar-actions {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 5px;
+      }
+      .coverage-toggle {
+        padding: 4px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+        color: var(--secondary-text-color);
+        background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
+        font: inherit;
+        font-size: 9px;
+        cursor: pointer;
+      }
+      .coverage-toggle.active {
+        border-color: var(--mmwave-accent);
+        color: var(--mmwave-accent);
+        background: color-mix(in srgb, var(--mmwave-accent) 12%, var(--card-background-color, #fff));
+      }
+      .replay-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .play {
+        width: 26px;
+        height: 22px;
+        padding: 0;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+        color: var(--primary-text-color);
+        background: transparent;
+        font-size: 9px;
+        cursor: pointer;
+      }
+      .scrub {
+        flex: 1 1 120px;
+        min-width: 100px;
+        accent-color: var(--mmwave-accent);
+      }
+      .clock {
+        color: var(--secondary-text-color);
+        font:
+          9px ui-monospace,
+          monospace;
+      }
+      .heatmap-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .replay-bar > .heatmap-note:first-child,
+      .heatmap-bar > .heatmap-note:first-child {
+        flex: 1 1 100%;
+      }
+      .windows {
+        display: inline-flex;
+        overflow: hidden;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+      }
+      .windows button {
+        padding: 3px 10px;
+        border: none;
+        color: var(--secondary-text-color);
+        background: transparent;
+        font: inherit;
+        font-size: 9px;
+        cursor: pointer;
+      }
+      .windows button + button {
+        border-left: 1px solid var(--divider-color);
+      }
+      .windows button.selected {
+        color: #fff;
+        background: var(--mmwave-accent);
+      }
+      .windows button[disabled] {
+        cursor: progress;
+        opacity: 0.5;
+      }
+      .ramp {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .ramp i {
+        width: 14px;
+        height: 8px;
+        border-radius: 2px;
+      }
+      .ramp small,
+      .heatmap-note {
+        color: var(--secondary-text-color);
+        font-size: 9px;
+      }
+      .status,
+      .radar-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+        color: var(--secondary-text-color);
+        background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
+        font-size: 9px;
+        backdrop-filter: blur(6px);
+      }
+      .status i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #9ca3af;
+      }
+      .status.online {
+        color: var(--mmwave-accent);
+      }
+      .status.online i {
+        background: var(--mmwave-accent);
+        box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.14);
+      }
+      .status.fallback {
+        color: var(--warning-color, #ff9800);
+      }
+      .status.fallback i {
+        background: var(--warning-color, #ff9800);
+      }
+      .status.error {
+        color: var(--error-color, #e53935);
+      }
+      .status.error i {
+        background: var(--error-color, #e53935);
+      }
+      .summary {
+        display: grid;
+        gap: 6px;
+        margin-top: 8px;
+      }
+      .assist-hint {
+        margin: 8px 0 0;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+        line-height: 1.45;
+      }
+      .calibration-warning {
+        display: grid;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 7px 9px;
+        border: 1px solid color-mix(in srgb, var(--warning-color, #ff9800) 45%, transparent);
+        border-radius: 8px;
+        color: var(--warning-color, #ff9800);
+        background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent);
+        font-size: 9px;
+        line-height: 1.45;
+      }
+      .summary > div:first-child {
+        display: flex;
+        align-items: baseline;
+        gap: 6px;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+      }
+      .summary > div:first-child strong {
+        color: var(--primary-text-color);
+        font-size: 18px;
+      }
+      .track {
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 9px;
+        border-radius: 9px;
+        background: color-mix(in srgb, var(--track-color) 7%, transparent);
+        color: var(--primary-text-color);
+        font:
+          10px ui-monospace,
+          monospace;
+      }
+      .track i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--track-color);
+      }
+      .track small {
+        overflow: hidden;
+        color: var(--secondary-text-color);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .track em {
+        color: var(--track-color);
+        font-style: normal;
+        font-weight: 700;
+      }
+      .events {
+        display: grid;
+        gap: 5px;
+        margin-top: 12px;
+      }
+      .events > strong {
+        color: var(--primary-text-color);
+        font-size: 10px;
+      }
+      .event-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .event-filters button {
+        padding: 3px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 999px;
+        color: var(--secondary-text-color);
+        background: transparent;
+        font: inherit;
+        font-size: 9px;
+        cursor: pointer;
+      }
+      .event-filters button.selected {
+        color: #fff;
+        background: var(--mmwave-accent);
+        border-color: var(--mmwave-accent);
+      }
+      .events > button {
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 9px;
+        border: 1px solid var(--divider-color);
+        border-radius: var(--mmwave-control-radius);
+        color: var(--primary-text-color);
+        background: rgba(128, 128, 128, 0.035);
+        font-size: 9px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .events > button:has(img) {
+        grid-template-columns: auto 1fr auto auto;
+      }
+      .events > button.selected {
+        border-color: var(--mmwave-accent);
+        background: rgba(11, 130, 92, 0.08);
+      }
+      .events .thumb {
+        width: 36px;
+        height: 36px;
+        object-fit: cover;
+        border-radius: 4px;
+        background: rgba(128, 128, 128, 0.12);
+      }
+      .events small {
+        color: var(--secondary-text-color);
+      }
+      .events em {
+        color: var(--mmwave-accent);
+        font-style: normal;
+      }
+      .events em.failed {
+        color: var(--error-color, #e53935);
+      }
+    `,
+    controlStyles,
+  ];
 }
 
 declare global {

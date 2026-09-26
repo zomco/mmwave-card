@@ -1,3 +1,5 @@
+import { presenceStatus } from './utils/presence-status';
+import { controlStyles } from './styles/controls';
 import { rangeContains } from './utils/range-filter';
 /**
  * MMWave Radar HA Card  —  main orchestrator
@@ -79,7 +81,7 @@ console.info(
 // ── Tab indices ──────────────────────────────────────────────────────────────
 
 const TAB_GEO = 0;
-const TAB_YAW = 1;
+const TAB_BOUNDARY = 1;
 const TAB_LIVE = 2;
 
 function emptyAreas(): Vec2[][] {
@@ -1100,6 +1102,7 @@ export class MMWaveCard extends LitElement {
     const roomD = (this._cal.room_d ?? this._config.room_d) as number;
     const lang = this._hass?.language ?? 'en';
     const insideTargets = this._insideTargetCount();
+    const status = presenceStatus(this._present, this._targets);
     const steps = [
       {
         icon: 'mdi:cube-scan',
@@ -1107,9 +1110,9 @@ export class MMWaveCard extends LitElement {
         description: this._t('card.place_the_radar_in_the_3d'),
       },
       {
-        icon: 'mdi:compass-outline',
-        title: this._t('card.direction'),
-        description: this._t('card.calibrate_yaw_with_two_reference_points'),
+        icon: 'mdi:vector-polygon',
+        title: this._t('card.boundary'),
+        description: this._t('card.boundary_description'),
       },
       {
         icon: 'mdi:radar',
@@ -1132,24 +1135,15 @@ export class MMWaveCard extends LitElement {
             </div>
             <div class="header-actions">
               <span
-                class="presence-chip ${insideTargets > 0 || this._areaOccupied.some(Boolean) ? 'active' : this._present ? 'filtered' : ''}"
+                class="presence-chip ${status === 'present' || status === 'unlocated' ? 'active' : status === 'filtered' ? 'filtered' : ''}"
               >
                 <i></i>
                 ${
-                  this._areaOccupied.some(Boolean)
-                    ? this._areaOccupied
-                        .map((on, index) =>
-                          on
-                            ? this._adapter.info.is1DRanging
-                              ? this._t(index === 0 ? 'card.near' : 'card.far')
-                              : this._t('live.area_n', { n: index + 1 })
-                            : '',
-                        )
-                        .filter(Boolean)
-                        .join(' · ')
-                    : insideTargets > 0
-                      ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
-                      : this._present
+                  status === 'present'
+                    ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
+                    : status === 'unlocated'
+                      ? this._t('live.badge_unlocated')
+                      : status === 'filtered'
                         ? this._t('card.outside')
                         : this._t('card.clear')
                 }
@@ -1240,60 +1234,61 @@ export class MMWaveCard extends LitElement {
         >
           ${
             this._tab === TAB_GEO
-              ? html` <mmwave-geo-panel
-                  .floorplan=${this._config.floorplan}
-                  .adapter=${this._adapter}
-                  .calibration=${this._cal}
-                  .lang=${lang}
-                  .roomW=${roomW}
-                  .roomD=${roomD}
-                  .maxRangeM=${this._maxRangeM}
-                >
-                </mmwave-geo-panel>`
-              : nothing
-          }
-          ${
-            this._tab === TAB_YAW
-              ? this._adapter.info.is1DRanging
-                ? html`<p>${this._t('fusioncal.range_only')}</p>`
-                : html`<mmwave-fusion-calibration
-                    .floorplan=${this._config.floorplan}
-                    .hass=${this._hass}
-                    .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
-                    .lang=${lang}
-                    .roomW=${roomW}
-                    .roomD=${roomD}
-                    .applyLabel=${this._t('workflow.use_results')}
-                    @fusion-calibration-applied=${(event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>) => {
-                      const solution = event.detail.solutions[0];
-                      if (!solution) return;
-                      this._onCalibrationChanged(
-                        new CustomEvent('calibration-changed', { detail: solution.calibration }),
-                      );
-                      this._gotoTab(TAB_LIVE);
-                    }}
-                  ></mmwave-fusion-calibration>`
-              : nothing
-          }
-          ${
-            this._tab === TAB_LIVE
-              ? html` <mmwave-live-panel
-                    .hass=${this._hass}
-                    .config=${this._config}
+              ? html`
+                  <mmwave-geo-panel
                     .floorplan=${this._config.floorplan}
                     .adapter=${this._adapter}
                     .calibration=${this._cal}
                     .lang=${lang}
                     .roomW=${roomW}
                     .roomD=${roomD}
-                    .targets=${this._targets}
-                    .present=${this._present}
                     .maxRangeM=${this._maxRangeM}
-                    .showStatus=${true}
-                    .areas=${this._areas}
-                    .areaOccupied=${this._areaOccupied}
-                  >
-                  </mmwave-live-panel>
+                    .showBoundary=${false}
+                  ></mmwave-geo-panel>
+                  ${
+                    this._adapter.info.is1DRanging
+                      ? nothing
+                      : html`<details class="direction-adjustment">
+                          <summary>
+                            <span>${this._t('card.direction')}</span><small>${this._t('geo.optional')}</small>
+                          </summary>
+                          <mmwave-fusion-calibration
+                            .floorplan=${this._config.floorplan}
+                            .hass=${this._hass}
+                            .radars=${[{ ...this._config, id: this._config.device_id || 'radar', calibration: this._cal }]}
+                            .lang=${lang}
+                            .roomW=${roomW}
+                            .roomD=${roomD}
+                            .applyLabel=${this._t('workflow.use_results')}
+                            @fusion-calibration-applied=${(
+                              event: CustomEvent<{ solutions: RadarCalibrationSolution[] }>,
+                            ) => {
+                              const solution = event.detail.solutions[0];
+                              if (!solution) return;
+                              this._onCalibrationChanged(
+                                new CustomEvent('calibration-changed', { detail: solution.calibration }),
+                              );
+                              this._gotoTab(TAB_GEO);
+                            }}
+                          ></mmwave-fusion-calibration>
+                        </details>`
+                  }
+                `
+              : nothing
+          }
+          ${
+            this._tab === TAB_BOUNDARY
+              ? html`
+                  <mmwave-geo-panel
+                    .floorplan=${this._config.floorplan}
+                    .adapter=${this._adapter}
+                    .calibration=${this._cal}
+                    .lang=${lang}
+                    .roomW=${roomW}
+                    .roomD=${roomD}
+                    .maxRangeM=${this._maxRangeM}
+                    .showInstallation=${false}
+                  ></mmwave-geo-panel>
                   ${
                     this._adapter.info.is1DRanging
                       ? nothing
@@ -1312,7 +1307,31 @@ export class MMWaveCard extends LitElement {
                             this._areas = [0, 1, 2].map((index) => event.detail[index]?.polygon ?? []);
                           }}
                         ></mmwave-area-editor>`
-                  }`
+                  }
+                `
+              : nothing
+          }
+          ${
+            this._tab === TAB_LIVE
+              ? html`
+                  <mmwave-live-panel
+                    .hass=${this._hass}
+                    .config=${this._config}
+                    .floorplan=${this._config.floorplan}
+                    .adapter=${this._adapter}
+                    .calibration=${this._cal}
+                    .lang=${lang}
+                    .roomW=${roomW}
+                    .roomD=${roomD}
+                    .targets=${this._targets}
+                    .present=${this._present}
+                    .maxRangeM=${this._maxRangeM}
+                    .showStatus=${true}
+                    .areas=${this._areas}
+                    .areaOccupied=${this._areaOccupied}
+                  >
+                  </mmwave-live-panel>
+                `
               : nothing
           }
         </div>
@@ -1518,473 +1537,476 @@ export class MMWaveCard extends LitElement {
 
   // ── Styles ───────────────────────────────────────────────────────────────
 
-  static styles = css`
-    :host {
-      display: block;
-      --mmwave-primary: #0b825c;
-      --mmwave-primary-soft: rgba(11, 130, 92, 0.1);
-      --mmwave-surface: color-mix(in srgb, var(--card-background-color, #fff) 94%, var(--mmwave-primary));
-      --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
-      --mmwave-secondary: #4b5563;
-    }
-    ha-card {
-      background: var(--ha-card-background, var(--card-background-color, #fff));
-      border-radius: var(--ha-card-border-radius, 16px);
-      box-shadow: var(--ha-card-box-shadow, 0 8px 28px rgba(0, 0, 0, 0.08));
-      border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
-      overflow: hidden;
-      color: var(--primary-text-color);
-      font-family: var(--primary-font-family, system-ui, sans-serif);
-      transition: all 0.3s ease-out;
-    }
+  static styles = [
+    css`
+      :host {
+        display: block;
+        --mmwave-primary: #0b825c;
+        --mmwave-primary-soft: rgba(11, 130, 92, 0.1);
+        --mmwave-surface: color-mix(in srgb, var(--card-background-color, #fff) 94%, var(--mmwave-primary));
+        --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
+        --mmwave-secondary: #4b5563;
+      }
+      ha-card {
+        background: var(--ha-card-background, var(--card-background-color, #fff));
+        border-radius: var(--ha-card-border-radius, 16px);
+        box-shadow: var(--ha-card-box-shadow, 0 8px 28px rgba(0, 0, 0, 0.08));
+        border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
+        overflow: hidden;
+        color: var(--primary-text-color);
+        font-family: var(--primary-font-family, system-ui, sans-serif);
+        transition: all 0.3s ease-out;
+      }
 
-    /* Header styles */
-    .ha-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px 16px 12px 16px;
-    }
-    .ha-header.calib {
-      padding: 4px 8px 4px 4px;
-      border-bottom: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
-      background: rgba(128, 128, 128, 0.05);
-    }
-    .ha-title {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 16px;
-      font-weight: 500;
-      color: var(--primary-text-color);
-    }
-    .ha-title ha-icon {
-      --mdc-icon-size: 24px;
-    }
+      /* Header styles */
+      .ha-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 16px 12px 16px;
+      }
+      .ha-header.calib {
+        padding: 4px 8px 4px 4px;
+        border-bottom: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+        background: rgba(128, 128, 128, 0.05);
+      }
+      .ha-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+      }
+      .ha-title ha-icon {
+        --mdc-icon-size: 24px;
+      }
 
-    #tabs {
-      display: flex;
-      border-bottom: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
-    }
-    .tab {
-      flex: 1;
-      padding: 12px 6px 10px;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      text-align: center;
-      border: none;
-      background: none;
-      color: var(--secondary-text-color);
-      cursor: pointer;
-      position: relative;
-      transition: color 0.2s;
-    }
-    .tab:hover {
-      background: rgba(128, 128, 128, 0.05);
-    }
-    .tab.act {
-      color: var(--mmwave-primary);
-    }
-    .tab.act::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 15%;
-      right: 15%;
-      height: 2px;
-      background: var(--mmwave-primary);
-      border-radius: 2px 2px 0 0;
-    }
-    #body {
-      padding: 16px;
-      min-height: 270px;
-    }
-    #foot {
-      padding: 12px 16px 16px;
-      border-top: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: rgba(128, 128, 128, 0.02);
-    }
-    .left-btns {
-      display: flex;
-      gap: 8px;
-    }
-    .btn-sync {
-      background: var(--mmwave-primary);
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn-sync:hover {
-      opacity: 0.9;
-    }
-    .btn-rst {
-      background: transparent;
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.3));
-      border-radius: 6px;
-      padding: 8px 12px;
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--primary-text-color);
-      cursor: pointer;
-    }
-    .btn-rst:hover {
-      background: rgba(128, 128, 128, 0.05);
-    }
+      #tabs {
+        display: flex;
+        border-bottom: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+      }
+      .tab {
+        flex: 1;
+        padding: 12px 6px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        text-align: center;
+        border: none;
+        background: none;
+        color: var(--secondary-text-color);
+        cursor: pointer;
+        position: relative;
+        transition: color 0.2s;
+      }
+      .tab:hover {
+        background: rgba(128, 128, 128, 0.05);
+      }
+      .tab.act {
+        color: var(--mmwave-primary);
+      }
+      .tab.act::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 15%;
+        right: 15%;
+        height: 2px;
+        background: var(--mmwave-primary);
+        border-radius: 2px 2px 0 0;
+      }
+      #body {
+        padding: 16px;
+        min-height: 270px;
+      }
+      #foot {
+        padding: 12px 16px 16px;
+        border-top: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: rgba(128, 128, 128, 0.02);
+      }
+      .left-btns {
+        display: flex;
+        gap: 8px;
+      }
+      .btn-sync {
+        background: var(--mmwave-primary);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: opacity 0.15s;
+      }
+      .btn-sync:hover {
+        opacity: 0.9;
+      }
+      .btn-rst {
+        background: transparent;
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.3));
+        border-radius: 6px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+        cursor: pointer;
+      }
+      .btn-rst:hover {
+        background: rgba(128, 128, 128, 0.05);
+      }
 
-    .live-header,
-    .workflow-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 14px 16px;
-    }
-    .identity,
-    .header-actions,
-    .footer-tools,
-    .footer-actions {
-      display: flex;
-      align-items: center;
-    }
-    .identity {
-      min-width: 0;
-      gap: 11px;
-    }
-    .logo-tile {
-      width: 38px;
-      height: 38px;
-      display: grid;
-      place-items: center;
-      flex: none;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 12px;
-      background: var(--mmwave-surface);
-      opacity: 0.62;
-      transition: 0.25s ease;
-    }
-    .logo-tile.online {
-      border-color: rgba(11, 130, 92, 0.3);
-      box-shadow: 0 0 0 4px rgba(11, 130, 92, 0.08);
-      opacity: 1;
-    }
-    .identity-copy,
-    .workflow-title {
-      display: flex;
-      min-width: 0;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .card-title,
-    .workflow-title strong {
-      overflow: hidden;
-      color: var(--primary-text-color);
-      font-size: 15px;
-      font-weight: 650;
-      line-height: 1.25;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .card-subtitle,
-    .workflow-title span {
-      overflow: hidden;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .header-actions {
-      flex: none;
-      gap: 8px;
-    }
-    .presence-chip,
-    .step-count {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 9px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 999px;
-      color: var(--secondary-text-color);
-      background: rgba(128, 128, 128, 0.05);
-      font-size: 10px;
-      font-weight: 650;
-      white-space: nowrap;
-    }
-    .presence-chip i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #9ca3af;
-    }
-    .presence-chip.active {
-      border-color: rgba(11, 130, 92, 0.24);
-      color: var(--mmwave-primary);
-      background: var(--mmwave-primary-soft);
-    }
-    .presence-chip.active i {
-      background: var(--mmwave-primary);
-      box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.13);
-    }
-    .presence-chip.filtered i {
-      background: var(--warning-color, #ff9800);
-    }
-    .icon-button {
-      width: 36px;
-      height: 36px;
-      display: inline-grid;
-      place-items: center;
-      flex: none;
-      padding: 0;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 11px;
-      color: var(--secondary-text-color);
-      background: rgba(128, 128, 128, 0.04);
-      cursor: pointer;
-      transition: 0.18s ease;
-    }
-    .icon-button:hover {
-      border-color: rgba(11, 130, 92, 0.35);
-      color: var(--mmwave-primary);
-      background: var(--mmwave-primary-soft);
-    }
-    .icon-button ha-icon {
-      --mdc-icon-size: 20px;
-    }
-    .live-body {
-      padding: 0 12px 12px;
-    }
-    .fusion-playback {
-      margin-top: 10px;
-      padding: 10px;
-      border: 1px solid var(--divider-color);
-      border-radius: 11px;
-      background: rgba(128, 128, 128, 0.035);
-    }
-    .fusion-playback header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 8px;
-      color: var(--primary-text-color);
-      font-size: 10px;
-    }
-    .fusion-playback header span,
-    .fusion-playback p {
-      color: var(--secondary-text-color);
-      font-size: 9px;
-    }
-    .fusion-playback .quality-detail strong {
-      color: var(--primary-text-color);
-    }
-    .fusion-playback .clip-error {
-      color: var(--error-color, #e53935);
-      overflow-wrap: anywhere;
-    }
-    .fusion-playback video,
-    .fusion-playback .fusion-still {
-      display: block;
-      width: 100%;
-      max-height: 360px;
-      border-radius: 8px;
-      background: #000;
-      object-fit: contain;
-    }
-    .workflow-header {
-      justify-content: flex-start;
-      border-bottom: 1px solid var(--mmwave-line);
-      background: linear-gradient(135deg, rgba(11, 130, 92, 0.065), transparent 65%);
-    }
-    .workflow-title {
-      flex: 1;
-    }
-    .workflow-steps {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--mmwave-line);
-    }
-    .workflow-step {
-      display: flex;
-      min-width: 0;
-      align-items: center;
-      gap: 8px;
-      padding: 9px;
-      border: 1px solid transparent;
-      border-radius: 11px;
-      color: var(--secondary-text-color);
-      background: transparent;
-      text-align: left;
-      cursor: pointer;
-      transition: 0.18s ease;
-    }
-    .workflow-step:hover {
-      background: rgba(128, 128, 128, 0.06);
-    }
-    .workflow-step.current {
-      border-color: rgba(11, 130, 92, 0.22);
-      color: var(--mmwave-primary);
-      background: var(--mmwave-primary-soft);
-    }
-    .workflow-step.complete {
-      color: var(--mmwave-primary);
-    }
-    .step-icon {
-      width: 30px;
-      height: 30px;
-      display: grid;
-      place-items: center;
-      flex: none;
-      border-radius: 9px;
-      background: rgba(128, 128, 128, 0.1);
-    }
-    .workflow-step.current .step-icon,
-    .workflow-step.complete .step-icon {
-      color: #fff;
-      background: var(--mmwave-primary);
-    }
-    .step-icon ha-icon {
-      --mdc-icon-size: 17px;
-    }
-    .step-copy {
-      display: flex;
-      min-width: 0;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .step-copy strong {
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .step-copy small {
-      overflow: hidden;
-      font-size: 9px;
-      font-weight: 400;
-      line-height: 1.25;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .workflow-body {
-      min-height: 320px;
-      padding: 16px;
-    }
-    .workflow-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 12px 16px 16px;
-      border-top: 1px solid var(--mmwave-line);
-      background: rgba(128, 128, 128, 0.025);
-    }
-    .footer-tools,
-    .footer-actions {
-      gap: 7px;
-    }
-    .text-button,
-    .secondary-button,
-    .primary-button {
-      display: inline-flex;
-      min-height: 36px;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      padding: 7px 11px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 650;
-      cursor: pointer;
-      transition: 0.18s ease;
-    }
-    .text-button {
-      padding-inline: 7px;
-      border: 1px solid transparent;
-      color: var(--secondary-text-color);
-      background: transparent;
-    }
-    .text-button:hover,
-    .secondary-button:hover {
-      background: rgba(128, 128, 128, 0.08);
-    }
-    .text-button.danger:hover {
-      color: var(--error-color, #ef5350);
-      background: rgba(239, 83, 80, 0.08);
-    }
-    .secondary-button {
-      border: 1px solid var(--mmwave-line);
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-    }
-    .primary-button {
-      border: 1px solid var(--mmwave-primary);
-      color: #fff;
-      background: var(--mmwave-primary);
-      box-shadow: 0 5px 14px rgba(11, 130, 92, 0.2);
-    }
-    .primary-button:hover {
-      filter: brightness(1.06);
-      transform: translateY(-1px);
-    }
-    .primary-button:disabled {
-      cursor: wait;
-      opacity: 0.65;
-      transform: none;
-    }
-    .primary-button.success {
-      border-color: var(--success-color, #43a047);
-      background: var(--success-color, #43a047);
-    }
-    .primary-button.error {
-      border-color: var(--error-color, #e53935);
-      background: var(--error-color, #e53935);
-    }
-    .text-button ha-icon,
-    .secondary-button ha-icon,
-    .primary-button ha-icon {
-      --mdc-icon-size: 17px;
-    }
-    @media (max-width: 520px) {
+      .live-header,
+      .workflow-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 16px;
+      }
+      .identity,
+      .header-actions,
+      .footer-tools,
+      .footer-actions {
+        display: flex;
+        align-items: center;
+      }
+      .identity {
+        min-width: 0;
+        gap: 11px;
+      }
+      .logo-tile {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        flex: none;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 12px;
+        background: var(--mmwave-surface);
+        opacity: 0.62;
+        transition: 0.25s ease;
+      }
+      .logo-tile.online {
+        border-color: rgba(11, 130, 92, 0.3);
+        box-shadow: 0 0 0 4px rgba(11, 130, 92, 0.08);
+        opacity: 1;
+      }
+      .identity-copy,
+      .workflow-title {
+        display: flex;
+        min-width: 0;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .card-title,
+      .workflow-title strong {
+        overflow: hidden;
+        color: var(--primary-text-color);
+        font-size: 15px;
+        font-weight: 650;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card-subtitle,
+      .workflow-title span {
+        overflow: hidden;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .header-actions {
+        flex: none;
+        gap: 8px;
+      }
+      .presence-chip,
+      .step-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 9px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 999px;
+        color: var(--secondary-text-color);
+        background: rgba(128, 128, 128, 0.05);
+        font-size: 10px;
+        font-weight: 650;
+        white-space: nowrap;
+      }
+      .presence-chip i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #9ca3af;
+      }
+      .presence-chip.active {
+        border-color: rgba(11, 130, 92, 0.24);
+        color: var(--mmwave-primary);
+        background: var(--mmwave-primary-soft);
+      }
+      .presence-chip.active i {
+        background: var(--mmwave-primary);
+        box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.13);
+      }
+      .presence-chip.filtered i {
+        background: var(--warning-color, #ff9800);
+      }
+      .icon-button {
+        width: 36px;
+        height: 36px;
+        display: inline-grid;
+        place-items: center;
+        flex: none;
+        padding: 0;
+        border: 1px solid var(--mmwave-line);
+        border-radius: var(--mmwave-control-radius);
+        color: var(--secondary-text-color);
+        background: rgba(128, 128, 128, 0.04);
+        cursor: pointer;
+        transition: 0.18s ease;
+      }
+      .icon-button:hover {
+        border-color: rgba(11, 130, 92, 0.35);
+        color: var(--mmwave-primary);
+        background: var(--mmwave-primary-soft);
+      }
+      .icon-button ha-icon {
+        --mdc-icon-size: 20px;
+      }
+      .live-body {
+        padding: 0 12px 12px;
+      }
+      .fusion-playback {
+        margin-top: 10px;
+        padding: 10px;
+        border: 1px solid var(--divider-color);
+        border-radius: 11px;
+        background: rgba(128, 128, 128, 0.035);
+      }
+      .fusion-playback header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 8px;
+        color: var(--primary-text-color);
+        font-size: 10px;
+      }
+      .fusion-playback header span,
+      .fusion-playback p {
+        color: var(--secondary-text-color);
+        font-size: 9px;
+      }
+      .fusion-playback .quality-detail strong {
+        color: var(--primary-text-color);
+      }
+      .fusion-playback .clip-error {
+        color: var(--error-color, #e53935);
+        overflow-wrap: anywhere;
+      }
+      .fusion-playback video,
+      .fusion-playback .fusion-still {
+        display: block;
+        width: 100%;
+        max-height: 360px;
+        border-radius: 8px;
+        background: #000;
+        object-fit: contain;
+      }
+      .workflow-header {
+        justify-content: flex-start;
+        border-bottom: 1px solid var(--mmwave-line);
+        background: linear-gradient(135deg, rgba(11, 130, 92, 0.065), transparent 65%);
+      }
+      .workflow-title {
+        flex: 1;
+      }
       .workflow-steps {
-        gap: 4px;
-        padding-inline: 10px;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--mmwave-line);
       }
       .workflow-step {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 8px;
+        padding: 9px;
+        border: 1px solid transparent;
+        border-radius: 11px;
+        color: var(--secondary-text-color);
+        background: transparent;
+        text-align: left;
+        cursor: pointer;
+        transition: 0.18s ease;
+      }
+      .workflow-step:hover {
+        background: rgba(128, 128, 128, 0.06);
+      }
+      .workflow-step.current {
+        border-color: rgba(11, 130, 92, 0.22);
+        color: var(--mmwave-primary);
+        background: var(--mmwave-primary-soft);
+      }
+      .workflow-step.complete {
+        color: var(--mmwave-primary);
+      }
+      .step-icon {
+        width: 30px;
+        height: 30px;
+        display: grid;
+        place-items: center;
+        flex: none;
+        border-radius: 9px;
+        background: rgba(128, 128, 128, 0.1);
+      }
+      .workflow-step.current .step-icon,
+      .workflow-step.complete .step-icon {
+        color: #fff;
+        background: var(--mmwave-primary);
+      }
+      .step-icon ha-icon {
+        --mdc-icon-size: 17px;
+      }
+      .step-copy {
+        display: flex;
+        min-width: 0;
         flex-direction: column;
-        gap: 4px;
-        text-align: center;
+        gap: 2px;
+      }
+      .step-copy strong {
+        font-size: 11px;
+        font-weight: 700;
       }
       .step-copy small {
-        display: none;
+        overflow: hidden;
+        font-size: 9px;
+        font-weight: 400;
+        line-height: 1.25;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .workflow-body {
-        padding: 12px;
+        min-height: 320px;
+        padding: 16px;
       }
       .workflow-footer {
-        align-items: stretch;
-        padding: 10px 12px 12px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 12px 16px 16px;
+        border-top: 1px solid var(--mmwave-line);
+        background: rgba(128, 128, 128, 0.025);
       }
-      .footer-tools span {
-        display: none;
-      }
+      .footer-tools,
       .footer-actions {
-        margin-left: auto;
+        gap: 7px;
       }
-      .presence-chip {
-        display: none;
+      .text-button,
+      .secondary-button,
+      .primary-button {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 7px 11px;
+        border-radius: var(--mmwave-control-radius);
+        font-size: 11px;
+        font-weight: 650;
+        cursor: pointer;
+        transition: 0.18s ease;
       }
-    }
-  `;
+      .text-button {
+        padding-inline: 7px;
+        border: 1px solid transparent;
+        color: var(--secondary-text-color);
+        background: transparent;
+      }
+      .text-button:hover,
+      .secondary-button:hover {
+        background: rgba(128, 128, 128, 0.08);
+      }
+      .text-button.danger:hover {
+        color: var(--error-color, #ef5350);
+        background: rgba(239, 83, 80, 0.08);
+      }
+      .secondary-button {
+        border: 1px solid var(--mmwave-line);
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+      }
+      .primary-button {
+        border: 1px solid var(--mmwave-primary);
+        color: #fff;
+        background: var(--mmwave-primary);
+        box-shadow: 0 5px 14px rgba(11, 130, 92, 0.2);
+      }
+      .primary-button:hover {
+        filter: brightness(1.06);
+        transform: translateY(-1px);
+      }
+      .primary-button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+        transform: none;
+      }
+      .primary-button.success {
+        border-color: var(--success-color, #43a047);
+        background: var(--success-color, #43a047);
+      }
+      .primary-button.error {
+        border-color: var(--error-color, #e53935);
+        background: var(--error-color, #e53935);
+      }
+      .text-button ha-icon,
+      .secondary-button ha-icon,
+      .primary-button ha-icon {
+        --mdc-icon-size: 17px;
+      }
+      @media (max-width: 520px) {
+        .workflow-steps {
+          gap: 4px;
+          padding-inline: 10px;
+        }
+        .workflow-step {
+          flex-direction: column;
+          gap: 4px;
+          text-align: center;
+        }
+        .step-copy small {
+          display: none;
+        }
+        .workflow-body {
+          padding: 12px;
+        }
+        .workflow-footer {
+          align-items: stretch;
+          padding: 10px 12px 12px;
+        }
+        .footer-tools span {
+          display: none;
+        }
+        .footer-actions {
+          margin-left: auto;
+        }
+        .presence-chip {
+          display: none;
+        }
+      }
+    `,
+    controlStyles,
+  ];
 }
 
 declare global {

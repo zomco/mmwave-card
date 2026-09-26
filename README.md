@@ -122,11 +122,14 @@ integration, traverse clips get a person / pet / false-positive label that the
 event list shows. Yaw calibration and fusion warnings spell out the usual
 90°/180° mistakes; they do not need a model.
 
-The visual editor keeps radar binding, exact installation values, and the
-shared 3-D placement scene in one setup step organized as one tab per radar.
-Only the active radar's form and synchronized 3-D model are shown; adding a
-radar creates and selects a new tab. Joint direction calibration then
-uses the same green, undistorted floor plan as single-radar calibration. Pause in
+Card setup follows **Installation → Room boundary filter → Live test**.
+Installation includes 3-D placement and optional, initially collapsed numeric adjustment
+and direction calibration. Range-only radars hide direction calibration. The second page
+contains polygon boundaries and Area editing for 2-D radars, or minimum/maximum distance
+for range-only radars (without Areas). Live test is for checking the resulting detection.
+Multi-radar installation and boundaries use per-radar tabs. Changes remain drafts until applied.
+
+Joint direction calibration uses the same green, undistorted floor plan as single-radar calibration. Pause in
 at least three widely separated areas and capture three seconds of readings at each.
 Positions are approximate (about a small step from the center); tap empty floor space
 to relocate an uncaptured area when the recommendation is inaccessible. Keep one
@@ -232,3 +235,10 @@ Upload a PNG, JPEG or GIF (under 9 MB) directly in **Floor plan background**. Ho
 Direction calibration places the entire standing circle inside configured room boundaries, with clearance from walls. Manual relocation follows the same rule. Multi-radar guidance uses the union of configured radar boundaries; event zones are not room boundaries. With no polygon, room dimensions apply. Furniture and obstacles absent from the boundary are not detected automatically; move a station to a clear position. Insufficient space is reported instead of adding points outside the boundary.
 
 The radar preview shows compact scene metrics in its bottom-right corner: gestures for LD2450A (`gesture_entity`), and breathing/heart rates for supported models such as LD6002 and R60ABD1 (`breath_entity`, `heart_entity`). Bind these optional sensors in the card editor. Missing, unavailable or non-positive rate readings display “—”.
+
+Shared control styles live in `src/styles/controls.ts` and are included in every panel shadow root. Reuse these tokens for buttons, inputs and disclosures; keep target/area/axis colors semantic. Controls follow HA text and surface colors, including dark themes.
+
+
+Recent events are collapsed by default. Their type/zone/time filters only affect the list, not HA notifications.
+Notifications are controlled by automations under Settings → Automations & scenes: choose the zone, time window and notification service; crossing blueprints also accept a minimum quality score. Dwell duration comes from the fusion zone's `dwell_s`. The test environment's Example notification automations can be disabled individually.
+Floor plan controls are grouped into image source, placement and numeric adjustment. Lock placement after aligning the image to prevent accidental dragging.

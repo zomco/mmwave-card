@@ -14,7 +14,7 @@
     "pitch": "俯仰角",
     "roll": "横滚角",
     "geo_note": "坐标原点为预览图左上角，X 向右，Y 向下（从床头到床尾方向为正）。\n偏航角 = 雷达正前方相对 Y 轴（向下）的夹角，顺时针为正。\nPitch/Roll：水平安装填 0；有倾斜时填实测值或接入 IMU 传感器后自动读取。",
-    "boundary": "房间边界过滤（可选）",
+    "boundary": "边界过滤（可选）",
     "poly_hint_none": "点击画布添加顶点，绘制有效区域（≥ 3 个点）",
     "poly_hint_ok": "边界过滤已启用 — {n} 个顶点",
     "poly_undo": "撤销",
@@ -87,14 +87,19 @@
     "area_n": "区域 {n}"
   },
   "area": {
-    "hint": "站到书桌、床或门口，点「我在这里」——也可以自己在地图上描多边形。",
+    "hint": "先选择区域，再在图中依次点击至少三个点；也可站到目标位置，点“我在这里”快速生成。",
     "stand_here": "我在这里",
     "stand_need_target": "先走进那个位置。雷达要看到目标才能放下区域。",
     "area_n": "区域 {n}",
     "warn_small": "有区域短边小于 {cm} cm，占位可能抖动。",
     "warn_close": "区域质心距离小于 {cm} cm，互斥分配会来回抢。",
     "warn_overlap": "区域有重叠。静止目标会留在上次区域，直到走出迟滞带。",
-    "ok": "区域间距看起来够用。"
+    "ok": "区域间距看起来够用。",
+    "title": "区域占用",
+    "purpose": "分别查看床边、书桌或门口是否有人，不改变有效检测边界。",
+    "empty": "未设置",
+    "drawing": "描绘中 · {n} 个点",
+    "configured": "已设置"
   },
   "actions": {
     "save": "保存",
@@ -258,7 +263,9 @@
     "clear_2": "无人",
     "trajectory_quality": "轨迹质量",
     "no_playable_clip_is_available_yet": "该事件没有可播放片段，或录像仍在生成。",
-    "clip_review": "摄像头复核"
+    "clip_review": "摄像头复核",
+    "boundary": "边界过滤",
+    "boundary_description": "设置有效检测范围和区域"
   },
   "fusion": {
     "filtered": "已过滤",
@@ -326,7 +333,7 @@
     "discard_confirm": "离开后将丢弃尚未应用的安装调整和采集记录。是否离开？",
     "preview_readonly": "请先保存并退出卡片编辑器，再从卡片右上角进入安装校准。",
     "backend_required": "请更新并连接融合后端，再进行多雷达校准。",
-    "use_results": "使用校准结果，进入验证",
+    "use_results": "采用安装调整",
     "verify_hint": "当前使用草稿安装参数进行临时融合预览。请单人在房间内行走，检查目标是否合并和轨迹是否连续；确认后点击“应用并同步”。此预览不会保存轨迹或触发录像，运行中的后端继续使用原参数。",
     "preview_status": "校准草稿预览",
     "saving": "正在应用…",
@@ -492,7 +499,10 @@
     "trace": "沿墙吸附",
     "trace_hint": "依次点击墙角附近描边，可撤销重选。",
     "trace_snapped": "已吸附到图中轮廓",
-    "trace_unavailable": "请上传图片以使用吸附；仍可手动描边。"
+    "trace_unavailable": "请上传图片以使用吸附；仍可手动描边。",
+    "source_section": "图片来源",
+    "placement_section": "图片定位",
+    "adjust_section": "数值调整"
   },
   "metrics": {
     "heart": "心率",

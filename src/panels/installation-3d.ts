@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { drawFloorplan } from '../utils/floorplan';
 import type { FloorplanConfig } from '../types';
 import { LitElement, html, css } from 'lit';
@@ -650,81 +651,84 @@ export class Installation3D extends LitElement {
     return html`<span><i style="background:${HANDLE_COLORS[mode]}"></i>${label}</span>`;
   }
 
-  static styles = css`
-    :host {
-      display: block;
-    }
-    .scene-shell {
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
-      border-radius: 12px;
-      background:
-        radial-gradient(circle at 50% 25%, rgba(3, 169, 244, 0.08), transparent 48%),
-        var(--ha-card-background, var(--card-background-color, #fff));
-    }
-    canvas {
-      display: block;
-      width: 100%;
-      touch-action: none;
-      user-select: none;
-    }
-    .values {
-      position: absolute;
-      top: 8px;
-      left: 8px;
-      right: 8px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-      pointer-events: none;
-    }
-    .values span {
-      padding: 3px 7px;
-      border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.18));
-      border-radius: 10px;
-      background: color-mix(in srgb, var(--card-background-color, #fff) 82%, transparent);
-      color: var(--secondary-text-color);
-      font: 600 10px/1.2 system-ui;
-      backdrop-filter: blur(5px);
-    }
-    .values .coverage {
-      border-color: color-mix(in srgb, var(--primary-color, #0b825c) 35%, transparent);
-      color: var(--primary-color, #0b825c);
-    }
-    .hint {
-      margin: 7px 2px 5px;
-      color: var(--secondary-text-color);
-      font-size: 11px;
-      text-align: center;
-    }
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 5px 12px;
-      margin-bottom: 10px;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-    }
-    .legend span {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .legend i {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      box-shadow: 0 0 5px currentColor;
-    }
-    .legend .beam-key i {
-      width: 13px;
-      border-radius: 2px 7px 7px 2px;
-      background: linear-gradient(90deg, rgba(11, 130, 92, 0.28), rgba(3, 169, 244, 0.7));
-      box-shadow: none;
-    }
-  `;
+  static styles = [
+    css`
+      :host {
+        display: block;
+      }
+      .scene-shell {
+        position: relative;
+        overflow: hidden;
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.2));
+        border-radius: 12px;
+        background:
+          radial-gradient(circle at 50% 25%, rgba(3, 169, 244, 0.08), transparent 48%),
+          var(--ha-card-background, var(--card-background-color, #fff));
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        touch-action: none;
+        user-select: none;
+      }
+      .values {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        right: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        pointer-events: none;
+      }
+      .values span {
+        padding: 3px 7px;
+        border: 1px solid var(--divider-color, rgba(128, 128, 128, 0.18));
+        border-radius: 10px;
+        background: color-mix(in srgb, var(--card-background-color, #fff) 82%, transparent);
+        color: var(--secondary-text-color);
+        font: 600 10px/1.2 system-ui;
+        backdrop-filter: blur(5px);
+      }
+      .values .coverage {
+        border-color: color-mix(in srgb, var(--primary-color, var(--mmwave-accent)) 35%, transparent);
+        color: var(--primary-color, var(--mmwave-accent));
+      }
+      .hint {
+        margin: 7px 2px 5px;
+        color: var(--secondary-text-color);
+        font-size: 11px;
+        text-align: center;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 5px 12px;
+        margin-bottom: 10px;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+      }
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .legend i {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        box-shadow: 0 0 5px currentColor;
+      }
+      .legend .beam-key i {
+        width: 13px;
+        border-radius: 2px 7px 7px 2px;
+        background: linear-gradient(90deg, rgba(11, 130, 92, 0.28), rgba(3, 169, 244, 0.7));
+        box-shadow: none;
+      }
+    `,
+    controlStyles,
+  ];
 }
 
 declare global {

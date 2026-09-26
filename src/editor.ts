@@ -1,3 +1,4 @@
+import { controlStyles } from './styles/controls';
 import './panels/floorplan-editor';
 import type { FloorplanConfig } from './types';
 import { LitElement, html, css, nothing } from 'lit';
@@ -1108,470 +1109,473 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     </div>`;
   }
 
-  static styles = css`
-    :host {
-      --mmwave-primary: #0b825c;
-      --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
-      display: block;
-      max-width: 100%;
-      overflow-x: hidden;
-    }
-    .card-config {
-      box-sizing: border-box;
-      max-width: 100%;
-      min-width: 0;
-      padding: 4px 2px 12px;
-    }
-    .mode-switch {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4px;
-      margin: 10px 0 2px;
-      padding: 4px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 10px;
-      background: rgba(128, 128, 128, 0.045);
-    }
-    .mode-switch button,
-    .add-button,
-    .remove-button {
-      border: 0;
-      border-radius: 7px;
-      color: var(--secondary-text-color);
-      background: transparent;
-      font-size: 10px;
-      cursor: pointer;
-    }
-    .mode-switch button {
-      padding: 7px;
-    }
-    .mode-switch button.active {
-      color: #fff;
-      background: var(--mmwave-primary);
-      font-weight: 700;
-    }
-    .check-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-top: 9px;
-      padding: 9px 10px;
-      border-radius: 9px;
-      color: var(--secondary-text-color);
-      background: rgba(128, 128, 128, 0.045);
-      font-size: 10px;
-    }
-    .check-row input {
-      accent-color: var(--mmwave-primary);
-    }
-    .camera-card {
-      display: grid;
-      gap: 8px;
-      margin: 8px 0;
-      padding: 10px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 12px;
-    }
-    .checks {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-    }
-    .camera-card .check-row {
-      margin-top: 0;
-      padding: 6px 8px;
-    }
-    .radar-workspace,
-    .radar-tab-panel {
-      min-width: 0;
-    }
-    .radar-tabs {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 8px;
-    }
-    .radar-tabs button {
-      display: grid;
-      flex: 0 0 auto;
-      gap: 1px;
-      min-width: 78px;
-      padding: 7px 10px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 9px;
-      color: var(--primary-text-color);
-      background: rgba(128, 128, 128, 0.035);
-      font: inherit;
-      font-size: 10px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .radar-tabs button.active {
-      border-color: rgba(11, 130, 92, 0.5);
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.08);
-      box-shadow: inset 0 -2px 0 var(--mmwave-primary);
-    }
-    .radar-tabs small {
-      color: var(--secondary-text-color);
-      font-size: 8px;
-      font-weight: 500;
-    }
-    .radar-tabs .add-radar-tab {
-      grid-auto-flow: column;
-      place-content: center;
-      align-items: center;
-      min-width: max-content;
-      border-style: dashed;
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.05);
-    }
-    .add-radar-tab b {
-      font-size: 14px;
-    }
-    .radar-editor {
-      box-sizing: border-box;
-      max-width: 100%;
-      min-width: 0;
-      overflow: hidden;
-      padding: 10px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 12px;
-      background: rgba(128, 128, 128, 0.025);
-    }
-    .radar-editor > header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 8px;
-      color: var(--primary-text-color);
-      font-size: 11px;
-    }
-    .radar-editor > header > span {
-      display: grid;
-      gap: 2px;
-      min-width: 0;
-    }
-    .radar-editor > header small {
-      overflow: hidden;
-      color: var(--secondary-text-color);
-      font-size: 8px;
-      font-weight: 500;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .remove-button {
-      width: 24px;
-      height: 24px;
-      color: var(--error-color, #e53935);
-      background: rgba(229, 57, 53, 0.08);
-      font-size: 16px;
-    }
-    .remove-button:disabled {
-      opacity: 0.35;
-      cursor: default;
-    }
-    .two-col,
-    .cal-grid,
-    .rules-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
-      min-width: 0;
-    }
-    .cal-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .radar-editor .field {
-      margin-bottom: 7px;
-    }
-    .profile-field {
-      position: relative;
-    }
-    .profile-badge {
-      flex: none;
-      padding: 3px 6px;
-      border-radius: 999px;
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.08);
-      font-size: 8px;
-      white-space: nowrap;
-    }
-    .profile-status {
-      margin-top: 7px;
-      padding: 8px 10px;
-      border-radius: 8px;
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.07);
-      font-size: 10px;
-    }
-    .installation-subsection {
-      display: grid;
-      gap: 3px;
-      margin: 14px 0 8px;
-      padding-top: 12px;
-      border-top: 1px solid var(--mmwave-line);
-    }
-    .installation-subsection strong {
-      color: var(--primary-text-color);
-      font-size: 12px;
-    }
-    .installation-subsection span {
-      color: var(--secondary-text-color);
-      font-size: 10px;
-      line-height: 1.5;
-    }
-    mmwave-installation-3d,
-    mmwave-fusion-calibration {
-      display: block;
-      max-width: 100%;
-      min-width: 0;
-    }
-    .json-field {
-      display: grid;
-      gap: 5px;
-      margin-bottom: 9px;
-    }
-    .json-field label {
-      color: var(--primary-text-color);
-      font-size: 10px;
-      font-weight: 700;
-    }
-    .json-field textarea {
-      box-sizing: border-box;
-      width: 100%;
-      padding: 8px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 9px;
-      color: var(--primary-text-color);
-      background: var(--card-background-color, #fff);
-      font:
-        9px ui-monospace,
-        monospace;
-      resize: vertical;
-    }
-    .json-error {
-      padding: 7px 9px;
-      border-radius: 8px;
-      color: var(--error-color, #e53935);
-      background: rgba(229, 57, 53, 0.08);
-      font-size: 9px;
-    }
-    .test-hint {
-      display: grid;
-      gap: 4px;
-      margin-top: 9px;
-      padding: 10px 12px;
-      border-left: 3px solid var(--mmwave-primary);
-      border-radius: 8px;
-      color: var(--secondary-text-color);
-      background: rgba(11, 130, 92, 0.065);
-      font-size: 10px;
-      line-height: 1.5;
-    }
-    .test-hint strong {
-      color: var(--primary-text-color);
-      font-size: 11px;
-    }
-    .editor-hero {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      padding: 12px;
-      border: 1px solid rgba(11, 130, 92, 0.2);
-      border-radius: 12px;
-      background: linear-gradient(135deg, rgba(11, 130, 92, 0.1), rgba(3, 169, 244, 0.04));
-    }
-    .hero-icon {
-      width: 32px;
-      height: 32px;
-      display: grid;
-      place-items: center;
-      flex: none;
-      border-radius: 10px;
-      color: #fff;
-      background: var(--mmwave-primary);
-      font-size: 18px;
-    }
-    .editor-hero strong {
-      color: var(--primary-text-color);
-      font-size: 13px;
-    }
-    .editor-hero p,
-    .section-help {
-      margin: 3px 0 0;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-      line-height: 1.5;
-    }
-    h3 {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin: 18px 0 8px;
-      color: var(--primary-text-color);
-      font-size: 12px;
-      font-weight: 700;
-    }
-    h3 span {
-      width: 20px;
-      height: 20px;
-      display: grid;
-      place-items: center;
-      border-radius: 7px;
-      color: #fff;
-      background: var(--mmwave-primary);
-      font-size: 10px;
-    }
-    .section-help {
-      margin: -3px 0 9px 27px;
-    }
-    .field {
-      box-sizing: border-box;
-      display: flex;
-      max-width: 100%;
-      min-width: 0;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
-      padding: 9px 10px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 10px;
-      background: rgba(128, 128, 128, 0.035);
-      transition: 0.18s ease;
-    }
-    .field:focus-within {
-      border-color: rgba(11, 130, 92, 0.45);
-      box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.07);
-    }
-    .field label {
-      min-width: 130px;
-      color: var(--primary-text-color);
-      font-size: 11px;
-      font-weight: 600;
-    }
-    .field ha-entity-picker,
-    .field select,
-    .field input {
-      box-sizing: border-box;
-      flex: 1;
-      max-width: 100%;
-      min-width: 0;
-    }
-    .field select,
-    .field input {
-      min-width: 0;
-      padding: 7px 8px;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 8px;
-      background: var(--card-background-color, #fff);
-      color: var(--primary-text-color);
-      font-size: 11px;
-      outline: none;
-    }
-    .match-status {
-      display: flex;
-      align-items: center;
-      gap: 7px;
-      margin: 3px 0 10px;
-      padding: 8px 10px;
-      border-radius: 9px;
-      color: var(--secondary-text-color);
-      background: rgba(128, 128, 128, 0.06);
-      font-size: 10px;
-    }
-    .match-status > span {
-      width: 18px;
-      height: 18px;
-      display: grid;
-      place-items: center;
-      flex: none;
-      border-radius: 50%;
-      color: #fff;
-      background: #9ca3af;
-      font-weight: 750;
-    }
-    .match-status.success {
-      color: var(--mmwave-primary);
-      background: rgba(11, 130, 92, 0.08);
-    }
-    .match-status.success > span {
-      background: var(--mmwave-primary);
-    }
-    .match-status.error {
-      color: var(--error-color, #e53935);
-      background: rgba(229, 57, 53, 0.07);
-    }
-    .match-status.error > span {
-      background: var(--error-color, #e53935);
-    }
-    .room-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      min-width: 0;
-    }
-    .room-grid .field {
-      margin: 0;
-    }
-    .field.compact {
-      align-items: stretch;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .field.compact label {
-      min-width: 0;
-    }
-    .advanced {
-      margin-top: 16px;
-      overflow: hidden;
-      border: 1px solid var(--mmwave-line);
-      border-radius: 11px;
-      background: rgba(128, 128, 128, 0.025);
-    }
-    .advanced summary {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      padding: 10px 12px;
-      color: var(--secondary-text-color);
-      font-size: 10px;
-      font-weight: 650;
-      cursor: pointer;
-    }
-    .advanced summary small {
-      padding: 2px 6px;
-      border-radius: 999px;
-      background: rgba(128, 128, 128, 0.09);
-      font-size: 8px;
-    }
-    .advanced-fields {
-      padding: 0 7px 7px;
-    }
-    @media (max-width: 500px) {
-      .field:not(.compact) {
+  static styles = [
+    css`
+      :host {
+        --mmwave-primary: #0b825c;
+        --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
+        display: block;
+        max-width: 100%;
+        overflow-x: hidden;
+      }
+      .card-config {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+        padding: 4px 2px 12px;
+      }
+      .mode-switch {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px;
+        margin: 10px 0 2px;
+        padding: 4px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 10px;
+        background: rgba(128, 128, 128, 0.045);
+      }
+      .mode-switch button,
+      .add-button,
+      .remove-button {
+        border: 0;
+        border-radius: var(--mmwave-control-radius);
+        color: var(--secondary-text-color);
+        background: transparent;
+        font-size: 10px;
+        cursor: pointer;
+      }
+      .mode-switch button {
+        padding: 7px;
+      }
+      .mode-switch button.active {
+        color: #fff;
+        background: var(--mmwave-primary);
+        font-weight: 700;
+      }
+      .check-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 9px;
+        padding: 9px 10px;
+        border-radius: 9px;
+        color: var(--secondary-text-color);
+        background: rgba(128, 128, 128, 0.045);
+        font-size: 10px;
+      }
+      .check-row input {
+        accent-color: var(--mmwave-primary);
+      }
+      .camera-card {
+        display: grid;
+        gap: 8px;
+        margin: 8px 0;
+        padding: 10px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 12px;
+      }
+      .checks {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+      }
+      .camera-card .check-row {
+        margin-top: 0;
+        padding: 6px 8px;
+      }
+      .radar-workspace,
+      .radar-tab-panel {
+        min-width: 0;
+      }
+      .radar-tabs {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+      .radar-tabs button {
+        display: grid;
+        flex: 0 0 auto;
+        gap: 1px;
+        min-width: 78px;
+        padding: 7px 10px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: var(--mmwave-control-radius);
+        color: var(--primary-text-color);
+        background: rgba(128, 128, 128, 0.035);
+        font: inherit;
+        font-size: 10px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .radar-tabs button.active {
+        border-color: rgba(11, 130, 92, 0.5);
+        color: var(--mmwave-primary);
+        background: rgba(11, 130, 92, 0.08);
+        box-shadow: inset 0 -2px 0 var(--mmwave-primary);
+      }
+      .radar-tabs small {
+        color: var(--secondary-text-color);
+        font-size: 8px;
+        font-weight: 500;
+      }
+      .radar-tabs .add-radar-tab {
+        grid-auto-flow: column;
+        place-content: center;
+        align-items: center;
+        min-width: max-content;
+        border-style: dashed;
+        color: var(--mmwave-primary);
+        background: rgba(11, 130, 92, 0.05);
+      }
+      .add-radar-tab b {
+        font-size: 14px;
+      }
+      .radar-editor {
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+        overflow: hidden;
+        padding: 10px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 12px;
+        background: rgba(128, 128, 128, 0.025);
+      }
+      .radar-editor > header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: var(--primary-text-color);
+        font-size: 11px;
+      }
+      .radar-editor > header > span {
+        display: grid;
+        gap: 2px;
+        min-width: 0;
+      }
+      .radar-editor > header small {
+        overflow: hidden;
+        color: var(--secondary-text-color);
+        font-size: 8px;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .remove-button {
+        width: 24px;
+        height: 24px;
+        color: var(--error-color, #e53935);
+        background: rgba(229, 57, 53, 0.08);
+        font-size: 16px;
+      }
+      .remove-button:disabled {
+        opacity: 0.35;
+        cursor: default;
+      }
+      .two-col,
+      .cal-grid,
+      .rules-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 7px;
+        min-width: 0;
+      }
+      .cal-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .radar-editor .field {
+        margin-bottom: 7px;
+      }
+      .profile-field {
+        position: relative;
+      }
+      .profile-badge {
+        flex: none;
+        padding: 3px 6px;
+        border-radius: 999px;
+        color: var(--mmwave-primary);
+        background: rgba(11, 130, 92, 0.08);
+        font-size: 8px;
+        white-space: nowrap;
+      }
+      .profile-status {
+        margin-top: 7px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        color: var(--mmwave-primary);
+        background: rgba(11, 130, 92, 0.07);
+        font-size: 10px;
+      }
+      .installation-subsection {
+        display: grid;
+        gap: 3px;
+        margin: 14px 0 8px;
+        padding-top: 12px;
+        border-top: 1px solid var(--mmwave-line);
+      }
+      .installation-subsection strong {
+        color: var(--primary-text-color);
+        font-size: 12px;
+      }
+      .installation-subsection span {
+        color: var(--secondary-text-color);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      mmwave-installation-3d,
+      mmwave-fusion-calibration {
+        display: block;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .json-field {
+        display: grid;
+        gap: 5px;
+        margin-bottom: 9px;
+      }
+      .json-field label {
+        color: var(--primary-text-color);
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .json-field textarea {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 8px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 9px;
+        color: var(--primary-text-color);
+        background: var(--card-background-color, #fff);
+        font:
+          9px ui-monospace,
+          monospace;
+        resize: vertical;
+      }
+      .json-error {
+        padding: 7px 9px;
+        border-radius: 8px;
+        color: var(--error-color, #e53935);
+        background: rgba(229, 57, 53, 0.08);
+        font-size: 9px;
+      }
+      .test-hint {
+        display: grid;
+        gap: 4px;
+        margin-top: 9px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--mmwave-primary);
+        border-radius: 8px;
+        color: var(--secondary-text-color);
+        background: rgba(11, 130, 92, 0.065);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      .test-hint strong {
+        color: var(--primary-text-color);
+        font-size: 11px;
+      }
+      .editor-hero {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid rgba(11, 130, 92, 0.2);
+        border-radius: 12px;
+        background: linear-gradient(135deg, rgba(11, 130, 92, 0.1), rgba(3, 169, 244, 0.04));
+      }
+      .hero-icon {
+        width: 32px;
+        height: 32px;
+        display: grid;
+        place-items: center;
+        flex: none;
+        border-radius: 10px;
+        color: #fff;
+        background: var(--mmwave-primary);
+        font-size: 18px;
+      }
+      .editor-hero strong {
+        color: var(--primary-text-color);
+        font-size: 13px;
+      }
+      .editor-hero p,
+      .section-help {
+        margin: 3px 0 0;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      h3 {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 18px 0 8px;
+        color: var(--primary-text-color);
+        font-size: 12px;
+        font-weight: 700;
+      }
+      h3 span {
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        border-radius: 7px;
+        color: #fff;
+        background: var(--mmwave-primary);
+        font-size: 10px;
+      }
+      .section-help {
+        margin: -3px 0 9px 27px;
+      }
+      .field {
+        box-sizing: border-box;
+        display: flex;
+        max-width: 100%;
+        min-width: 0;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 8px;
+        padding: 9px 10px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 10px;
+        background: rgba(128, 128, 128, 0.035);
+        transition: 0.18s ease;
+      }
+      .field:focus-within {
+        border-color: rgba(11, 130, 92, 0.45);
+        box-shadow: 0 0 0 3px rgba(11, 130, 92, 0.07);
+      }
+      .field label {
+        min-width: 130px;
+        color: var(--primary-text-color);
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .field ha-entity-picker,
+      .field select,
+      .field input {
+        box-sizing: border-box;
+        flex: 1;
+        max-width: 100%;
+        min-width: 0;
+      }
+      .field select,
+      .field input {
+        min-width: 0;
+        padding: 7px 8px;
+        border: 1px solid var(--mmwave-line);
+        border-radius: var(--mmwave-control-radius);
+        background: var(--card-background-color, #fff);
+        color: var(--primary-text-color);
+        font-size: 11px;
+        outline: none;
+      }
+      .match-status {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        margin: 3px 0 10px;
+        padding: 8px 10px;
+        border-radius: 9px;
+        color: var(--secondary-text-color);
+        background: rgba(128, 128, 128, 0.06);
+        font-size: 10px;
+      }
+      .match-status > span {
+        width: 18px;
+        height: 18px;
+        display: grid;
+        place-items: center;
+        flex: none;
+        border-radius: 50%;
+        color: #fff;
+        background: #9ca3af;
+        font-weight: 750;
+      }
+      .match-status.success {
+        color: var(--mmwave-primary);
+        background: rgba(11, 130, 92, 0.08);
+      }
+      .match-status.success > span {
+        background: var(--mmwave-primary);
+      }
+      .match-status.error {
+        color: var(--error-color, #e53935);
+        background: rgba(229, 57, 53, 0.07);
+      }
+      .match-status.error > span {
+        background: var(--error-color, #e53935);
+      }
+      .room-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        min-width: 0;
+      }
+      .room-grid .field {
+        margin: 0;
+      }
+      .field.compact {
         align-items: stretch;
         flex-direction: column;
         gap: 6px;
       }
-      .field label {
+      .field.compact label {
         min-width: 0;
       }
-      .room-grid {
-        grid-template-columns: 1fr;
+      .advanced {
+        margin-top: 16px;
+        overflow: hidden;
+        border: 1px solid var(--mmwave-line);
+        border-radius: 11px;
+        background: rgba(128, 128, 128, 0.025);
       }
-      .cal-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .advanced summary {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 12px;
+        color: var(--secondary-text-color);
+        font-size: 10px;
+        font-weight: 650;
+        cursor: pointer;
       }
-      .rules-grid {
-        grid-template-columns: 1fr;
+      .advanced summary small {
+        padding: 2px 6px;
+        border-radius: 999px;
+        background: rgba(128, 128, 128, 0.09);
+        font-size: 8px;
       }
-    }
-  `;
+      .advanced-fields {
+        padding: 0 7px 7px;
+      }
+      @media (max-width: 500px) {
+        .field:not(.compact) {
+          align-items: stretch;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .field label {
+          min-width: 0;
+        }
+        .room-grid {
+          grid-template-columns: 1fr;
+        }
+        .cal-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .rules-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    `,
+    controlStyles,
+  ];
 }
 
 declare global {

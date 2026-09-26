@@ -1,3 +1,4 @@
+import { controlStyles } from '../styles/controls';
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import type { CalibrationConfig } from '../types';
@@ -27,17 +28,20 @@ export class RangeStatus extends LitElement {
       <p>${t(tunable ? 'noise_preserved' : 'noise_unknown')}</p>
     </div>`;
   }
-  static styles = css`
-    :host {
-      display: block;
-      color: var(--secondary-text-color);
-      font-size: 11px;
-    }
-    p {
-      margin: 5px 0;
-    }
-    .warning {
-      color: var(--warning-color, #b26a00);
-    }
-  `;
+  static styles = [
+    css`
+      :host {
+        display: block;
+        color: var(--secondary-text-color);
+        font-size: 11px;
+      }
+      p {
+        margin: 5px 0;
+      }
+      .warning {
+        color: var(--warning-color, #b26a00);
+      }
+    `,
+    controlStyles,
+  ];
 }
