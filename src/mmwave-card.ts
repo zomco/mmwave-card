@@ -44,6 +44,7 @@ import {
   type Vec2,
   DEFAULT_CARD_CONFIG,
 } from './types';
+import { resolveDevicePrefix } from './utils/device-prefix';
 import { CARD_TAG, EDITOR_TAG, CARD_VERSION, CARD_BUILD, REQUIRED_FUSION_API_VERSION } from './const';
 
 // Sub-elements (register them)
@@ -863,22 +864,7 @@ export class MMWaveCard extends LitElement {
    * `dev_target_1`.
    */
   private _devicePrefix(): string {
-    if (this._adapter.info.is1DRanging) {
-      const entity = this._config.presence_entity as string | undefined;
-      const match = entity?.match(/^binary_sensor\.(.+)_presence$/);
-      if (match) return match[1];
-    }
-    const xEntity = (this._config?.x_entity as string) || '';
-    if (xEntity) {
-      const match = xEntity.match(/^sensor\.(.+?)(_radar_x|_x)$/);
-      if (match) return match[1];
-      const parts = xEntity.split('.')[1]?.split('_') || [];
-      return parts.slice(0, parts.length - 1).join('_');
-    }
-
-    const targetEntity = (this._config?.target_1_x_entity as string) || '';
-    const targetMatch = targetEntity.match(/^sensor\.(.+?)_target_\d+_x$/);
-    return targetMatch ? targetMatch[1] : '';
+    return resolveDevicePrefix(this._adapter, this._config);
   }
 
   private _loadFromDevice() {
@@ -891,7 +877,10 @@ export class MMWaveCard extends LitElement {
 
     // Read numbers
     for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
-      const stateObj = this._hass.states[`number.${prefix}_${suffix}`];
+      let stateObj = this._hass.states[`number.${prefix}_${suffix}`];
+      if (!stateObj) {
+        stateObj = this._hass.states[`number.${prefix}_${key}`];
+      }
       if (stateObj && stateObj.state && !isNaN(Number(stateObj.state))) {
         cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX] = Number(stateObj.state);
       }
@@ -907,7 +896,15 @@ export class MMWaveCard extends LitElement {
       cal.polygon = [];
     }
     // Read polygon
-    const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
+    const rawPoly = this._config.polygon_entity as string | undefined;
+    const isStaleR60Poly = prefix !== 'r60abd1' && rawPoly === 'text.r60abd1_polygon_config';
+    let polyEntity = !rawPoly || isStaleR60Poly ? `text.${prefix}_zone_polygon` : rawPoly;
+    if (
+      this._hass.states[polyEntity] === undefined &&
+      this._hass.states[`text.${prefix}_polygon_config`] !== undefined
+    ) {
+      polyEntity = `text.${prefix}_polygon_config`;
+    }
     const polyObj = this._adapter.info.is1DRanging ? undefined : this._hass.states[polyEntity];
     if (polyObj && polyObj.state) {
       const s = polyObj.state;
@@ -988,7 +985,10 @@ export class MMWaveCard extends LitElement {
 
       for (const [key, suffix] of Object.entries(CALIBRATION_ENTITY_SUFFIX)) {
         const val = this._cal[key as keyof typeof CALIBRATION_ENTITY_SUFFIX];
-        const entityId = `number.${prefix}_${suffix}`;
+        let entityId = `number.${prefix}_${suffix}`;
+        if (this._hass.states[entityId] === undefined && this._hass.states[`number.${prefix}_${key}`] !== undefined) {
+          entityId = `number.${prefix}_${key}`;
+        }
 
         // An entity that does not exist is the failure mode that matters:
         // set_value against an unknown entity_id does not reject, so without
@@ -1028,7 +1028,15 @@ export class MMWaveCard extends LitElement {
         }
       }
       const polyStr = this._cal.polygon.map((p) => `${p.x},${p.y}`).join(';');
-      const polyEntity = this._config.polygon_entity || `text.${prefix}_zone_polygon`;
+      const rawPoly = this._config.polygon_entity as string | undefined;
+      const isStaleR60Poly = prefix !== 'r60abd1' && rawPoly === 'text.r60abd1_polygon_config';
+      let polyEntity = !rawPoly || isStaleR60Poly ? `text.${prefix}_zone_polygon` : rawPoly;
+      if (
+        this._hass.states[polyEntity] === undefined &&
+        this._hass.states[`text.${prefix}_polygon_config`] !== undefined
+      ) {
+        polyEntity = `text.${prefix}_polygon_config`;
+      }
       if (!this._adapter.info.is1DRanging && this._hass.states[polyEntity] !== undefined) {
         try {
           await this._hass.callService('text', 'set_value', {
