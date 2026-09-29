@@ -6,9 +6,31 @@ on:
   push:
     branches:
       - main
+    paths-ignore: &card-ignore
+      - 'docs/**'
+      - 'tests/**'
+      - 'assets/**'
+      - '.devcontainer/**'
+      - '.vscode/**'
+      - 'README.md'
+      - 'README_CN.md'
+      - 'DIY.md'
+      - 'DIY_CN.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'LICENSE'
+      - 'lovelace-example.yaml'
+      - 'lovelace-fusion-example.yaml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/FUNDING.yml'
   pull_request:
     branches:
       - main
+    paths-ignore: *card-ignore
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

@@ -2,10 +2,33 @@ name: Validate
 
 on:
   push:
+    branches: [main]
+    paths-ignore: &hacs-ignore
+      - 'docs/**'
+      - 'tests/**'
+      - 'assets/**'
+      - '.devcontainer/**'
+      - '.vscode/**'
+      - 'DIY.md'
+      - 'DIY_CN.md'
+      - 'AGENTS.md'
+      - 'CLAUDE.md'
+      - 'lovelace-example.yaml'
+      - 'lovelace-fusion-example.yaml'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/FUNDING.yml'
   pull_request:
+    branches: [main]
+    paths-ignore: *hacs-ignore
   schedule:
     - cron: "0 0 * * *"   # daily check at midnight UTC
   workflow_dispatch:
+
+# Nightly and manual runs ignore paths. A superseded push should not keep a
+# HACS check queued behind one nobody will read.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions: {}
 
