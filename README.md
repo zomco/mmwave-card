@@ -9,236 +9,91 @@
 
 [中文文档](./README_CN.md)
 
-Calibration and live visualization card for millimetre-wave radars in
-[Home Assistant](https://www.home-assistant.io/). Supports 16 radar models.
-
-## What this is
-
-A top-down map of your room showing where people actually are, plus the tools
-to make that map correct — you tell the card where the radar is mounted and
-which way it points, draw the room boundary, and it turns raw radar output into
-real room coordinates.
-
-This card is also the **only user interface** for the project. Calibration
-happens here; the ESPHome firmware and the fusion integration ship no UI of
-their own.
-
-For range-only radars, target trails, range arcs and metre labels share the radar boresight and the room map projection. When the preview is stretched, range circles appear elliptical so they still match room coordinates.
+The only user interface for these radars in Home Assistant. It shows a top-down room map, and it is where you say where the radar is mounted, which way it points, and where the room ends. Firmware and the fusion integration ship no UI of their own.
 
 <img src="./assets/screenshot-live.gif" alt="Live view panel" width="600">
 
-_(Tab ① — Geometry & Boundary | Tab ② — Yaw Calibration | Tab ③ — Live View)_
-
----
-
 ## Quick start
 
-### 1. Install via HACS
+Firmware not flashed yet? Start at [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md). If the device is already in Home Assistant:
 
-[![Open your Home Assistant instance and open a repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zomco&repository=mmwave-card&category=plugin)
+1. Install via HACS as a **Lovelace** plugin, then restart Home Assistant.
 
-Or: **HACS → Frontend → ⋮ → Custom repositories** → add this repo URL →
-category **Lovelace**. Restart Home Assistant afterwards.
+   [![Open your Home Assistant instance and open a repository inside HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=zomco&repository=mmwave-card&category=plugin)
 
-### 2. Add it to a dashboard
+2. Edit a dashboard, **Add Card**, search **MMWave Radar Card**. Pick the model. The editor lists the entities that model needs. No YAML required.
+3. Calibrate in order. This is the step that makes the coordinates mean anything.
 
-Edit any dashboard, **Add Card**, search for **MMWave Radar Card**. Pick your
-model from the drop-down and the editor shows one picker per entity that model
-needs, filtered to plausible candidates. **No YAML required.**
+| Tab | Do this | Why |
+| --- | --- | --- |
+| ① Geometry & boundary | Enter the radar's position and draw the room | Targets outside the outline stop driving presence |
+| ② Yaw | Pause in at least three guided areas | Solves which way the radar faces |
+| ③ Live view | Walk and watch the dot | Checks the other two |
 
-### 3. Calibrate
+A mirrored dot is yaw 180° out. A dot moving at right angles to you is 90° out. Redo tab ②. Do not nudge the number by hand. 1D radars hide direction calibration and use a min/max distance instead of a room polygon.
 
-Work through the three tabs in order — this is the step that makes the
-coordinates mean anything, and the step people skip:
-
-| Tab                   | What you do                                                                | Why                                                                                    |
-| --------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| ① Geometry & Boundary | Enter where the radar is (cm from a room corner) and drag the room outline | Targets outside the outline stop driving presence — this is the through-wall ghost fix |
-| ② Yaw Calibration     | Pause in at least three guided areas, roughly near each center                         | Solves which way the radar faces                                                       |
-| ③ Live View           | Walk around and watch the dot                                              | Verifies the other two                                                                 |
-
-A mirrored dot means yaw is 180° out; a dot moving at right angles to you means
-90° out. Redo Tab ② rather than nudging the number by hand.
-
-> **Don't have the firmware flashed yet?** The full journey — wiring, browser
-> flashing, then this card — is in
-> [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md).
-
----
-
-## Supported models
-
-Sixteen adapters are registered. Range-only models report distance without
-direction, so they render as an arc rather than a point and cannot take part in
-multi-radar fusion.
-
-| Model                                           | Freq   | Targets | Range | FOV  | Z axis | Breathing | Heart rate | Sleep | Fusion |
-| ----------------------------------------------- | ------ | ------- | ----- | ---- | ------ | --------- | ---------- | ----- | ------ |
-| [MicRadar R60ABD1](https://www.micradar.cn/)    | 60 GHz | 1       | 2.5 m | 40°  | ✅     | ✅        | ✅         | ✅    | ✅     |
-| [Hi-Link LD2450](https://www.hlktech.net/)      | 24 GHz | 3       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
-| Hi-Link LD2451                                  | 24 GHz | 3       | 100 m | 30°  | ❌     | ❌        | ❌         | ❌    | ✅     |
-| Hi-Link LD2452                                  | 24 GHz | 3       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
-| Hi-Link LD2453                                  | 24 GHz | 3       | 6 m   | 80°  | ❌     | ❌        | ❌         | ❌    | ✅     |
-| Hi-Link LD2454                                  | 24 GHz | 3       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ✅     |
-| Hi-Link LD6002                                  | 60 GHz | 1       | 6 m   | 120° | ❌     | ✅        | ✅         | ❌    | ❌     |
-| Hi-Link LD2410                                  | 24 GHz | 1       | 8 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2410B                                 | 24 GHz | 1       | 6 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2410C                                 | 24 GHz | 1       | 8 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2411                                  | 24 GHz | 1       | 6 m   | 40°  | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2411S                                 | 24 GHz | 1       | 6 m   | 45°  | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2412                                  | 24 GHz | 1       | 9 m   | 150° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2420                                  | 24 GHz | 1       | 8 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| Hi-Link LD2450A                                 | 24 GHz | 1       | 2 m   | 120° | ❌     | ❌        | ❌         | ❌    | ❌     |
-| [Ai-Thinker RD03E](https://www.ai-thinker.com/) | 24 GHz | 1       | 6 m   | 40°  | ❌     | ❌        | ❌         | ❌    | ❌     |
-
-Per-model YAML reference lives in `docs/<model>/README.md`.
-
-Adding a model takes one new file plus one registry line — see
-[Adding a New Model](./DIY.md#adding-a-new-model) in the DIY guide.
-
----
-
-## Multi-radar fusion (optional, experimental)
-
-**Single-radar use needs nothing beyond this card.**
-
-Covering one space with several radars, and wanting persisted trajectories,
-zone events and camera recording, additionally needs the
-**[mmwave-fusion](https://github.com/zomco/mmwave-fusion)** integration — a
-separate HACS entry under the **integration** category.
-
-Without it the card still renders a fused view, but fusion happens in the
-browser and nothing is stored. The card says so explicitly rather than
-pretending everything is fine.
-
-The two are released independently, so the integration stamps `api_version` on
-every push and the card reports a backend that is too old instead of
-half-working.
-
-Optional AI stays off until you turn it on in Home Assistant. Enable the
-**MMWave Fusion** LLM API on a conversation agent to ask Assist about occupancy
-and events (tracks stay anonymous). If an AI Task entity is set on the
-integration, traverse clips get a person / pet / false-positive label that the
-event list shows. Yaw calibration and fusion warnings spell out the usual
-90°/180° mistakes; they do not need a model.
-
-Card setup follows **Installation → Room boundary filter → Live test**.
-Installation includes 3-D placement and optional, initially collapsed numeric adjustment
-and direction calibration. Range-only radars hide direction calibration. The second page
-contains polygon boundaries and Area editing for 2-D radars, or minimum/maximum distance
-for range-only radars (without Areas). Live test is for checking the resulting detection.
-Multi-radar installation and boundaries use per-radar tabs. Changes remain drafts until applied.
-
-Joint direction calibration uses the same green, undistorted floor plan as single-radar calibration. Pause in
-at least three widely separated areas and capture three seconds of readings at each.
-Positions are approximate (about a small step from the center); tap empty floor space
-to relocate an uncaptured area when the recommendation is inaccessible. Keep one
-person visible; ambiguous multi-target frames and unstable captures are skipped.
-Each radar needs three accepted stations spanning 120 cm, RMS residual at most
-60 cm and maximum residual at most 90 cm. A weighted fit includes a 30 cm station
-uncertainty and preserves pitch/roll. With four or more stations, gross outliers
-can be discarded only with at least three stations and 75% consensus.
-Existing parameters are retained when their RMS residual is within 40 cm, maximum
-error within 60 cm, and a new fit improves RMS by less than 15 cm. This avoids
-chasing measurement noise; it does not claim a unique physical optimum.
-Accepted radars can proceed to verification independently; unfinished radars keep
-their settings and remain identified. Good readings are kept while filling missing
-radars at a station; remove a station in details to recapture it completely.
-Results remain a draft until Apply and sync succeeds. Walk to other positions in
-Live test to check alignment before saving; device sync failures are shown separately.
-On phone-sized screens the calibration panel also offers a focused mobile mode:
-the current region guide stays at the top, the large capture action stays above
-the bottom safe area, live progress is announced in place, and captured-point
-diagnostics remain collapsed until they are needed. This keeps the walking and
-capture loop usable with one hand without losing the full diagnostic results.
-After at least three positions have been captured, the results compare each
-radar's current X/Y/yaw with the fitted reference and a suggested manual delta.
-Rejected fits are marked low-confidence with a specific reason and are never
-written automatically, so installation values can be checked before recapturing.
-
-Fusion status, replay, heatmap, coverage, and online-count controls are shown
-in a toolbar outside the floor-plan canvas so they cannot cover edge-mounted
-radar markers.
-
----
+Optional floor plan: in the editor, set an image URL such as `/local/floorplans/room.png` (file at `/config/www/floorplans/room.png`), or upload a PNG, JPEG, or GIF under 9 MB. `width_cm` is the physical width of the whole image. The image does not change the detection filter.
 
 ## Documentation map
 
-| If you are                             | Read                                                                                      |
-| -------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Setting up for the first time          | [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md) |
-| Configuring the card in YAML           | [DIY.md](./DIY.md)                                                                        |
-| Looking up one model's entities        | `docs/<model>/README.md`                                                                  |
-| Adding a model or building from source | [DIY.md](./DIY.md#adding-a-new-model)                                                     |
-| An AI agent working in this repo       | [AGENTS.md](./AGENTS.md)                                                                  |
+| If you want | Read |
+| --- | --- |
+| Wiring, flash, then this card | [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md) |
+| YAML, calibration, adding a model, building from source | [DIY.md](./DIY.md) |
+| One model's card config | `docs/<model>/README.md` |
+| Stored tracks, zone events, clips | [mmwave-fusion](https://github.com/zomco/mmwave-fusion) — 2D radars only |
+| You are an AI agent | [AGENTS.md](./AGENTS.md) |
+
+## Radars
+
+Two classes. **1D radars report distance only.** They draw as an arc, not a point, and cannot use [mmwave-fusion](https://github.com/zomco/mmwave-fusion). The card still shows presence and distance.
+
+**2D radars report a position on the floor.** They can use every feature, including fusion. R60ABD1 also reports height; it is listed here because it can be fused.
+
+One 2D radar is enough for a room map. Several 2D radars can be fused in the browser with nothing stored. Stored trajectories, zone events, and camera clips need the fusion integration.
+
+Figures and progress match [mmwave-component](https://github.com/zomco/mmwave-component/blob/main/README.md), which is the source of truth. `—` means the manual does not state it. A cell marked *accuracy* is not a range-gate width. LD2410 at 0.20 m resolution reaches 1.6 m. LD2451 reports whole metres. LD2450 and LD2454 publish resolution in each target frame. LD2454's performance table says 8 m; the install section says 6 m tracking.
+
+| Status | Meaning |
+| --- | --- |
+| Developing | On-hardware firmware tests are in progress. |
+| Testing | Home Assistant integration tests are in progress. |
+| Completed | Integration checked and stable. |
+
+### 1D radars
+
+| Model | Detection distance | Distance resolution | Progress |
+| --- | --- | --- | --- |
+| LD2410 | 6 m | 0.75 m / 0.20 m | Developing |
+| LD2410B | 6 m | 0.75 m (protocol can also select 0.20 m) | Testing |
+| LD2410C | 6 m | 0.75 m (protocol can also select 0.20 m) | Testing |
+| LD2411 | 2 m (gesture 1 m) | — | Developing |
+| LD2411S | 6 m (micro-motion 3.5 m) | ±5 cm / ±5% (accuracy) | Developing |
+| LD2412 | 9 m | 0.75 m | Developing |
+| LD2420 | 8 m (micro-motion 6 m) | 0.70 m | Developing |
+| LD2450A | 2 m | 0.2 m (sensing accuracy) | Developing |
+| LD6002 | 1.5 m (breath / heart) | — | Developing |
+| RD-03E | 6 m (micro-motion 3.5 m) | ±5 cm / ±5% (accuracy) | Developing |
+
+### 2D radars
+
+| Model | Detection distance | Angle | Distance resolution | Progress |
+| --- | --- | --- | --- | --- |
+| LD2450 | 6 m | azimuth ±60°, elevation ±35° | per frame | Developing |
+| LD2451 | 100 m | horizontal ±15°, vertical ±7° | 1 m | Testing |
+| LD2452 | 6 m | azimuth ±60°, elevation ±30° | 0.72 m | Testing |
+| LD2453 | 6 m | azimuth ±40°, elevation ±30° | 0.72 m | Developing |
+| LD2454 | 8 m | azimuth ±60°, elevation ±30° | per frame | Testing |
+| R60ABD1 | 2.5 m (breath / heart 1.5 m) | ±20° | — | Completed |
 
 ## Related repositories
 
-| Repository                                                    | What it is       | Needed?                                           |
-| ------------------------------------------------------------- | ---------------- | ------------------------------------------------- |
-| [mmwave-component](https://github.com/zomco/mmwave-component) | ESPHome firmware | Yes — the device side.                            |
-| **mmwave-card** (this)                                        | Lovelace card    | Yes — the only UI, and where calibration happens. |
-| [mmwave-fusion](https://github.com/zomco/mmwave-fusion)       | HA integration   | Multi-radar fusion only. Experimental.            |
-
----
+| Repository | What it is | Needed? |
+| --- | --- | --- |
+| [mmwave-component](https://github.com/zomco/mmwave-component) | ESPHome firmware | Yes |
+| **mmwave-card** (this) | Lovelace card | Yes — the only UI |
+| [mmwave-fusion](https://github.com/zomco/mmwave-fusion) | Home Assistant integration | Only for stored fusion. 2D radars only. Experimental. |
 
 ## License
 
 MIT © zomco
-
-The radar preview outlines the configured polygon with a dashed green line and shades the area outside it. This shows the software boundary filter; targets outside remain visible for diagnosis. With fewer than three vertices, no polygon filter overlay is shown.
-
-Range-only radars use software distance limits (cm, 0 disables each bound) instead of room polygons. Sync writes the device Zone Min/Max Distance entities. The preview shows radial limits and the reported native maximum when available; unknown native minima or per-gate exclusions are not treated as verified coverage. Native detection thresholds remain untouched. No automatic boot-time reset of user calibration is performed.
-
-Compact range previews show the software interval directly: green is the retained sector and grey radial bands are excluded. Detailed range diagnostics remain in settings, not below the preview.
-
-Live previews use equal horizontal and vertical scale even when card height is capped. Unused space remains visible instead of stretching the radar fan; targets, trails, and boundaries share the same mapping.
-
-### Floor plan background
-
-In the card editor, expand **Floor plan background** and enter an image URL such as
-`/local/floorplans/room.png`. On HA, put the image at `/config/www/floorplans/room.png`
-(in this workspace: `ha-config/www/floorplans/room.png`). This version uses image URLs;
-it does not upload files. PNG, JPG and WebP are supported. Prefer a flat top-down plan.
-
-Unlock placement to drag the image, rotate it, or adjust offsets. **Calibrate scale**
-lets you select both ends of a known wall and enter its actual length in centimetres.
-**Set origin** maps a selected image point to the room's top-left coordinate origin.
-Then lock placement and save the card in HA. Visibility and opacity remain adjustable.
-
-The same background is used in single-radar and fusion views, direction calibration,
-and the installation floor. Image aspect ratio is preserved; room coordinates, not
-screen pixels, anchor it across mobile and desktop layouts. Settings are saved in the
-Lovelace card, not radar firmware. A fusion card shares one image across its radars.
-The image does not change detection filters: draw the room polygon separately.
-Image loading failures retain the usual grid and radar view.
-
-```yaml
-floorplan:
-  url: /local/floorplans/room.png
-  width_cm: 600
-  offset_x_cm: 0
-  offset_y_cm: 0
-  rotation: 0 # clockwise degrees, around the image's top-left corner
-  opacity: 0.45
-  visible: true
-  locked: true
-```
-
-`width_cm` is the physical width represented by the entire image, including margins;
-height follows the image aspect ratio. Offsets place the image's top-left corner in
-room coordinates. Omitted width defaults to room width. Copy `floorplan` to other
-cards if they should share the same placement.
-
-Upload a PNG, JPEG or GIF (under 9 MB) directly in **Floor plan background**. Home Assistant stores the image; save the card to keep its URL. No fusion integration is required. In boundary or zone editing, **Snap to walls** helps each tap land on a nearby image edge. Tap wall corners in order, undo mistakes, and review before saving. Image edges may include furniture or text; turn snapping off for manual placement. Cross-origin backgrounds remain viewable but may require uploading for snapping.
-
-Direction calibration places the entire standing circle inside configured room boundaries, with clearance from walls. Manual relocation follows the same rule. Multi-radar guidance uses the union of configured radar boundaries; event zones are not room boundaries. With no polygon, room dimensions apply. Furniture and obstacles absent from the boundary are not detected automatically; move a station to a clear position. Insufficient space is reported instead of adding points outside the boundary.
-
-The radar preview shows compact scene metrics in its bottom-right corner: gestures for LD2450A (`gesture_entity`), and breathing/heart rates for supported models such as LD6002 and R60ABD1 (`breath_entity`, `heart_entity`). Bind these optional sensors in the card editor. Missing, unavailable or non-positive rate readings display “—”.
-
-Shared control styles live in `src/styles/controls.ts` and are included in every panel shadow root. Reuse these tokens for buttons, inputs and disclosures; keep target/area/axis colors semantic. Controls follow HA text and surface colors, including dark themes.
-
-
-Recent events are collapsed by default. Their type/zone/time filters only affect the list, not HA notifications.
-Notifications are controlled by automations under Settings → Automations & scenes: choose the zone, time window and notification service; crossing blueprints also accept a minimum quality score. Dwell duration comes from the fusion zone's `dwell_s`. The test environment's Example notification automations can be disabled individually.
-Floor plan controls are grouped into image source, placement and numeric adjustment. Lock placement after aligning the image to prevent accidental dragging.
