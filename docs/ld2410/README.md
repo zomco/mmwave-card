@@ -19,8 +19,8 @@ and the model cannot take part in
 [multi-radar fusion](https://github.com/zomco/mmwave-fusion), which needs
 direction.
 
-> **Wiring note:** LD2410 is the one supported model that does not use
-> GPIO21/GPIO20. Its ESPHome config uses `GPIO4` (TX) and `GPIO5` (RX).
+> **Wiring note:** LD2410 uses the same ESP32-C3 UART mapping as other models:
+> `GPIO21` (TX) → radar RX and `GPIO20` (RX) ← radar TX (cross-wired).
 
 ## 2. Prerequisites
 
