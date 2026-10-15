@@ -1,4 +1,5 @@
 import { controlStyles } from '../styles/controls';
+import { SERIES_COLORS } from '../styles/scene';
 import { tracePoint } from '../utils/floorplan-trace';
 import type { FloorplanConfig } from '../types';
 import { floorplanImage, floorplanValues } from '../utils/floorplan';
@@ -7,7 +8,7 @@ import { localize } from '../localize/localize';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { FusionZoneConfig, RadarSourceConfig, Vec2 } from '../types';
 
-const COLORS = ['#0b825c', '#03a9f4', '#e91e63', '#ff9800', '#8bc34a', '#9c27b0'];
+const COLORS = SERIES_COLORS;
 
 @customElement('mmwave-zone-editor')
 export class ZoneEditor extends LitElement {
@@ -328,7 +329,7 @@ export class ZoneEditor extends LitElement {
         padding: 7px 9px;
         color: var(--secondary-text-color);
         background: var(--card-background-color, #fff);
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .zone-tabs button {
@@ -376,7 +377,7 @@ export class ZoneEditor extends LitElement {
         pointer-events: none;
       }
       .axis {
-        font-size: 9px;
+        font-size: 12px;
         text-anchor: start;
       }
       .radar {
@@ -384,13 +385,13 @@ export class ZoneEditor extends LitElement {
       }
       .radar circle {
         fill: rgba(3, 169, 244, 0.15);
-        stroke: #03a9f4;
+        stroke: var(--mmwave-ink);
         stroke-width: 2;
         vector-effect: non-scaling-stroke;
       }
       .radar path {
         fill: none;
-        stroke: #03a9f4;
+        stroke: var(--mmwave-ink);
         stroke-width: 2;
         stroke-dasharray: 4 3;
         vector-effect: non-scaling-stroke;
@@ -405,7 +406,7 @@ export class ZoneEditor extends LitElement {
         display: grid;
         gap: 4px;
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
       }
       .form-grid label.dwell {
         grid-column: 1 / -1;
@@ -417,7 +418,7 @@ export class ZoneEditor extends LitElement {
         border-radius: var(--mmwave-control-radius);
         color: var(--primary-text-color);
         background: var(--card-background-color, #fff);
-        font-size: 10px;
+        font-size: 12px;
       }
       .vertex-count {
         display: grid;
@@ -427,8 +428,8 @@ export class ZoneEditor extends LitElement {
         border-radius: 7px;
         color: var(--mmwave-accent);
         background: rgba(11, 130, 92, 0.08);
-        font-size: 9px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
       }
       .actions {
         justify-content: flex-end;
@@ -438,7 +439,7 @@ export class ZoneEditor extends LitElement {
       .hint,
       .error {
         margin: 7px 1px 0;
-        font-size: 9px;
+        font-size: 12px;
       }
       .hint {
         color: var(--secondary-text-color);

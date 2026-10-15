@@ -1,4 +1,5 @@
 import { controlStyles } from '../styles/controls';
+import { SERIES_COLORS, sceneTheme, SCENE_FONT } from '../styles/scene';
 import { standingAreaFits } from '../utils/guided-regions';
 import type { FloorplanConfig } from '../types';
 import { LitElement, css, html, nothing, type PropertyValues } from 'lit';
@@ -43,7 +44,7 @@ const CAPTURE_MS = 3000;
 const MIN_CAPTURE_SAMPLES = 3;
 const MIN_REFERENCE_SPAN_CM = 120;
 const ACCEPTABLE_RESIDUAL_CM = 60;
-const COLORS = ['#408564', '#9c27b0', '#ff9800', '#e91e63', '#4caf50', '#795548'];
+const COLORS = SERIES_COLORS;
 
 const median = (values: number[]) => {
   const sorted = [...values].sort((left, right) => left - right);
@@ -276,12 +277,12 @@ export class FusionCalibrationPanel extends LitElement {
     context.arc(point.cx, point.cy, radius + 2, 0, Math.PI * 2);
     context.stroke();
     context.setLineDash([]);
-    context.fillStyle = 'rgba(255, 255, 255, 0.92)';
+    context.fillStyle = sceneTheme(context).surface;
     context.beginPath();
     context.arc(point.cx, point.cy, 9, 0, Math.PI * 2);
     context.fill();
     context.fillStyle = complete ? '#0b825c' : region.id === this.selectedRegionId ? '#408564' : '#64748b';
-    context.font = 'bold 10px system-ui';
+    context.font = `600 11px ${SCENE_FONT}`;
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(region.label, point.cx, point.cy + 0.5);
@@ -333,7 +334,7 @@ export class FusionCalibrationPanel extends LitElement {
       context.beginPath();
       context.arc(point.cx, point.cy, 4, 0, Math.PI * 2);
       context.fill();
-      context.font = 'bold 9px system-ui';
+      context.font = `600 11px ${SCENE_FONT}`;
       context.textAlign = 'center';
       context.fillText(radar.id, point.cx, point.cy - 10);
 
@@ -968,8 +969,8 @@ export class FusionCalibrationPanel extends LitElement {
       }
       .eyebrow {
         color: var(--primary-color, var(--mmwave-accent));
-        font-size: 9px;
-        font-weight: 750;
+        font-size: 12px;
+        font-weight: 600;
         text-transform: uppercase;
       }
       .intro strong {
@@ -979,7 +980,7 @@ export class FusionCalibrationPanel extends LitElement {
       .intro p {
         margin: 0;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.5;
       }
       .guide-card {
@@ -1010,11 +1011,11 @@ export class FusionCalibrationPanel extends LitElement {
         min-width: 0;
       }
       .guide-card strong {
-        font-size: 11px;
+        font-size: 12px;
       }
       .guide-card small {
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
         line-height: 1.45;
       }
       canvas {
@@ -1036,7 +1037,7 @@ export class FusionCalibrationPanel extends LitElement {
         padding: 9px 11px;
         border-top: 1px solid var(--divider-color, rgba(128, 128, 128, 0.15));
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       button {
         min-width: 0;
@@ -1046,7 +1047,7 @@ export class FusionCalibrationPanel extends LitElement {
         color: #fff;
         background: var(--primary-color, var(--mmwave-accent));
         font: inherit;
-        font-weight: 700;
+        font-weight: 600;
         cursor: pointer;
       }
       button:disabled {
@@ -1078,7 +1079,7 @@ export class FusionCalibrationPanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.04);
-        font-size: 9px;
+        font-size: 12px;
       }
       .radar-sample-status span.live-ready {
         border-color: color-mix(in srgb, var(--primary-color, var(--mmwave-accent)) 48%, transparent);
@@ -1094,7 +1095,7 @@ export class FusionCalibrationPanel extends LitElement {
         padding: 7px 11px;
         color: var(--primary-color, var(--mmwave-accent));
         background: color-mix(in srgb, var(--primary-color, var(--mmwave-accent)) 7%, transparent);
-        font-size: 10px;
+        font-size: 12px;
       }
       .calibration-details {
         min-width: 0;
@@ -1114,16 +1115,16 @@ export class FusionCalibrationPanel extends LitElement {
         border-radius: 9px;
         color: var(--primary-text-color);
         background: color-mix(in srgb, var(--warning-color, #f59e0b) 9%, transparent);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.45;
       }
       .installation-review strong {
         color: var(--warning-color, #b45309);
-        font-size: 11px;
+        font-size: 12px;
       }
       .installation-review small {
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
       }
       .reference {
         display: grid;
@@ -1131,7 +1132,7 @@ export class FusionCalibrationPanel extends LitElement {
         align-items: center;
         gap: 6px;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .reference b {
         width: 20px;
@@ -1159,7 +1160,7 @@ export class FusionCalibrationPanel extends LitElement {
         border-radius: 8px;
         color: var(--primary-text-color);
         background: color-mix(in srgb, var(--primary-color, var(--mmwave-accent)) 7%, transparent);
-        font-size: 10px;
+        font-size: 12px;
       }
       .result.bad {
         background: color-mix(in srgb, var(--error-color, #e53935) 7%, transparent);
@@ -1182,7 +1183,7 @@ export class FusionCalibrationPanel extends LitElement {
         flex: 0 0 auto;
         padding: 3px 6px;
         border-radius: 999px;
-        font-size: 8px;
+        font-size: 12px;
       }
       .status.accepted {
         color: var(--primary-color, var(--mmwave-accent));
@@ -1222,7 +1223,7 @@ export class FusionCalibrationPanel extends LitElement {
       }
       .parameter-grid small {
         color: var(--secondary-text-color);
-        font-size: 8px;
+        font-size: 12px;
       }
       .parameter-grid span {
         overflow-wrap: anywhere;
@@ -1233,7 +1234,7 @@ export class FusionCalibrationPanel extends LitElement {
         border-color: color-mix(in srgb, var(--primary-color, var(--mmwave-accent)) 24%, transparent);
       }
       .solution-meta {
-        font-size: 8px;
+        font-size: 12px;
       }
       .missing {
         color: var(--error-color, #c62828);
@@ -1241,7 +1242,7 @@ export class FusionCalibrationPanel extends LitElement {
       .calibration-progress {
         padding: 5px 11px 0;
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
         text-align: right;
       }
       .actions {
@@ -1279,7 +1280,7 @@ export class FusionCalibrationPanel extends LitElement {
         }
         .mobile-mode-bar small {
           color: var(--secondary-text-color);
-          font-size: 9px;
+          font-size: 12px;
           line-height: 1.35;
         }
         .mobile-mode-toggle {
@@ -1327,12 +1328,12 @@ export class FusionCalibrationPanel extends LitElement {
         }
         .details-toggle small {
           color: var(--secondary-text-color);
-          font-size: 9px;
+          font-size: 12px;
         }
         .details-toggle > b {
           flex: 0 0 auto;
           color: var(--primary-color, var(--mmwave-accent));
-          font-size: 9px;
+          font-size: 12px;
         }
         .calibration-details:not(.expanded) {
           display: none;
@@ -1394,7 +1395,7 @@ export class FusionCalibrationPanel extends LitElement {
           font-size: 13px;
         }
         .mobile-focus .guide-card small {
-          font-size: 10px;
+          font-size: 12px;
         }
         .mobile-focus .capture-dock {
           position: fixed;

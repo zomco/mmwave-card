@@ -360,7 +360,7 @@ export class FusionWorkflow extends LitElement {
       }
       small {
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
       }
       header > b {
         font-size: 12px;

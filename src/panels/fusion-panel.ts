@@ -1,4 +1,5 @@
 import { controlStyles } from '../styles/controls';
+import { SERIES_COLORS, SCENE_FONT } from '../styles/scene';
 import type { FloorplanConfig } from '../types';
 import { LitElement, css, html, nothing, PropertyValues } from 'lit';
 import { localize } from '../localize/localize';
@@ -46,7 +47,7 @@ export interface FusionRadarVisual {
   stale?: boolean;
 }
 
-const PALETTE = ['#ff9800', '#03a9f4', '#e91e63', '#8bc34a', '#9c27b0', '#00bcd4'];
+const PALETTE = SERIES_COLORS;
 
 function colorForId(id: string): string {
   let hash = 0;
@@ -168,7 +169,7 @@ export class FusionPanel extends LitElement {
   private drawZones(context: CanvasRenderingContext2D, metrics: CanvasMetrics) {
     this.zones.forEach((zone, index) => {
       if (zone.polygon.length < 3) return;
-      const color = PALETTE[(index + 3) % PALETTE.length];
+      const color = PALETTE[index % PALETTE.length];
       const points = zone.polygon.map((point) => roomToCanvas(point.x, point.y, metrics));
       context.beginPath();
       points.forEach((point, pointIndex) =>
@@ -186,7 +187,7 @@ export class FusionPanel extends LitElement {
       context.setLineDash([]);
       context.globalAlpha = 1;
       context.fillStyle = color;
-      context.font = 'bold 10px system-ui';
+      context.font = `600 11px ${SCENE_FONT}`;
       context.textAlign = 'left';
       context.fillText(zone.name || zone.id, points[0].cx + 5, points[0].cy + 13);
     });
@@ -228,7 +229,7 @@ export class FusionPanel extends LitElement {
       context.stroke();
       context.restore();
       context.fillStyle = color;
-      context.font = 'bold 9px system-ui';
+      context.font = `600 11px ${SCENE_FONT}`;
       context.textAlign = 'center';
       context.fillText(radar.config.id, point.cx, point.cy - 14);
     }
@@ -260,7 +261,7 @@ export class FusionPanel extends LitElement {
       const color = colorForId(target.track_id);
       drawTarget(context, point.cx, point.cy, true, color);
       context.fillStyle = color;
-      context.font = 'bold 9px ui-monospace, monospace';
+      context.font = '600 11px ui-monospace, monospace';
       context.textAlign = 'center';
       context.fillText(target.track_id.slice(0, 6), point.cx, point.cy - 14);
     }
@@ -820,7 +821,7 @@ export class FusionPanel extends LitElement {
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
         font: inherit;
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .coverage-toggle.active {
@@ -843,7 +844,7 @@ export class FusionPanel extends LitElement {
         border-radius: 999px;
         color: var(--primary-text-color);
         background: transparent;
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .scrub {
@@ -854,7 +855,7 @@ export class FusionPanel extends LitElement {
       .clock {
         color: var(--secondary-text-color);
         font:
-          9px ui-monospace,
+          12px ui-monospace,
           monospace;
       }
       .heatmap-bar {
@@ -880,7 +881,7 @@ export class FusionPanel extends LitElement {
         color: var(--secondary-text-color);
         background: transparent;
         font: inherit;
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .windows button + button {
@@ -907,7 +908,7 @@ export class FusionPanel extends LitElement {
       .ramp small,
       .heatmap-note {
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
       }
       .status,
       .radar-count {
@@ -919,7 +920,7 @@ export class FusionPanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-        font-size: 9px;
+        font-size: 12px;
         backdrop-filter: blur(6px);
       }
       .status i {
@@ -955,7 +956,7 @@ export class FusionPanel extends LitElement {
       .assist-hint {
         margin: 8px 0 0;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.45;
       }
       .calibration-warning {
@@ -967,7 +968,7 @@ export class FusionPanel extends LitElement {
         border-radius: 8px;
         color: var(--warning-color, #ff9800);
         background: color-mix(in srgb, var(--warning-color, #ff9800) 8%, transparent);
-        font-size: 9px;
+        font-size: 12px;
         line-height: 1.45;
       }
       .summary > div:first-child {
@@ -975,7 +976,7 @@ export class FusionPanel extends LitElement {
         align-items: baseline;
         gap: 6px;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .summary > div:first-child strong {
         color: var(--primary-text-color);
@@ -991,7 +992,7 @@ export class FusionPanel extends LitElement {
         background: color-mix(in srgb, var(--track-color) 7%, transparent);
         color: var(--primary-text-color);
         font:
-          10px ui-monospace,
+          12px ui-monospace,
           monospace;
       }
       .track i {
@@ -1009,7 +1010,7 @@ export class FusionPanel extends LitElement {
       .track em {
         color: var(--track-color);
         font-style: normal;
-        font-weight: 700;
+        font-weight: 600;
       }
       .events {
         display: grid;
@@ -1018,7 +1019,7 @@ export class FusionPanel extends LitElement {
       }
       .events > strong {
         color: var(--primary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .event-filters {
         display: flex;
@@ -1032,7 +1033,7 @@ export class FusionPanel extends LitElement {
         color: var(--secondary-text-color);
         background: transparent;
         font: inherit;
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .event-filters button.selected {
@@ -1050,7 +1051,7 @@ export class FusionPanel extends LitElement {
         border-radius: var(--mmwave-control-radius);
         color: var(--primary-text-color);
         background: rgba(128, 128, 128, 0.035);
-        font-size: 9px;
+        font-size: 12px;
         text-align: left;
         cursor: pointer;
       }

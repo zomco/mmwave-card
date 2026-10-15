@@ -33,7 +33,7 @@ export class RangeStatus extends LitElement {
       :host {
         display: block;
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
       }
       p {
         margin: 5px 0;

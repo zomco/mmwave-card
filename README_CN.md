@@ -41,6 +41,7 @@
 | 接线、烧录，然后装这张卡片 | [新手上手指南](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED_CN.md) |
 | YAML、校准、新增型号、从源码构建 | [DIY_CN.md](./DIY_CN.md) |
 | 某个型号的卡片配置 | `docs/<型号>/README_CN.md` |
+| 统一界面样式与无硬件预览 | [视觉规范](docs/visual-language_CN.md) |
 | 轨迹存储、区域事件、录像 | [mmwave-fusion](https://github.com/zomco/mmwave-fusion) — 仅 2D 雷达 |
 | 你是 AI 助手 | [AGENTS.md](./AGENTS.md) |
 

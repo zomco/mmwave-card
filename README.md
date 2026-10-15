@@ -41,6 +41,7 @@ Optional floor plan: in the editor, set an image URL such as `/local/floorplans/
 | Wiring, flash, then this card | [Getting Started](https://github.com/zomco/mmwave-component/blob/main/GETTING-STARTED.md) |
 | YAML, calibration, adding a model, building from source | [DIY.md](./DIY.md) |
 | One model's card config | `docs/<model>/README.md` |
+| Shared UI styling and hardware-free previews | [Visual language](docs/visual-language.md) |
 | Stored tracks, zone events, clips | [mmwave-fusion](https://github.com/zomco/mmwave-fusion) — 2D radars only |
 | You are an AI agent | [AGENTS.md](./AGENTS.md) |
 

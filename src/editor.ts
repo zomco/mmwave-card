@@ -1,4 +1,5 @@
 import { controlStyles } from './styles/controls';
+import { logoSvg } from './logo';
 import './panels/floorplan-editor';
 import type { FloorplanConfig } from './types';
 import { LitElement, html, css, nothing } from 'lit';
@@ -463,7 +464,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     return html`
       <div class="card-config">
         <div class="editor-hero">
-          <span class="hero-icon">◎</span>
+          <span class="hero-icon">${logoSvg}</span>
           <div>
             <strong>${this._t('editor.multi_radar_fusion_2')}</strong>
             <p>${this._t('editor.place_multiple_2_d_radars_in')}</p>
@@ -984,7 +985,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
     return html` <div class="card-config">
       <div class="editor-hero">
-        <span class="hero-icon">◎</span>
+        <span class="hero-icon">${logoSvg}</span>
         <div>
           <strong>${this._t('editor.mmwave_radar_card')}</strong>
           <p>${this._t('editor.choose_a_radar_device_to_match')}</p>
@@ -1112,8 +1113,6 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   static styles = [
     css`
       :host {
-        --mmwave-primary: #0b825c;
-        --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
         display: block;
         max-width: 100%;
         overflow-x: hidden;
@@ -1141,7 +1140,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: var(--mmwave-control-radius);
         color: var(--secondary-text-color);
         background: transparent;
-        font-size: 10px;
+        font-size: 12px;
         cursor: pointer;
       }
       .mode-switch button {
@@ -1150,7 +1149,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       .mode-switch button.active {
         color: #fff;
         background: var(--mmwave-primary);
-        font-weight: 700;
+        font-weight: 600;
       }
       .check-row {
         display: flex;
@@ -1161,7 +1160,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 9px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.045);
-        font-size: 10px;
+        font-size: 12px;
       }
       .check-row input {
         accent-color: var(--mmwave-primary);
@@ -1180,7 +1179,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         align-items: center;
         gap: 6px;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .camera-card .check-row {
         margin-top: 0;
@@ -1207,8 +1206,8 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         color: var(--primary-text-color);
         background: rgba(128, 128, 128, 0.035);
         font: inherit;
-        font-size: 10px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
       }
       .radar-tabs button.active {
@@ -1219,7 +1218,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       }
       .radar-tabs small {
         color: var(--secondary-text-color);
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 500;
       }
       .radar-tabs .add-radar-tab {
@@ -1250,7 +1249,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         justify-content: space-between;
         margin-bottom: 8px;
         color: var(--primary-text-color);
-        font-size: 11px;
+        font-size: 12px;
       }
       .radar-editor > header > span {
         display: grid;
@@ -1260,7 +1259,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       .radar-editor > header small {
         overflow: hidden;
         color: var(--secondary-text-color);
-        font-size: 8px;
+        font-size: 12px;
         font-weight: 500;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1299,7 +1298,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 999px;
         color: var(--mmwave-primary);
         background: rgba(11, 130, 92, 0.08);
-        font-size: 8px;
+        font-size: 12px;
         white-space: nowrap;
       }
       .profile-status {
@@ -1308,7 +1307,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 8px;
         color: var(--mmwave-primary);
         background: rgba(11, 130, 92, 0.07);
-        font-size: 10px;
+        font-size: 12px;
       }
       .installation-subsection {
         display: grid;
@@ -1323,7 +1322,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       }
       .installation-subsection span {
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.5;
       }
       mmwave-installation-3d,
@@ -1339,8 +1338,8 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       }
       .json-field label {
         color: var(--primary-text-color);
-        font-size: 10px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
       }
       .json-field textarea {
         box-sizing: border-box;
@@ -1351,7 +1350,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         color: var(--primary-text-color);
         background: var(--card-background-color, #fff);
         font:
-          9px ui-monospace,
+          12px ui-monospace,
           monospace;
         resize: vertical;
       }
@@ -1360,7 +1359,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 8px;
         color: var(--error-color, #e53935);
         background: rgba(229, 57, 53, 0.08);
-        font-size: 9px;
+        font-size: 12px;
       }
       .test-hint {
         display: grid;
@@ -1371,12 +1370,12 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 8px;
         color: var(--secondary-text-color);
         background: rgba(11, 130, 92, 0.065);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.5;
       }
       .test-hint strong {
         color: var(--primary-text-color);
-        font-size: 11px;
+        font-size: 12px;
       }
       .editor-hero {
         display: flex;
@@ -1385,9 +1384,10 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         padding: 12px;
         border: 1px solid rgba(11, 130, 92, 0.2);
         border-radius: 12px;
-        background: linear-gradient(135deg, rgba(11, 130, 92, 0.1), rgba(3, 169, 244, 0.04));
+        background: linear-gradient(135deg, var(--mmwave-primary-soft), transparent);
       }
       .hero-icon {
+        --mmwave-ink: #fff;
         width: 32px;
         height: 32px;
         display: grid;
@@ -1406,7 +1406,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       .section-help {
         margin: 3px 0 0;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.5;
       }
       h3 {
@@ -1416,7 +1416,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         margin: 18px 0 8px;
         color: var(--primary-text-color);
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 600;
       }
       h3 span {
         width: 20px;
@@ -1426,7 +1426,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 7px;
         color: #fff;
         background: var(--mmwave-primary);
-        font-size: 10px;
+        font-size: 12px;
       }
       .section-help {
         margin: -3px 0 9px 27px;
@@ -1452,7 +1452,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
       .field label {
         min-width: 130px;
         color: var(--primary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
       }
       .field ha-entity-picker,
@@ -1471,7 +1471,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: var(--mmwave-control-radius);
         background: var(--card-background-color, #fff);
         color: var(--primary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         outline: none;
       }
       .match-status {
@@ -1483,7 +1483,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 9px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.06);
-        font-size: 10px;
+        font-size: 12px;
       }
       .match-status > span {
         width: 18px;
@@ -1494,7 +1494,7 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         border-radius: 50%;
         color: #fff;
         background: #9ca3af;
-        font-weight: 750;
+        font-weight: 600;
       }
       .match-status.success {
         color: var(--mmwave-primary);
@@ -1541,15 +1541,15 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         gap: 8px;
         padding: 10px 12px;
         color: var(--secondary-text-color);
-        font-size: 10px;
-        font-weight: 650;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
       }
       .advanced summary small {
         padding: 2px 6px;
         border-radius: 999px;
         background: rgba(128, 128, 128, 0.09);
-        font-size: 8px;
+        font-size: 12px;
       }
       .advanced-fields {
         padding: 0 7px 7px;

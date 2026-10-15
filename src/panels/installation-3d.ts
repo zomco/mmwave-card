@@ -1,3 +1,4 @@
+import { SCENE_FONT } from '../styles/scene';
 import { controlStyles } from '../styles/controls';
 import { drawFloorplan } from '../utils/floorplan';
 import type { FloorplanConfig } from '../types';
@@ -41,11 +42,11 @@ interface DragState {
 }
 
 const HANDLE_COLORS: Record<DragMode, string> = {
-  position: '#03a9f4',
-  height: '#00a878',
-  yaw: '#ff9800',
-  pitch: '#7e57c2',
-  roll: '#ec407a',
+  position: '#477db3',
+  height: '#0b825c',
+  yaw: '#b88736',
+  pitch: '#8071b1',
+  roll: '#ad648b',
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
@@ -167,7 +168,7 @@ export class Installation3D extends LitElement {
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 1.5;
     ctx.stroke();
-    ctx.font = 'bold 9px system-ui';
+    ctx.font = `600 11px ${SCENE_FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     ctx.fillStyle = HANDLE_COLORS[mode];
@@ -275,7 +276,7 @@ export class Installation3D extends LitElement {
       this._line(ctx, this._project({ ...corner, z: 0 }, scene), this._project({ ...corner, z: scene.zMax }, scene));
     }
     ctx.restore();
-    ctx.font = 'bold 10px system-ui';
+    ctx.font = `600 11px ${SCENE_FONT}`;
     ctx.fillStyle = secondaryColor;
     ctx.fillText('X', floor[1].x + 8, floor[1].y + 2);
     ctx.fillText('Y', floor[3].x - 14, floor[3].y + 2);
@@ -310,7 +311,7 @@ export class Installation3D extends LitElement {
       ctx.beginPath();
       ctx.arc(peerPoint.x, peerPoint.y, 4, 0, Math.PI * 2);
       ctx.fill();
-      ctx.font = 'bold 9px system-ui';
+      ctx.font = `600 11px ${SCENE_FONT}`;
       ctx.textAlign = 'center';
       ctx.fillText(peer.id, peerPoint.x, peerPoint.y - 9);
       ctx.restore();
@@ -697,7 +698,7 @@ export class Installation3D extends LitElement {
       .hint {
         margin: 7px 2px 5px;
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         text-align: center;
       }
       .legend {
@@ -707,7 +708,7 @@ export class Installation3D extends LitElement {
         gap: 5px 12px;
         margin-bottom: 10px;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .legend span {
         display: inline-flex;

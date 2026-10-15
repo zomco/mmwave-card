@@ -142,7 +142,7 @@ export class AreaEditor extends LitElement {
             }
             ${
               this.radar
-                ? svg`<g transform=${`translate(${this.radar.x} ${this.radar.y}) rotate(${-this.radar.yaw})`}><circle r="10" fill="#111" /><path d="M 0 0 L -10 22 M 0 0 L 10 22" stroke="#111" fill="none" /></g>`
+                ? svg`<g transform=${`translate(${this.radar.x} ${this.radar.y}) rotate(${-this.radar.yaw})`}><circle r="10" fill="var(--mmwave-ink)" /><path d="M 0 0 L -10 22 M 0 0 L 10 22" stroke="var(--mmwave-ink)" fill="none" /></g>`
                 : nothing
             }
           </svg>
@@ -218,7 +218,7 @@ export class AreaEditor extends LitElement {
       }
       .floor {
         width: 100%;
-        background: var(--secondary-background-color, #f6f8f7);
+        background: var(--mmwave-plot-surface);
         border: 1px solid var(--mmwave-control-border);
         border-radius: 12px;
         cursor: crosshair;

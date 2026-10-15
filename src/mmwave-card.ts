@@ -1339,10 +1339,15 @@ export class MMWaveCard extends LitElement {
         <footer class="workflow-footer">
           ${this._syncState === 'error' ? html`<p role="alert">${this._syncFailures.join('; ')}</p>` : nothing}
           <div class="footer-tools">
-            <button class="text-button" type="button" @click=${this._loadFromDevice}>
+            <button
+              class="text-button"
+              type="button"
+              aria-label=${this._t('card.revert')}
+              @click=${this._loadFromDevice}
+            >
               <ha-icon icon="mdi:backup-restore"></ha-icon><span>${this._t('card.revert')}</span>
             </button>
-            <button class="text-button danger" type="button" @click=${this._reset}>
+            <button class="text-button danger" type="button" aria-label=${this._t('card.reset')} @click=${this._reset}>
               <ha-icon icon="mdi:restore-alert"></ha-icon><span>${this._t('card.reset')}</span>
             </button>
           </div>
@@ -1541,11 +1546,6 @@ export class MMWaveCard extends LitElement {
     css`
       :host {
         display: block;
-        --mmwave-primary: #0b825c;
-        --mmwave-primary-soft: rgba(11, 130, 92, 0.1);
-        --mmwave-surface: color-mix(in srgb, var(--card-background-color, #fff) 94%, var(--mmwave-primary));
-        --mmwave-line: var(--divider-color, rgba(128, 128, 128, 0.18));
-        --mmwave-secondary: #4b5563;
       }
       ha-card {
         background: var(--ha-card-background, var(--card-background-color, #fff));
@@ -1554,7 +1554,7 @@ export class MMWaveCard extends LitElement {
         border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color, #e0e0e0));
         overflow: hidden;
         color: var(--primary-text-color);
-        font-family: var(--primary-font-family, system-ui, sans-serif);
+        font-family: var(--mmwave-font);
         transition: all 0.3s ease-out;
       }
 
@@ -1589,7 +1589,7 @@ export class MMWaveCard extends LitElement {
       .tab {
         flex: 1;
         padding: 12px 6px 10px;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.05em;
         text-transform: uppercase;
@@ -1709,7 +1709,7 @@ export class MMWaveCard extends LitElement {
         overflow: hidden;
         color: var(--primary-text-color);
         font-size: 15px;
-        font-weight: 650;
+        font-weight: 600;
         line-height: 1.25;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -1718,7 +1718,7 @@ export class MMWaveCard extends LitElement {
       .workflow-title span {
         overflow: hidden;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
@@ -1736,8 +1736,8 @@ export class MMWaveCard extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.05);
-        font-size: 10px;
-        font-weight: 650;
+        font-size: 12px;
+        font-weight: 600;
         white-space: nowrap;
       }
       .presence-chip i {
@@ -1797,12 +1797,12 @@ export class MMWaveCard extends LitElement {
         gap: 8px;
         margin-bottom: 8px;
         color: var(--primary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .fusion-playback header span,
       .fusion-playback p {
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
       }
       .fusion-playback .quality-detail strong {
         color: var(--primary-text-color);
@@ -1884,12 +1884,12 @@ export class MMWaveCard extends LitElement {
         gap: 2px;
       }
       .step-copy strong {
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
       }
       .step-copy small {
         overflow: hidden;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 400;
         line-height: 1.25;
         text-overflow: ellipsis;
@@ -1922,8 +1922,8 @@ export class MMWaveCard extends LitElement {
         gap: 5px;
         padding: 7px 11px;
         border-radius: var(--mmwave-control-radius);
-        font-size: 11px;
-        font-weight: 650;
+        font-size: 12px;
+        font-weight: 600;
         cursor: pointer;
         transition: 0.18s ease;
       }

@@ -1,7 +1,8 @@
 import type { Vec2 } from '../types';
 import { pointInPolygon } from './transform';
+import { SERIES_COLORS } from '../styles/scene';
 
-export const AREA_COLORS = ['#0b825c', '#03a9f4', '#e91e63'] as const;
+export const AREA_COLORS = SERIES_COLORS.slice(0, 3);
 export const MIN_AREA_SHORT_SIDE_CM = 150;
 export const MIN_AREA_CENTROID_GAP_CM = 200;
 export const DEFAULT_AREA_SIDE_CM = 180;

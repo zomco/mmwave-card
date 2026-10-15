@@ -1,4 +1,5 @@
 import { drawFloorplan } from './floorplan';
+import { sceneTheme, updateSceneTheme, SCENE_FONT } from '../styles/scene';
 import type { FloorplanConfig } from '../types';
 /**
  * canvas.ts — shared drawing utilities
@@ -91,6 +92,7 @@ export function setupCanvas(cv: HTMLCanvasElement, cssH: number): CanvasRenderin
   cv.style.height = `${cssH}px`;
   const ctx = cv.getContext('2d')!;
   ctx.scale(dpr, dpr);
+  updateSceneTheme(ctx, getComputedStyle(cv));
   return ctx;
 }
 
@@ -114,7 +116,7 @@ export function drawBase(
   drawFloorplan(ctx, m, floorplan, onReady);
 
   // Grid
-  ctx.strokeStyle = 'rgba(128,128,128,.06)';
+  ctx.strokeStyle = sceneTheme(ctx).grid;
   ctx.lineWidth = 0.5;
   for (let x = 0; x < m.W; x += 40) {
     ctx.beginPath();
@@ -130,7 +132,7 @@ export function drawBase(
   }
 
   // Room border
-  ctx.strokeStyle = 'rgba(255,255,255,.15)';
+  ctx.strokeStyle = sceneTheme(ctx).line;
   ctx.lineWidth = 1.5;
   ctx.strokeRect(1, 1, m.W - 2, m.H - 2);
 
@@ -142,7 +144,7 @@ export function drawBase(
   ctx.beginPath();
   ctx.moveTo(barX, barY);
   ctx.lineTo(barX + swPx, barY);
-  ctx.strokeStyle = 'rgba(255,255,255,.35)';
+  ctx.strokeStyle = sceneTheme(ctx).muted;
   ctx.lineWidth = 1.2;
   ctx.stroke();
   // tick marks
@@ -152,14 +154,14 @@ export function drawBase(
   ctx.moveTo(barX + swPx, barY - 3);
   ctx.lineTo(barX + swPx, barY + 3);
   ctx.stroke();
-  ctx.fillStyle = 'rgba(255,255,255,.45)';
-  ctx.font = '9px system-ui';
+  ctx.fillStyle = sceneTheme(ctx).muted;
+  ctx.font = `11px ${SCENE_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'bottom';
   ctx.fillText(`${swCm}cm`, barX + swPx / 2, barY - 3);
 
   // Axis labels
-  ctx.font = 'bold 9px system-ui';
+  ctx.font = `600 11px ${SCENE_FONT}`;
   ctx.fillStyle = 'rgba(11,130,92,.6)';
 
   // X→ at top-right
@@ -175,7 +177,7 @@ export function drawBase(
   // Origin "0" at top-left
   ctx.textAlign = 'left';
   ctx.textBaseline = 'top';
-  ctx.fillStyle = 'rgba(255,255,255,.3)';
+  ctx.fillStyle = sceneTheme(ctx).muted;
   ctx.fillText('0', 4, 4);
 
   ctx.textBaseline = 'alphabetic'; // reset
@@ -233,7 +235,7 @@ export function drawOccupancyAreas(
     const cy = pts.reduce((s, p) => s + p.cy, 0) / pts.length;
     ctx.globalAlpha = 0.9;
     ctx.fillStyle = color;
-    ctx.font = 'bold 11px system-ui';
+    ctx.font = `600 11px ${SCENE_FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(index + 1), cx, cy);
@@ -410,7 +412,7 @@ export function drawReplay(
     const point = roomToCanvas(head.x, head.y, m);
     drawTarget(ctx, point.cx, point.cy, true, color);
     ctx.fillStyle = color;
-    ctx.font = 'bold 9px ui-monospace, monospace';
+    ctx.font = '600 11px ui-monospace, monospace';
     ctx.textAlign = 'center';
     ctx.fillText(track.track_id.slice(0, 6), point.cx, point.cy - 14);
   }
@@ -593,7 +595,7 @@ export function drawRadarFov(
       const radiusCm = toCm(r_m * pf);
       ctx.beginPath();
       projection.arc(radiusCm, base - halfFov, base + halfFov, false);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      ctx.strokeStyle = sceneTheme(ctx).line;
       ctx.lineWidth = 0.8;
       ctx.setLineDash([3, 4]);
       ctx.stroke();
@@ -611,7 +613,7 @@ export function drawRadarFov(
       ctx.beginPath();
       ctx.moveTo(from.x, from.y);
       ctx.lineTo(to.x, to.y);
-      ctx.strokeStyle = deg === 0 ? 'rgba(11, 200, 140, 0.5)' : 'rgba(255, 255, 255, 0.18)';
+      ctx.strokeStyle = deg === 0 ? sceneTheme(ctx).accent : sceneTheme(ctx).line;
       ctx.lineWidth = deg === 0 ? 1.2 : 0.8;
       if (deg !== 0) ctx.setLineDash([3, 4]);
       ctx.stroke();
@@ -622,8 +624,8 @@ export function drawRadarFov(
         const tip = projection.point(maxR, angRad);
         const lx = tip.x + 14 * Math.cos(angRad);
         const ly = tip.y + 14 * Math.sin(angRad);
-        ctx.font = 'bold 9px system-ui';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+        ctx.font = `600 11px ${SCENE_FONT}`;
+        ctx.fillStyle = sceneTheme(ctx).text;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${deg > 0 ? '+' : ''}${deg}°`, lx, ly);
@@ -654,14 +656,14 @@ export function drawRadarFov(
   const drawLabel = (rangeM: number, r: number, color: string) => {
     const { x: tx, y: ty } = projection.point(r, base);
     const txt = `${rangeM}m`;
-    ctx.font = 'bold 9px system-ui';
+    ctx.font = `600 11px ${SCENE_FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const tw = ctx.measureText(txt).width;
     // pill background
-    ctx.fillStyle = 'rgba(10,10,24,.82)';
+    ctx.fillStyle = sceneTheme(ctx).surface;
     ctx.beginPath();
-    ctx.roundRect?.(tx - tw / 2 - 3, ty - 7, tw + 6, 14, 3);
+    ctx.roundRect?.(tx - tw / 2 - 4, ty - 9, tw + 8, 18, 4);
     ctx.fill();
     ctx.fillStyle = color;
     ctx.fillText(txt, tx, ty);
@@ -679,7 +681,7 @@ export function drawRadarFov(
       const radiusCm = toCm(r_m * pf);
       const isMax = Math.abs(r_m - maxRangeM) < 0.01;
       const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
-      const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
+      const col = isMax || isVital ? sceneTheme(ctx).accent : sceneTheme(ctx).muted;
       drawLabel(Number(r_m.toFixed(1)), radiusCm, col);
     }
   } else {
@@ -707,7 +709,7 @@ export function drawRadarFov(
       const radiusCm = toCm(r_m * pf);
       const isMax = Math.abs(r_m - maxRangeM) < 0.01;
       const isVital = vitalRangeM != null && Math.abs(r_m - vitalRangeM) < 0.01;
-      const col = isMax ? 'rgba(27,159,117,.95)' : isVital ? 'rgba(11,130,92,1)' : 'rgba(255,255,255,.7)';
+      const col = isMax || isVital ? sceneTheme(ctx).accent : sceneTheme(ctx).muted;
       drawLabel(Number(r_m.toFixed(1)), radiusCm, col);
     }
   }
@@ -717,7 +719,7 @@ export function drawRadarFov(
 
   ctx.beginPath();
   ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(10,10,24,.92)';
+  ctx.fillStyle = sceneTheme(ctx).surface;
   ctx.fill();
   ctx.strokeStyle = 'rgba(11,130,92,.95)';
   ctx.lineWidth = 1.5;
@@ -877,7 +879,7 @@ export function drawDot(
     ctx.stroke();
   }
   ctx.fillStyle = hollow ? color : '#fff';
-  ctx.font = 'bold 9px system-ui';
+  ctx.font = `600 11px ${SCENE_FONT}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(label, x, y);

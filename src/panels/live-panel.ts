@@ -1,4 +1,5 @@
 import { controlStyles } from '../styles/controls';
+import { SERIES_COLORS } from '../styles/scene';
 import type { HomeAssistant } from 'custom-card-helpers';
 import type { MMWaveCardConfig } from '../types';
 import { readSceneMetrics } from '../utils/scene-metrics';
@@ -46,7 +47,7 @@ interface AnimatedTarget {
   lastTrailAt: number;
 }
 
-const TARGET_COLORS = ['#ff9800', '#03a9f4', '#e91e63'] as const;
+const TARGET_COLORS = SERIES_COLORS;
 const TRAIL_SAMPLE_MS = 75;
 const TRAIL_MIN_DISTANCE_CM = 0.5;
 const ANIMATED_TARGET_TTL_MS = 1000;
@@ -525,7 +526,7 @@ export class LivePanel extends LitElement {
         margin-left: auto;
       }
       .scene-metric small {
-        font-size: 10px;
+        font-size: 12px;
         white-space: nowrap;
         color: var(--secondary-text-color);
       }
@@ -540,7 +541,7 @@ export class LivePanel extends LitElement {
         gap: 6px 14px;
         padding: 6px 2px 0;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .boundary-legend span {
         display: inline-flex;
@@ -567,8 +568,8 @@ export class LivePanel extends LitElement {
       }
       .eyebrow {
         color: var(--mmwave-primary);
-        font-size: 9px;
-        font-weight: 750;
+        font-size: 12px;
+        font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -576,12 +577,12 @@ export class LivePanel extends LitElement {
         margin: 4px 0;
         color: var(--primary-text-color);
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
       }
       .panel-heading p {
         margin: 0;
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1.5;
       }
       .scene-shell {
@@ -610,7 +611,7 @@ export class LivePanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
         pointer-events: auto;
         backdrop-filter: blur(6px);
@@ -627,7 +628,7 @@ export class LivePanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 82%, transparent);
-        font-size: 10px;
+        font-size: 12px;
         pointer-events: none;
         transform: translate(-50%, -50%);
         backdrop-filter: blur(7px);
@@ -687,7 +688,7 @@ export class LivePanel extends LitElement {
         border-radius: 8px;
         padding: 6px 10px;
         color: #fff;
-        font-size: 11px;
+        font-size: 12px;
         display: flex;
         flex-direction: column;
         gap: 4px;
@@ -725,14 +726,14 @@ export class LivePanel extends LitElement {
         justify-content: space-between;
         margin-bottom: 7px;
         color: var(--primary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .summary-head span {
         padding: 2px 6px;
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.09);
-        font-size: 9px;
+        font-size: 12px;
       }
       .target-list {
         display: grid;
@@ -747,7 +748,7 @@ export class LivePanel extends LitElement {
         border-radius: 8px;
         color: var(--primary-text-color);
         background: color-mix(in srgb, var(--target-color) 7%, transparent);
-        font-size: 9px;
+        font-size: 12px;
       }
       .target-row.outside {
         opacity: 0.55;
@@ -756,7 +757,7 @@ export class LivePanel extends LitElement {
         display: inline-flex;
         align-items: center;
         gap: 5px;
-        font-weight: 700;
+        font-weight: 600;
       }
       .target-id i {
         width: 7px;
@@ -778,12 +779,12 @@ export class LivePanel extends LitElement {
         border-radius: 999px;
         color: var(--target-color);
         background: color-mix(in srgb, var(--target-color) 10%, transparent);
-        font-weight: 700;
+        font-weight: 600;
       }
       .target-empty {
         padding: 8px;
         color: var(--secondary-text-color);
-        font-size: 10px;
+        font-size: 12px;
         text-align: center;
       }
       @media (max-width: 440px) {

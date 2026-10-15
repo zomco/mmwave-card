@@ -355,8 +355,8 @@ export class GeoPanel extends LitElement {
       }
       .eyebrow {
         color: var(--mmwave-primary);
-        font-size: 9px;
-        font-weight: 750;
+        font-size: 12px;
+        font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -365,17 +365,17 @@ export class GeoPanel extends LitElement {
         margin: 4px 0;
         color: var(--primary-text-color);
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
       }
       .panel-heading p,
       .section-heading p {
         margin: 0;
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1.5;
       }
       .sec-title {
-        font-size: 10px;
+        font-size: 12px;
         letter-spacing: 0.07em;
         text-transform: uppercase;
         color: var(--secondary-text-color);
@@ -426,7 +426,7 @@ export class GeoPanel extends LitElement {
         padding: 2px 0;
       }
       .unit {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--secondary-text-color);
         min-width: 18px;
         text-align: right;
@@ -452,7 +452,7 @@ export class GeoPanel extends LitElement {
         }
       }
       .note {
-        font-size: 10px;
+        font-size: 12px;
         color: var(--secondary-text-color);
         line-height: 1.6;
         margin: 5px 0;
@@ -484,8 +484,8 @@ export class GeoPanel extends LitElement {
         border: 1px solid var(--divider-color);
         border-radius: 999px;
         color: var(--secondary-text-color);
-        font-size: 9px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
       }
       .boundary-badge.active {
         border-color: rgba(11, 130, 92, 0.25);
@@ -499,7 +499,7 @@ export class GeoPanel extends LitElement {
         margin-bottom: 6px;
       }
       .poly-hint {
-        font-size: 11px;
+        font-size: 12px;
         color: var(--secondary-text-color);
       }
       .poly-hint.ok {
@@ -514,7 +514,7 @@ export class GeoPanel extends LitElement {
         border: 1px solid var(--divider-color);
         border-radius: 6px;
         padding: 3px 9px;
-        font-size: 11px;
+        font-size: 12px;
         color: var(--secondary-text-color);
         cursor: pointer;
       }
@@ -540,7 +540,7 @@ export class GeoPanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-        font-size: 9px;
+        font-size: 12px;
         pointer-events: none;
         transform: translateX(-50%);
         white-space: nowrap;

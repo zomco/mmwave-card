@@ -295,8 +295,8 @@ export class YawPanel extends LitElement {
       }
       .eyebrow {
         color: var(--mmwave-primary);
-        font-size: 9px;
-        font-weight: 750;
+        font-size: 12px;
+        font-weight: 600;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
@@ -304,12 +304,12 @@ export class YawPanel extends LitElement {
         margin: 4px 0;
         color: var(--primary-text-color);
         font-size: 16px;
-        font-weight: 700;
+        font-weight: 600;
       }
       .panel-heading p {
         margin: 0;
         color: var(--secondary-text-color);
-        font-size: 11px;
+        font-size: 12px;
         line-height: 1.5;
       }
       .map-shell {
@@ -337,7 +337,7 @@ export class YawPanel extends LitElement {
         border-radius: 999px;
         color: var(--secondary-text-color);
         background: color-mix(in srgb, var(--card-background-color, #fff) 88%, transparent);
-        font-size: 9px;
+        font-size: 12px;
         text-overflow: ellipsis;
         pointer-events: none;
         transform: translateX(-50%);
@@ -373,7 +373,7 @@ export class YawPanel extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 600;
         flex-shrink: 0;
       }
@@ -383,14 +383,14 @@ export class YawPanel extends LitElement {
       .ref-title {
         margin-bottom: 2px;
         color: var(--primary-text-color);
-        font-size: 11px;
-        font-weight: 700;
+        font-size: 12px;
+        font-weight: 600;
       }
       .ref-sub {
         display: -webkit-box;
         overflow: hidden;
         color: var(--secondary-text-color);
-        font-size: 9px;
+        font-size: 12px;
         line-height: 1.35;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
@@ -430,7 +430,7 @@ export class YawPanel extends LitElement {
         border: 1px solid var(--mmwave-primary);
         border-radius: 11px;
         font-size: 13px;
-        font-weight: 650;
+        font-weight: 600;
         cursor: pointer;
         color: #fff;
         transition: background 0.15s;
@@ -456,7 +456,7 @@ export class YawPanel extends LitElement {
         border-radius: 10px;
         color: var(--secondary-text-color);
         background: rgba(128, 128, 128, 0.04);
-        font-size: 10px;
+        font-size: 12px;
       }
       .result-card.ok {
         border-color: rgba(11, 130, 92, 0.22);
@@ -472,8 +472,8 @@ export class YawPanel extends LitElement {
         border-radius: 50%;
         color: #fff;
         background: #9ca3af;
-        font-size: 10px;
-        font-weight: 750;
+        font-size: 12px;
+        font-weight: 600;
       }
       .result-card.ok .result-icon {
         background: var(--mmwave-primary);
@@ -487,7 +487,7 @@ export class YawPanel extends LitElement {
         border-radius: var(--mmwave-control-radius);
         color: inherit;
         background: rgba(128, 128, 128, 0.09);
-        font-size: 9px;
+        font-size: 12px;
         cursor: pointer;
       }
       .troubleshoot {
@@ -501,15 +501,15 @@ export class YawPanel extends LitElement {
         display: block;
         margin-bottom: 4px;
         color: var(--primary-text-color);
-        font-size: 10px;
+        font-size: 12px;
       }
       .troubleshoot p {
         margin: 0;
-        font-size: 10px;
+        font-size: 12px;
         line-height: 1.45;
       }
       .result-line {
-        font-size: 11px;
+        font-size: 12px;
         text-align: center;
         min-height: 15px;
         margin-top: 5px;

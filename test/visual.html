@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MMWave Card · Visual fixture</title>
+<style>
+  :root { color-scheme: light; --card-background-color:#fff; --primary-text-color:#16201d; --secondary-text-color:#61796e; --divider-color:#dbe4df; background:#f4f7f6; color:var(--primary-text-color); font:14px/1.7 'DM Sans','Noto Sans SC',system-ui,sans-serif; }
+  :root.dark { color-scheme:dark; --card-background-color:#0d1915; --primary-text-color:#eef7f3; --secondary-text-color:#a0b4a9; --divider-color:#2b4035; background:#06100d; }
+  body { margin:0; padding:24px; } header { max-width:1080px; margin:auto auto 24px; } h1 {font-size:24px;font-weight:600;} button,select {font:inherit;padding:10px 14px;border-radius:10px;border:1px solid var(--divider-color);background:var(--card-background-color);color:inherit;cursor:pointer;} button:focus-visible,select:focus-visible {outline:2px solid #0b825c;outline-offset:3px;}
+  .grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px;max-width:1080px;margin:auto;} section {min-width:0;} .sheet {background:var(--card-background-color);border:1px solid var(--divider-color);border-radius:16px;padding:16px;} h2 {font-size:14px;font-weight:600;} ha-card {display:block;} ha-icon {display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;} ha-icon::before {content:'◦';font-size:22px;}
+  @media(max-width:760px) {.grid{grid-template-columns:1fr;}body{padding:12px;}}
+</style>
+<header><h1>MMWave Card / Fusion · 视觉验收</h1><p>模拟数据，无 HA 连接。仅验证自定义组件；HA 原生图标和实体选择器需在 HA 中复核。</p><button id="theme">切换浅色 / 深色</button> <label>语言 <select id="language"><option value="zh-Hans">中文</option><option value="en">English</option></select></label></header>
+<main class="grid"><section><h2>单雷达 · 实时与安装向导</h2><div id="single"></div><h2>融合 · 轨迹、区域与回放</h2><div id="fusion" class="sheet"></div></section><section><h2>卡片与融合配置</h2><div id="editor" class="sheet"></div></section></main>
+<script type="module">
+  import '../dist/mmwave-card.js';
+  customElements.define('ha-card', class extends HTMLElement { connectedCallback() { this.style.display='block'; } });
+  const polygon = [{x:20,y:20},{x:380,y:20},{x:380,y:430},{x:20,y:430}];
+  const config = {type:'custom:mmwave-card',radar_model:'ld2450',room_w:400,room_d:450,presence_entity:'binary_sensor.visual_presence',target_1_x_entity:'sensor.visual_x',target_1_y_entity:'sensor.visual_y',polygon_entity:'text.visual_polygon'};
+  const state = (value, unit) => ({state:String(value),attributes:{unit_of_measurement:unit},last_updated:new Date().toISOString()});
+  const hass = () => ({language:document.querySelector('#language').value,states:{'binary_sensor.visual_presence':state('on'),'sensor.visual_x':state(40,'cm'),'sensor.visual_y':state(130,'cm'),'text.visual_polygon':state(JSON.stringify(polygon))},user:{is_admin:true},config:{components:[]},themes:{darkMode:document.documentElement.classList.contains('dark')},callWS:async()=>[],callService:async()=>{throw new Error('Visual fixture: device writes disabled');}});
+  const card = document.createElement('mmwave-card'); card.setConfig(config); card.hass=hass(); document.querySelector('#single').append(card);
+  const editor = await customElements.get('mmwave-card').getConfigElement(); editor.setConfig(config); editor.hass=hass(); document.querySelector('#editor').append(editor);
+  const fusion = document.createElement('mmwave-fusion-panel'); Object.assign(fusion,{lang:'zh-Hans',roomW:400,roomD:450,backendState:'preview',targets:[{track_id:'demo-A',x:160,y:180,vx:0,vy:0,confidence:.95,sources:['A','B'],started_at:Date.now()/1000,last_seen:Date.now()/1000}],zones:[{id:'desk',name:'书桌',polygon:[{x:90,y:100},{x:250,y:100},{x:250,y:270},{x:90,y:270}]}]}); document.querySelector('#fusion').append(fusion);
+  const refresh = () => {card.hass=hass();editor.hass=hass();fusion.lang=hass().language;fusion.requestUpdate();};
+  document.querySelector('#theme').onclick=()=>{document.documentElement.classList.toggle('dark');refresh();}; document.querySelector('#language').onchange=refresh;
+</script>
+</html>
