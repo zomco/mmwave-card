@@ -259,6 +259,7 @@ export class MMWaveCard extends LitElement {
 
   @state() private _targets: RadarTarget[] = [];
   @state() private _present = false;
+  @state() private _presenceError: 'missing' | 'unavailable' | 'unknown' | undefined = undefined;
   @state() private _maxRangeM?: number;
   @state() private _syncState: 'idle' | 'syncing' | 'success' | 'error' = 'idle';
   @state() private _syncFailures: string[] = [];
@@ -316,6 +317,7 @@ export class MMWaveCard extends LitElement {
 
     const reading = this._adapter.readFromHass(hass, this._config);
     this._present = reading.present;
+    this._presenceError = reading.presenceError;
     this._maxRangeM = reading.maxRangeM;
 
     // Apply transform to every target
@@ -1102,7 +1104,7 @@ export class MMWaveCard extends LitElement {
     const roomD = (this._cal.room_d ?? this._config.room_d) as number;
     const lang = this._hass?.language ?? 'en';
     const insideTargets = this._insideTargetCount();
-    const status = presenceStatus(this._present, this._targets);
+    const status = presenceStatus(this._present, this._targets, this._presenceError);
     const steps = [
       {
         icon: 'mdi:cube-scan',
@@ -1135,17 +1137,19 @@ export class MMWaveCard extends LitElement {
             </div>
             <div class="header-actions">
               <span
-                class="presence-chip ${status === 'present' || status === 'unlocated' ? 'active' : status === 'filtered' ? 'filtered' : ''}"
+                class="presence-chip ${status === 'present' || status === 'unlocated' ? 'active' : status === 'filtered' ? 'filtered' : status === 'unknown' ? 'unknown' : ''}"
               >
                 <i></i>
                 ${
-                  status === 'present'
-                    ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
-                    : status === 'unlocated'
-                      ? this._t('live.badge_unlocated')
-                      : status === 'filtered'
-                        ? this._t('card.outside')
-                        : this._t('card.clear')
+                  status === 'unknown'
+                    ? this._t('card.data_unavailable')
+                    : status === 'present'
+                      ? this._t('card.p0_target_p1', { p0: insideTargets, p1: insideTargets === 1 ? '' : 's' })
+                      : status === 'unlocated'
+                        ? this._t('live.badge_unlocated')
+                        : status === 'filtered'
+                          ? this._t('card.outside')
+                          : this._t('card.clear')
                 }
               </span>
               <button
@@ -1173,6 +1177,7 @@ export class MMWaveCard extends LitElement {
               .roomD=${roomD}
               .targets=${this._targets}
               .present=${this._present}
+              .presentError=${this._presenceError}
               .maxRangeM=${this._maxRangeM}
               .areas=${this._areas}
               .areaOccupied=${this._areaOccupied}
@@ -1325,6 +1330,7 @@ export class MMWaveCard extends LitElement {
                     .roomD=${roomD}
                     .targets=${this._targets}
                     .present=${this._present}
+                    .presentError=${this._presenceError}
                     .maxRangeM=${this._maxRangeM}
                     .showStatus=${true}
                     .areas=${this._areas}

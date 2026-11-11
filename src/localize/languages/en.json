@@ -61,6 +61,8 @@
   "live": {
     "title": "Room Top-Down View",
     "badge_none": "No presence",
+    "data_unavailable": "Data unavailable",
+    "data_unavailable_hint": "Presence state unavailable. Check the entity binding or device connection.",
     "badge_present": "Present",
     "badge_unlocated": "Present · range unavailable",
     "badge_filtered": "Outside boundary",
@@ -247,6 +249,7 @@
     "p0_target_p1": "{p0} target{p1}",
     "outside": "Outside",
     "clear": "Clear",
+    "data_unavailable": "Data unavailable",
     "near": "Near",
     "far": "Far",
     "open_calibration": "Open calibration",

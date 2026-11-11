@@ -82,6 +82,13 @@ export interface RadarReading {
   present: boolean;
   targets: RadarTarget[];
   maxRangeM?: number;
+  /**
+   * Why the presence state itself is not usable evidence. Set when the
+   * presence entity is missing, unavailable or unknown. undefined means the
+   * presence state is a valid on/off sample. Adapters that do not track this
+   * keep the historical behaviour of treating absence as a valid "nobody".
+   */
+  presenceError?: 'missing' | 'unavailable' | 'unknown';
 }
 
 // ── Multi-radar fusion ─────────────────────────────────────────────────────

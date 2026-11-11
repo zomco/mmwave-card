@@ -93,6 +93,7 @@ export class LivePanel extends LitElement {
   @property({ type: Number }) roomW = 400;
   @property({ type: Number }) roomD = 350;
   @property({ attribute: false }) targets: RadarTarget[] = [];
+  @property({ attribute: false }) presentError: 'missing' | 'unavailable' | 'unknown' | undefined = undefined;
   @property({ type: Boolean }) present = false;
   @property({ type: Boolean }) showStatus = false;
   @property({ type: Number }) maxRangeM?: number;
@@ -373,12 +374,14 @@ export class LivePanel extends LitElement {
   }
 
   private _badgeText() {
-    return this._L(`live.badge_${presenceStatus(this.present, this.targets)}`);
+    const status = presenceStatus(this.present, this.targets, this.presentError);
+    return status === 'unknown' ? this._L('live.data_unavailable') : this._L(`live.badge_${status}`);
   }
 
   private _badgeCls() {
-    const status = presenceStatus(this.present, this.targets);
+    const status = presenceStatus(this.present, this.targets, this.presentError);
     if (status === 'none') return '';
+    if (status === 'unknown') return 'unknown';
     return status === 'filtered' ? 'filtered' : 'on';
   }
 
@@ -417,7 +420,11 @@ export class LivePanel extends LitElement {
         </div>
         ${
           !this.present
-            ? html`<div class="idle-hint"><span>◎</span>${this._t('live.waiting_for_a_radar_target')}</div>`
+            ? html`<div class="idle-hint">
+                <span>◎</span>${
+                  this.presentError ? this._t('live.data_unavailable_hint') : this._t('live.waiting_for_a_radar_target')
+                }
+              </div>`
             : ''
         }
       </div>

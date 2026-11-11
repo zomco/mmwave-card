@@ -75,9 +75,9 @@ export const r60abd1Adapter: RadarModelAdapter = {
     };
 
     const pres = get('presence_entity');
-    if (!pres || pres.state === 'unavailable') {
-      return { present: false, targets: [] };
-    }
+    if (!pres) return { present: false, targets: [], presenceError: 'missing' };
+    if (pres.state === 'unavailable') return { present: false, targets: [], presenceError: 'unavailable' };
+    if (pres.state === 'unknown') return { present: false, targets: [], presenceError: 'unknown' };
 
     const present = pres.state === 'on';
     if (!present) return { present: false, targets: [] };

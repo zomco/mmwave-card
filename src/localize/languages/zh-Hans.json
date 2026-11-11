@@ -61,6 +61,8 @@
   "live": {
     "title": "房间俯视图",
     "badge_none": "无人",
+    "data_unavailable": "数据不可用",
+    "data_unavailable_hint": "存在状态不可用。请检查实体绑定或设备连接。",
     "badge_present": "有人",
     "badge_unlocated": "有人 · 距离未知",
     "badge_filtered": "边界外",
@@ -244,6 +246,7 @@
     "presence_radar": "人体存在雷达",
     "p0_target_p1": "{p0} 个目标",
     "outside": "边界外",
+    "data_unavailable": "数据不可用",
     "clear": "无人",
     "near": "近",
     "far": "远",

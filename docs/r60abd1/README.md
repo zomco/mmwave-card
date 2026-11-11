@@ -15,6 +15,8 @@ Before applying this configuration, ensure that:
 
 ## 3. How to Use
 
+When the configured presence entity is missing, `unavailable`, or `unknown`, the card shows **Data unavailable**. Check the entity binding and device connection. Only a valid `off` state means no presence; valid `on` without coordinates remains present but unlocated. The display recovers automatically when valid entity states return.
+
 You can add this configuration to your Home Assistant dashboard using two main methods:
 
 ### Method A: Via UI Editor (Recommended)

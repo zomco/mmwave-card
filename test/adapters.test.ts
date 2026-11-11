@@ -212,3 +212,38 @@ describe.each(MODEL_IDS)('%s adapter', (modelId) => {
     expect(new Set(indices).size).toBe(indices.length);
   });
 });
+
+describe('r60abd1 presence validity', () => {
+  const adapter = RADAR_MODELS.r60abd1;
+  const config = fullConfig('r60abd1');
+
+  it('marks missing, unavailable and unknown presence as not valid evidence', () => {
+    const missing = adapter.readFromHass({ states: {} } as unknown as HomeAssistant, config);
+    expect(missing.present).toBe(false);
+    expect(missing.presenceError).toBe('missing');
+
+    const unavailable = adapter.readFromHass(hassWith('r60abd1', 'unavailable'), config);
+    expect(unavailable.present).toBe(false);
+    expect(unavailable.presenceError).toBe('unavailable');
+
+    const unknown = adapter.readFromHass(hassWith('r60abd1', 'unknown'), config);
+    expect(unknown.present).toBe(false);
+    expect(unknown.presenceError).toBe('unknown');
+  });
+
+  it('keeps a valid off as a plain nobody with no error', () => {
+    const reading = adapter.readFromHass(hassWith('r60abd1', 'off'), config);
+    expect(reading.present).toBe(false);
+    expect(reading.presenceError).toBeUndefined();
+  });
+
+  it('keeps present-but-unlocated as present, not an error', () => {
+    const hass = hassWith('r60abd1', 'unavailable');
+    const id = config.presence_entity as string;
+    (hass.states as Record<string, unknown>)[id] = { entity_id: id, state: 'on', attributes: {} };
+    const reading = adapter.readFromHass(hass, config);
+    expect(reading.present).toBe(true);
+    expect(reading.presenceError).toBeUndefined();
+    expect(reading.targets).toEqual([]);
+  });
+});
