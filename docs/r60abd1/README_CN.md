@@ -19,14 +19,18 @@
 
 您可以通过以下两种主要方式将该配置添加到您的 Home Assistant 仪表板中：
 
-### 方法 A：通过 UI 编辑器（推荐）
+### 方法 A：通过卡片编辑器（推荐）
 
-1. 进入 Home Assistant，打开您想要添加卡片的仪表板。
-2. 点击右上角的 **“编辑仪表板”** (铅笔图标)。
-3. 点击右下角的 **“添加卡片”**。
-4. 在弹出的卡片列表中，向下滚动并选择最底部的 **“手动” (Manual)**。
-5. 将 `tests/r60abd1.yaml` 中的内容复制并粘贴到代码编辑器中。
-6. 根据您的实际情况修改实体 ID（见下文“修改实体 ID”），然后点击“保存”。
+1. 在仪表盘中添加卡片，选择 **MMWave Radar Card**，型号选 `r60abd1`。
+2. 在“连接雷达设备”下拉框中选择你的 R60ABD1 设备。卡片只在**该设备的实体**内匹配，不会混入其他设备。
+3. 查看匹配反馈：“已自动匹配 N 个配置项”表示绑定了 N 个字段；必需字段（presence、x、y）未绑全时会明确列出缺失项，请展开“高级”手动选择。
+4. 有多个候选实体（例如设备上有两个 presence）时不会静默任选，会提示你在“高级”中选择。
+5. 绑定完成后，如果提示“已绑定实体当前为 unavailable/unknown”，说明绑定正确但设备离线或尚未连接，等待设备恢复即可，不需要重新绑定。
+6. 实体注册表暂时不可用时，你的配置不会被改动，可展开“高级”手动填写实体。
+
+7. 若唯一候选实体在 Home Assistant 中被禁用，编辑器不会自动绑定，会提示先在 HA 中启用或手动选择其他实体；卡片不会在后台启用或重命名任何实体。
+
+绑定时注意：x/y 必须是雷达**原始局部坐标**（如 `sensor.xxx_x`），不要选 `room_x`/`room_y`，否则坐标会被变换两次。
 
 ### 方法 B：通过 YAML 模式
 
@@ -35,20 +39,20 @@
 cards:
   - type: custom:mmwave-card
     radar_model: r60abd1
-    presence_entity: binary_sensor.r60abd1_presence
-    x_entity: sensor.r60abd1_x
-    y_entity: sensor.r60abd1_y
-    z_entity: sensor.r60abd1_z
-    breath_entity: sensor.r60abd1_breath_value
-    heart_entity: sensor.r60abd1_heart_rate
-    sleep_entity: sensor.r60abd1_sleep_state
+    presence_entity: binary_sensor.YOUR_DEVICE_presence
+    x_entity: sensor.YOUR_DEVICE_x
+    y_entity: sensor.YOUR_DEVICE_y
+    z_entity: sensor.YOUR_DEVICE_z
+    breath_entity: sensor.YOUR_DEVICE_breath_rate
+    heart_entity: sensor.YOUR_DEVICE_heart_rate
+    sleep_entity: sensor.YOUR_DEVICE_sleep_state
     room_w: 400
     room_d: 350
 ```
 
 ## 4. 修改实体 ID
 
-配置中的所有 `entity_id`（如 `binary_sensor.r60abd1_presence`）都是示例 ID。如果您的设备在 Home Assistant 中具有不同的名称，请务必将其替换为**您实际的实体 ID**。
+配置中的所有 `entity_id`（如 `binary_sensor.YOUR_DEVICE_presence`）都是示例 ID。如果您的设备在 Home Assistant 中具有不同的名称，请务必将其替换为**您实际的实体 ID**。
 
 您可以在 Home Assistant 的 **“开发者工具” -> “状态”** 页面中搜索并确认您雷达设备的真实实体 ID。
 

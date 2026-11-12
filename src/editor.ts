@@ -2,7 +2,7 @@ import { controlStyles } from './styles/controls';
 import { logoSvg } from './logo';
 import './panels/floorplan-editor';
 import type { FloorplanConfig } from './types';
-import { LitElement, html, css, nothing } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { HomeAssistant, LovelaceCardEditor } from 'custom-card-helpers';
 import { getModelList, getAdapter } from './models';
@@ -50,6 +50,8 @@ interface EntityRegistryEntry {
   device_id?: string;
   entity_id: string;
   original_name?: string;
+  /** Non-empty when Home Assistant has the entity disabled (by user, integration…). */
+  disabled_by?: string | null;
 }
 
 /**
@@ -78,6 +80,24 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
   @state() private _advOpen = false;
   @state() private _deviceStatus: 'idle' | 'loading' | 'success' | 'error' = 'idle';
   @state() private _matchedEntities = 0;
+  /**
+   * Key of the device selection that owns the in-flight registry lookup.
+   * A late reply from device A must not patch bindings after the user has
+   * already switched to device B or edited entities by hand.
+   */
+  private _deviceLookupKey = '';
+  private _deviceLookupSeq = 0;
+  /** Schema keys the user edited by hand while a lookup was pending. */
+  private _manualKeysWhileLoading = new Set<string>();
+  /** Entity ids the last successful registry snapshot actually contained. */
+  private _registryEntityIds = new Set<string>();
+  @state() private _missingRequired: string[] = [];
+  @state() private _ambiguousKeys: string[] = [];
+  /** Bound required entities absent from the last registry snapshot. */
+  @state() private _staleBound: string[] = [];
+  /** Required fields whose only candidate is a disabled registry entity. */
+  @state() private _disabledKeys: string[] = [];
+  @state() private _registryError = false;
   @state() private _calibrationProfiles: CalibrationProfile[] = [];
   @state() private _selectedFusionRadar = 0;
   @state() private _profileStatus = '';
@@ -148,7 +168,43 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
 
   private _changed(key: string, value: unknown) {
     this._config = { ...this._config, [key]: value };
+    // A hand edit to an entity field while a lookup is pending must survive the
+    // reply: record it so the auto-bind skips that key, and refresh feedback.
+    if (this._isEntityKey(key)) {
+      this._manualKeysWhileLoading.add(key);
+    }
+    if (key !== 'device_id') this._refreshBindingFeedback();
     this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+  }
+
+  /** Whether a config key is one of the model's entity binding fields. */
+  private _isEntityKey(key: string): boolean {
+    const modelId = (this._config.radar_model as string) || '';
+    const adapter = getAdapter(modelId);
+    return Boolean(adapter?.getEntitySchema().some((f) => f.key === key));
+  }
+
+  /**
+   * Recompute missing/ambiguous/invalid feedback from the current config.
+   *
+   * Called after manual edits (so completing a field clears its warning) and
+   * after device lookups. Purely derived state — no config mutation here.
+   */
+  private _refreshBindingFeedback() {
+    const modelId = (this._config.radar_model as string) || '';
+    if (!modelId) return;
+    this._missingRequired = this._requiredEntityKeys(modelId).filter(
+      (key) => !(this._config as Record<string, unknown>)[key],
+    );
+    this._staleBound = this._requiredEntityKeys(modelId).filter((key) => {
+      const value = String((this._config as Record<string, unknown>)[key] ?? '');
+      return Boolean(value) && this._registryEntityIds.size > 0 && !this._registryEntityIds.has(value);
+    });
+    // While a lookup is in flight or the registry failed, keep the current
+    // status; the reply path sets it once results are in.
+    if (this._deviceStatus === 'loading' || this._registryError) return;
+    this._deviceStatus =
+      this._missingRequired.length || this._ambiguousKeys.length || this._staleBound.length ? 'error' : 'success';
   }
 
   private _setMode(mode: 'single' | 'fusion') {
@@ -343,95 +399,259 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
     this._patchCamera(index, { zones: zones.length === allIds.length ? [] : zones });
   }
 
+  /**
+   * Which schema keys this adapter actually requires for a usable card.
+   *
+   * The R60 schema (and most single-target models) mark presence plus x/y as
+   * required; optional fields must never gate the basic card.
+   */
+  private _requiredEntityKeys(modelId: string): string[] {
+    const adapter = getAdapter(modelId);
+    return adapter
+      ? adapter
+          .getEntitySchema()
+          .filter((f) => f.required)
+          .map((f) => f.key)
+      : [];
+  }
+
+  /**
+   * Registry entities of one device, bucketed per schema key with the
+   * candidates that survived matching. Ambiguous keys keep every candidate so
+   * the user can choose instead of the last one in registry order winning.
+   */
+  private _matchDeviceEntities(
+    entities: EntityRegistryEntry[],
+    modelId: string,
+  ): { matches: Record<string, string[]>; ambiguous: string[] } {
+    const adapter = getAdapter(modelId);
+    const matches: Record<string, string[]> = {};
+    if (!adapter) return { matches, ambiguous: [] };
+
+    const push = (key: string, id: string) => {
+      (matches[key] ??= []).push(id);
+    };
+
+    for (const ent of entities) {
+      const id = ent.entity_id;
+      const name = (ent.original_name || id).toLowerCase();
+
+      const matchTargetX = id.match(/target_(\d+)_x/);
+      const matchTargetY = id.match(/target_(\d+)_y/);
+      const matchTargetSpeed = id.match(/target_(\d+)_speed/);
+
+      if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
+        push('presence_entity', id);
+      } else if (id.startsWith('sensor.') && (name === 'gesture' || id.endsWith('_gesture'))) {
+        push('gesture_entity', id);
+      } else if (id.startsWith('sensor.') && (id.includes('gesture') || name.includes('gesture'))) {
+        // Gesture distance/speed/angle are separate from the presence measurement.
+        continue;
+      } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'distance')) {
+        push('distance_entity', id);
+      } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'motion_state')) {
+        push('motion_state_entity', id);
+        push('target_state_entity', id);
+      } else if (matchTargetX) {
+        push(`target_${matchTargetX[1]}_x_entity`, id);
+      } else if (matchTargetY) {
+        push(`target_${matchTargetY[1]}_y_entity`, id);
+      } else if (matchTargetSpeed) {
+        push(`target_${matchTargetSpeed[1]}_speed_entity`, id);
+      } else if (
+        id.startsWith('sensor.') &&
+        (name.endsWith(' x') || id.endsWith('_x') || id.endsWith('radar_x')) &&
+        !id.includes('room_x') &&
+        !name.includes('room x')
+      ) {
+        // Raw radar-local x only; room_x would run the transform twice.
+        push('x_entity', id);
+      } else if (
+        id.startsWith('sensor.') &&
+        (name.endsWith(' y') || id.endsWith('_y') || id.endsWith('radar_y')) &&
+        !id.includes('room_y') &&
+        !name.includes('room y')
+      ) {
+        push('y_entity', id);
+      } else if (
+        id.startsWith('sensor.') &&
+        (name.endsWith(' z') || id.endsWith('_z') || id.endsWith('radar_z')) &&
+        !id.includes('room_z') &&
+        !name.includes('room z')
+      ) {
+        push('z_entity', id);
+      } else if (
+        id.startsWith('sensor.') &&
+        (/_(?:breath|breathing|respiration)_(?:rate|value)$/.test(id) ||
+          /^(?:breath|breathing|respiration) rate$/.test(name))
+      ) {
+        push('breath_entity', id);
+      } else if (id.startsWith('sensor.') && (/_heart_rate$/.test(id) || name === 'heart rate')) {
+        push('heart_entity', id);
+      } else if (id.startsWith('sensor.') && id.includes('sleep')) {
+        push('sleep_entity', id);
+      } else if (id.startsWith('text.') && matchesConcept(id, name, 'polygon')) {
+        push('polygon_entity', id);
+      } else if (id.startsWith('sensor.') && (id.includes('target_frame') || name.includes('target frame'))) {
+        push('frame_entity', id);
+      }
+    }
+
+    // One schema key with several equally plausible candidates is ambiguous:
+    // the user must pick; registry order must not decide silently.
+    const ambiguous = Object.keys(matches).filter((key) => matches[key].length > 1);
+    return { matches, ambiguous };
+  }
+
   private async _deviceDropdownChanged(e: Event) {
     const deviceId = (e.target as HTMLSelectElement).value;
+    const modelId = (this._config.radar_model as string) || '';
     this._changed('device_id', deviceId);
     if (!deviceId) {
       this._deviceStatus = 'idle';
       this._matchedEntities = 0;
+      this._deviceLookupKey = '';
+      this._missingRequired = [];
+      this._ambiguousKeys = [];
+      this._staleBound = [];
+      this._disabledKeys = [];
+      this._registryError = false;
       return;
     }
 
     this._deviceStatus = 'loading';
+    this._registryError = false;
+    const lookupKey = `${deviceId}@${this._deviceLookupSeq++}`;
+    this._deviceLookupKey = lookupKey;
+    // Entity keys the user hand-edits from now on must survive this reply.
+    this._manualKeysWhileLoading = new Set();
+    // Snapshot what is currently bound, so stale entities from another device
+    // (saved config or defaults) can be recognised and replaced, never merged.
+    const boundBefore = new Map<string, string>();
+    for (const field of getAdapter(modelId)?.getEntitySchema() ?? []) {
+      const value = (this._config as Record<string, unknown>)[field.key];
+      if (typeof value === 'string' && value) boundBefore.set(field.key, value);
+    }
 
     try {
       const entities = await this.hass.callWS<EntityRegistryEntry[]>({ type: 'config/entity_registry/list' });
+
+      // The selection moved on (or was cleared) while the registry replied.
+      if (this._deviceLookupKey !== lookupKey) return;
+      if (this._config.device_id !== deviceId) return;
+
+      this._registryEntityIds = new Set(entities.map((ent) => ent.entity_id));
+
       const deviceEntities = entities.filter((ent) => ent.device_id === deviceId);
+      const { matches, ambiguous } = this._matchDeviceEntities(deviceEntities, modelId);
 
-      const configPatch: Partial<MMWaveCardConfig> = {};
-
-      for (const ent of deviceEntities) {
-        const id = ent.entity_id;
-        const name = (ent.original_name || id).toLowerCase();
-
-        const matchTargetX = id.match(/target_(\d+)_x/);
-        const matchTargetY = id.match(/target_(\d+)_y/);
-        const matchTargetSpeed = id.match(/target_(\d+)_speed/);
-
-        if (id.startsWith('binary_sensor.') && (name.includes('presence') || id.includes('presence'))) {
-          configPatch.presence_entity = id;
-        } else if (id.startsWith('sensor.') && (name === 'gesture' || id.endsWith('_gesture'))) {
-          configPatch.gesture_entity = id;
-        } else if (id.startsWith('sensor.') && (id.includes('gesture') || name.includes('gesture'))) {
-          // Gesture distance/speed/angle are separate from the presence measurement.
+      // Auto-bind only unambiguous, enabled candidates. A disabled entity is
+      // never selected silently; the user sees it named instead.
+      const configPatch: Record<string, unknown> = {};
+      const disabledKeys: string[] = [];
+      for (const [key, ids] of Object.entries(matches)) {
+        if (ids.length !== 1) continue;
+        const row = deviceEntities.find((ent) => ent.entity_id === ids[0]);
+        if (row?.disabled_by) {
+          disabledKeys.push(key);
           continue;
-        } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'distance')) {
-          configPatch.distance_entity = id;
-        } else if (id.startsWith('sensor.') && matchesConcept(id, name, 'motion_state')) {
-          configPatch.motion_state_entity = id;
-          configPatch.target_state_entity = id;
-        } else if (matchTargetX) {
-          configPatch[`target_${matchTargetX[1]}_x_entity` as keyof MMWaveCardConfig] = id;
-        } else if (matchTargetY) {
-          configPatch[`target_${matchTargetY[1]}_y_entity` as keyof MMWaveCardConfig] = id;
-        } else if (matchTargetSpeed) {
-          configPatch[`target_${matchTargetSpeed[1]}_speed_entity` as keyof MMWaveCardConfig] = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (name.endsWith(' x') || id.endsWith('_x') || id.endsWith('radar_x')) &&
-          !id.includes('room_x') &&
-          !name.includes('room x')
-        ) {
-          configPatch.x_entity = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (name.endsWith(' y') || id.endsWith('_y') || id.endsWith('radar_y')) &&
-          !id.includes('room_y') &&
-          !name.includes('room y')
-        ) {
-          configPatch.y_entity = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (name.endsWith(' z') || id.endsWith('_z') || id.endsWith('radar_z')) &&
-          !id.includes('room_z') &&
-          !name.includes('room z')
-        ) {
-          configPatch.z_entity = id;
-        } else if (
-          id.startsWith('sensor.') &&
-          (/_(?:breath|breathing|respiration)_(?:rate|value)$/.test(id) ||
-            /^(?:breath|breathing|respiration) rate$/.test(name))
-        ) {
-          configPatch.breath_entity = id;
-        } else if (id.startsWith('sensor.') && (/_heart_rate$/.test(id) || name === 'heart rate')) {
-          configPatch.heart_entity = id;
-        } else if (id.startsWith('sensor.') && id.includes('sleep')) {
-          configPatch.sleep_entity = id;
-        } else if (id.startsWith('text.') && matchesConcept(id, name, 'polygon')) {
-          configPatch.polygon_entity = id;
         }
+        if (this._manualKeysWhileLoading.has(key)) continue; // hand edit wins
+        configPatch[key] = ids[0];
+      }
+
+      // Replacement semantics: entity fields that belong to THIS model but hold
+      // a value the new device did not provide are cleared, unless the user
+      // typed them by hand during this lookup. This is what keeps A's y out of
+      // a partial B selection, including values restored from a saved config.
+      for (const field of getAdapter(modelId)?.getEntitySchema() ?? []) {
+        if (field.key in configPatch) continue;
+        // A hand edit made while this lookup was pending always wins.
+        if (this._manualKeysWhileLoading.has(field.key)) continue;
+        const previous = boundBefore.get(field.key);
+        if (previous === undefined) continue; // nothing bound before, nothing to clear
+        // Selecting a device is an explicit replacement of the binding set:
+        // fields the new device did not provide are cleared so no other
+        // device's entities persist as if they were this one's. Non-binding
+        // configuration (room size, calibration, style) is untouched above.
+        configPatch[field.key] = '';
       }
 
       if (Object.keys(configPatch).length > 0) {
         this._config = { ...this._config, ...configPatch };
         this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
       }
-      this._matchedEntities = Object.keys(configPatch).length;
-      this._deviceStatus = this._matchedEntities > 0 ? 'success' : 'error';
+      this._matchedEntities = Object.values(configPatch).filter(Boolean).length;
+      this._ambiguousKeys = ambiguous.filter((key) => this._requiredEntityKeys(modelId).includes(key));
+      this._disabledKeys = disabledKeys.filter((key) => this._requiredEntityKeys(modelId).includes(key));
+      this._manualKeysWhileLoading = new Set();
+      this._registryError = false;
+      // Recompute missing/stale feedback first, then derive the status once.
+      this._refreshBindingFeedback();
+      this._deviceStatus =
+        this._missingRequired.length ||
+        this._ambiguousKeys.length ||
+        this._staleBound.length ||
+        this._disabledKeys.length
+          ? 'error'
+          : 'success';
     } catch (err) {
+      if (this._deviceLookupKey !== lookupKey) return;
       this._deviceStatus = 'error';
+      this._registryError = true;
+      // Keep whatever was bound: a failed registry must not wipe the config.
       console.warn('Failed to auto-populate entities from device', err);
     }
+  }
+
+  /**
+   * Friendly label of a schema key for the missing/ambiguous messages.
+   */
+  private _requiredLabel(modelId: string, key: string): string {
+    const adapter = getAdapter(modelId);
+    const labelKey = adapter?.getEntitySchema().find((f) => f.key === key)?.labelKey;
+    const label = (labelKey && this._L(labelKey)) || key;
+    // Keep the schema key next to the friendly label: the key is what users
+    // must find in the advanced fields, and it keeps tooling greppable.
+    return label === key ? key : `${label} (${key})`;
+  }
+
+  /**
+   * Binding state versus live data state, kept separate on purpose.
+   *
+   * An entity can exist in the registry (binding is fine) while its current
+   * state is unavailable/unknown or absent from hass.states (device offline or
+   * not yet connected). That is not "nobody" and not a wrong entity name; the
+   * user gets one honest line instead of being told to re-bind.
+   */
+  private _bindingHealthNote() {
+    const modelId = (this._config.radar_model as string) || '';
+    const required = this._requiredEntityKeys(modelId);
+    if (!required.length) return nothing;
+    const bound = required.filter((key) => (this._config as Record<string, unknown>)[key]);
+    if (!bound.length) return nothing;
+    const config = this._config as Record<string, unknown>;
+    const states = (this.hass?.states ?? {}) as Record<string, { state?: string } | undefined>;
+    const unavailable = bound.filter((key) => {
+      const state = states[String(config[key])];
+      return state && (state.state === 'unavailable' || state.state === 'unknown');
+    });
+    const noState = bound.filter((key) => !states[String(config[key])]);
+    if (!unavailable.length && !noState.length) return nothing;
+    const parts: TemplateResult[] = [];
+    if (unavailable.length) {
+      parts.push(
+        html`<div class="binding-note warn">
+          ${this._t('editor.bound_but_unavailable_p0', { p0: unavailable.length })}
+        </div>`,
+      );
+    }
+    if (noState.length) {
+      parts.push(
+        html`<div class="binding-note warn">${this._t('editor.bound_but_no_state_p0', { p0: noState.length })}</div>`,
+      );
+    }
+    return html`${parts}`;
   }
 
   private _modeSelector(mode: 'single' | 'fusion') {
@@ -1036,17 +1256,64 @@ export class MMWaveCardEditor extends LitElement implements LovelaceCardEditor {
         this._deviceStatus !== 'idle'
           ? html`<div class="match-status ${this._deviceStatus}">
               <span>${this._deviceStatus === 'loading' ? '···' : this._deviceStatus === 'success' ? '✓' : '!'}</span>
-              ${
-                this._deviceStatus === 'loading'
-                  ? this._t('editor.detecting_device_entities')
-                  : this._deviceStatus === 'success'
-                    ? this._t('editor.matched_p0_configuration_fields', { p0: this._matchedEntities })
-                    : this._t('editor.automatic_detection_failed_configure_entities_manually')
-              }
+              <div class="match-detail">
+                ${
+                  this._deviceStatus === 'loading'
+                    ? this._t('editor.detecting_device_entities')
+                    : this._registryError
+                      ? this._t('editor.registry_unavailable_keep_manual')
+                      : this._t('editor.matched_p0_configuration_fields', { p0: this._matchedEntities })
+                }
+                ${
+                  this._deviceStatus !== 'loading' && !this._registryError && this._missingRequired.length
+                    ? html`<span class="match-sub miss">
+                        ${this._t('editor.required_fields_missing_p0', {
+                          p0: this._missingRequired.map((k) => this._requiredLabel(modelId, k)).join(', '),
+                        })}
+                      </span>`
+                    : ''
+                }
+                ${
+                  this._deviceStatus !== 'loading' && !this._registryError && this._ambiguousKeys.length
+                    ? html`<span class="match-sub miss">
+                        ${this._t('editor.ambiguous_fields_p0', {
+                          p0: this._ambiguousKeys.map((k) => this._requiredLabel(modelId, k)).join(', '),
+                        })}
+                      </span>`
+                    : ''
+                }
+                ${
+                  this._deviceStatus !== 'loading' && !this._registryError && this._staleBound.length
+                    ? html`<span class="match-sub miss">
+                        ${this._t('editor.stale_bound_p0', {
+                          p0: this._staleBound.map((k) => this._requiredLabel(modelId, k)).join(', '),
+                        })}
+                      </span>`
+                    : ''
+                }
+                ${
+                  this._deviceStatus !== 'loading' && !this._registryError && this._disabledKeys.length
+                    ? html`<span class="match-sub miss">
+                        ${this._t('editor.disabled_candidates_p0', {
+                          p0: this._disabledKeys.map((k) => this._requiredLabel(modelId, k)).join(', '),
+                        })}
+                      </span>`
+                    : ''
+                }
+                ${
+                  this._deviceStatus !== 'loading' &&
+                  !this._registryError &&
+                  !this._missingRequired.length &&
+                  !this._ambiguousKeys.length
+                    ? html`<span class="match-sub">${this._t('editor.optional_fields_missing_ok')}</span>`
+                    : ''
+                }
+                ${this._deviceStatus !== 'loading' && !this._registryError ? html`<span class="match-sub">${this._t('editor.manual_binding_hint')}</span>` : ''}
+              </div>
             </div>`
           : ''
       }
-
+      ${this._bindingHealthNote()}
       <!-- Room dimensions -->
       <h3><span>3</span>${this._L('editor.room_dimensions')}</h3>
       <p class="section-help">${this._t('editor.enter_the_room_dimensions_used_by')}</p>

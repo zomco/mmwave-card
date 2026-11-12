@@ -19,14 +19,18 @@ When the configured presence entity is missing, `unavailable`, or `unknown`, the
 
 You can add this configuration to your Home Assistant dashboard using two main methods:
 
-### Method A: Via UI Editor (Recommended)
+### Method A: Via the Card Editor (Recommended)
 
-1. Go to Home Assistant and open the dashboard where you want to add the card.
-2. Click **"Edit Dashboard"** (the pencil icon) in the top right corner.
-3. Click **"Add Card"** in the bottom right corner.
-4. Scroll to the very bottom of the card list popup and select **"Manual"**.
-5. Copy the contents from `tests/r60abd1.yaml` and paste them into the code editor.
-6. Modify the entity IDs according to your actual setup (see "Modifying Entity IDs" below), and then click "Save".
+1. Add a card to your dashboard, choose **MMWave Radar Card**, and set the model to `r60abd1`.
+2. Pick your R60ABD1 device in the **Connect radar device** dropdown. Matching only looks at that device's entities; other devices' entities are never mixed in.
+3. Read the match feedback: "Matched N configuration fields" means N fields were bound. If required fields (presence, x, y) are not all bound, the missing keys are listed — open **Advanced** and pick them manually.
+4. When several candidates match one field (for example two presence entities), nothing is silently selected; the editor asks you to choose under **Advanced**.
+5. If the editor says bound entities report "unavailable/unknown", the entities exist in the registry and the device is offline or not yet connected — waiting is reasonable. If they never appear, verify the entities still exist. If the editor says a bound entity is not in the selected device's registry, the binding is stale: re-pick the entity or the device.
+6. If the entity registry is temporarily unavailable, your configuration stays unchanged and you can fill entities manually under **Advanced**.
+
+7. If the only candidate entity is disabled in Home Assistant, the editor will not auto-bind it; it asks you to enable it in HA first or pick another entity manually. The card never enables or renames registry entities in the background.
+
+When binding, x/y must be the radar's **raw local coordinates** (e.g. `sensor.xxx_x`), not `room_x`/`room_y`, or the coordinates get transformed twice.
 
 ### Method B: Via YAML Mode
 
@@ -35,20 +39,20 @@ If you manage Lovelace using YAML mode (`ui-lovelace.yaml`), copy the configurat
 cards:
   - type: custom:mmwave-card
     radar_model: r60abd1
-    presence_entity: binary_sensor.r60abd1_presence
-    x_entity: sensor.r60abd1_x
-    y_entity: sensor.r60abd1_y
-    z_entity: sensor.r60abd1_z
-    breath_entity: sensor.r60abd1_breath_value
-    heart_entity: sensor.r60abd1_heart_rate
-    sleep_entity: sensor.r60abd1_sleep_state
+    presence_entity: binary_sensor.YOUR_DEVICE_presence
+    x_entity: sensor.YOUR_DEVICE_x
+    y_entity: sensor.YOUR_DEVICE_y
+    z_entity: sensor.YOUR_DEVICE_z
+    breath_entity: sensor.YOUR_DEVICE_breath_rate
+    heart_entity: sensor.YOUR_DEVICE_heart_rate
+    sleep_entity: sensor.YOUR_DEVICE_sleep_state
     room_w: 400
     room_d: 350
 ```
 
 ## 4. Modifying Entity IDs
 
-All `entity_id`s in the configuration (such as `binary_sensor.r60abd1_presence`) are examples. If your device has different names in Home Assistant, please make sure to replace them with **your actual entity IDs**.
+All `entity_id`s in the configuration (such as `binary_sensor.YOUR_DEVICE_presence`) are examples. If your device has different names in Home Assistant, please make sure to replace them with **your actual entity IDs**.
 
 You can search and confirm the real entity IDs of your radar device on the **"Developer Tools" -> "States"** page in Home Assistant.
 
