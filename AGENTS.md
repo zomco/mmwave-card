@@ -1,10 +1,5 @@
-# Agent instructions
+# Workspace development entry point
 
-The instructions for this repository live in
-[.github/copilot-instructions.md](.github/copilot-instructions.md).
-Read that file before making any change here.
+AI development, testing and maintenance guidance is maintained in [mmwave-workspace](https://github.com/zomco/mmwave-workspace/blob/main/docs/development/repositories/mmwave-card.md).
 
-**Before touching `src/utils/transform.ts`**, read the rotation-convention
-section in particular. That convention is implemented three times across three
-repositories, and changing one alone silently mirrors everyone's coordinates
-while this repository's CI stays green.
+Inside the workspace, read its root AGENTS.md, `docs/development/repositories/mmwave-card.md` and `docs/development/README.md` before edits. Skills live in the workspace's `.agents/skills/`; run `python scripts/dev.py list` from the workspace. This file is a routing stub: do not add local rules or duplicate Skills here. A standalone checkout retains its public README and CI; obtain the workspace for internal maintenance guidance instead of guessing its contents.
